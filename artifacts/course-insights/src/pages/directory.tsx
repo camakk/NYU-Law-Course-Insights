@@ -137,7 +137,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>([...COURSE_CATEGORIES]);
   const metricIdx = kind === 'professors' ? 5 : 8;
   const groupsForKind = kind === 'professors' ? ds.professors : ds.courses;
-  const maxOfferings = Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
+  const maxOfferings = kind === 'professors'
+    ? 30
+    : Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
   const maxReviews = kind === 'professors' ? 300 : 500;
   const hasFilters = q !== '' || sem !== 'all' ||
     (minOfferings !== '' && Number(minOfferings) > 1) ||
@@ -263,6 +265,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             max={maxOfferings}
             id="filter-min-offerings"
             formatValue={(value) => `${fmtInt(value)}+`}
+            maxLabel={isProf ? '30+' : undefined}
           />
           <RangeFilter
             label="Minimum reviews"

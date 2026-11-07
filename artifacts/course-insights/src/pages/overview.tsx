@@ -195,8 +195,14 @@ function OverviewInner({ ds }: { ds: Dataset }) {
         </div>
       </section>
 
-      <section className="my-10 rise" style={{ animationDelay: '80ms' }}>
-        <SearchBox value={q} onChange={setQ} placeholder="Search any professor or course title" testId="input-search-global" />
+      <section className="mt-0 mb-10 rise" style={{ animationDelay: '80ms' }}>
+        <SearchBox
+          value={q}
+          onChange={setQ}
+          placeholder="Type a professor name or course title"
+          testId="input-search-global"
+          featured
+        />
         {hits && (
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             {([['Professors', hits.p, 'professors'], ['Courses', hits.c, 'courses']] as const).map(([label, list, kind]) => (

@@ -88,17 +88,28 @@ export function LowSample({ responses }: { responses: number }) {
   );
 }
 
-export function SearchBox({ value, onChange, placeholder, testId }: { value: string; onChange: (v: string) => void; placeholder: string; testId: string }) {
+export function SearchBox({ value, onChange, placeholder, testId, featured = false }: { value: string; onChange: (v: string) => void; placeholder: string; testId: string; featured?: boolean }) {
   return (
-    <label className="relative flex-1 min-w-[220px] group">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+    <label className={cn('relative flex-1 min-w-[220px] group', featured && 'overview-search-featured')}>
+      <Search className={cn(
+        'absolute top-1/2 -translate-y-1/2 transition-colors',
+        featured
+          ? 'left-4 h-5 w-5 text-primary transition-transform group-focus-within:scale-110'
+          : 'left-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary',
+      )} />
       <input
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={placeholder}
         data-testid={testId}
-        className="w-full h-11 pl-9 pr-9 rounded-lg bg-card border border-input text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/20 transition"
+        className={cn(
+          'w-full outline-none transition',
+          featured
+            ? 'h-14 pl-12 pr-12 rounded-xl bg-card border border-primary/30 text-base font-medium shadow-sm focus:border-primary focus:ring-4 focus:ring-ring/20 placeholder:text-muted-foreground/80 hover:border-primary/50 hover:shadow-md transition-all duration-300'
+            : 'h-11 pl-9 pr-9 rounded-lg bg-card border border-input text-sm focus:border-primary focus:ring-2 focus:ring-ring/20',
+        )}
       />
       {value && (
         <button onClick={() => onChange('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted" aria-label="Clear search" data-testid={`${testId}-clear`}>
