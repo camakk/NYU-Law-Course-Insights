@@ -29,6 +29,29 @@ assert.ok(
 );
 const pairings = new Set([`${firstPair.professor}\u0000${firstPair.course}`]);
 
+test("legacy feedback keeps attendance labels and does not guess missing history", () => {
+  assert.equal(
+    getExamCompletionLabel({ examCompleted: null, examTaken: true }),
+    "Took exam",
+  );
+  assert.equal(
+    getExamCompletionLabel({ examCompleted: null, examTaken: false }),
+    "Did not take exam",
+  );
+  assert.equal(
+    getExamCompletionLabel({ examCompleted: true, examTaken: false }),
+    "Finished exam",
+  );
+  assert.equal(
+    getExamCompletionLabel({ examCompleted: false, examTaken: true }),
+    "Did not finish exam",
+  );
+  assert.equal(
+    getExamCompletionLabel({ examCompleted: null, examTaken: null }),
+    "Exam completion not recorded",
+  );
+});
+
 function interpolateParams(query, params) {
   // pg-mem cannot plan the empty-report HAVING subquery used by the API. With
   // the isolated test database containing no reports, removing this exclusion
@@ -76,6 +99,15 @@ test("completion is required and finished states survive API create and fresh li
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       UNIQUE (feedback_id, reporter_fingerprint)
     );
+  `);
+  const quoteSql = (value) => `'${value.replaceAll("'", "''")}'`;
+  memory.public.none(`
+    INSERT INTO exam_feedback
+      (professor, course, comment, exam_taken, exam_completed, created_at)
+    VALUES
+      (${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'Legacy took record', true, null, '2020-01-01T00:00:00Z'),
+      (${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'Legacy did not take record', false, null, '2020-01-02T00:00:00Z'),
+      (${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'Legacy unknown record', null, null, '2020-01-03T00:00:00Z');
   `);
 
   const database = drizzle(async (query, params) => {
@@ -136,10 +168,18 @@ test("completion is required and finished states survive API create and fresh li
 
   assert.deepEqual(
     list.comments.map((comment) => comment.examCompleted).sort(),
-    [false, true],
+    [null, null, null, false, true],
   );
   assert.deepEqual(list.comments.map(getExamCompletionLabel).sort(), [
     "Did not finish exam",
+    "Did not take exam",
+    "Exam completion not recorded",
     "Finished exam",
+    "Took exam",
   ]);
+  const legacyComments = list.comments.filter((comment) =>
+    comment.comment?.startsWith("Legacy"),
+  );
+  assert.equal(legacyComments.length, 3);
+  assert.ok(legacyComments.every((comment) => comment.examCompleted === null));
 });
