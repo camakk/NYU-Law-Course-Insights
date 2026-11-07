@@ -129,7 +129,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
   const mostReviewedUpperclassman = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course') && !course.records.some((record) => record.is1LCourse))
     .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
-    .slice(0, 30), [ds]);
+    .slice(0, 10), [ds]);
   const usable = ds.records.filter((r) => !r.inaccessible && (r.responded ?? 0) > 0).length;
 
   return (
