@@ -8,3 +8,9 @@ Treat course comparisons as summaries of subjective student evaluations, not obj
 **Why:** The uploaded workbook reports offering-level response counts only. Equal weighting would overemphasize tiny sections; pretending exact question-level weights exist would overstate precision.
 
 **How to apply:** Retain response-count context and small-sample caveats when extending comparisons. Do not treat missing ratings as zero, merge duplicate-looking offering rows, or silently repair source anomalies. The user's core requirement is professor results across all classes and teacher comparisons within each individual course.
+
+For directory minimums, interpret “courses taught” as distinct course titles; retain individual sections and repeat terms under the separate “class offerings” measure.
+
+**Why:** Repeated sections should not imply a broader range of teaching experience. Separate measures let users filter on either breadth or number of offerings.
+
+**How to apply:** Keep these labels distinct in future filters and apply minimums to the selected semester's records.

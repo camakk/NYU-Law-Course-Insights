@@ -21,12 +21,60 @@ function matches(g: Group, terms: string[], kind: Kind, ds: Dataset) {
   return terms.every((t) => hay.includes(t) || other.includes(t));
 }
 
+function MinimumFilter({ label, value, onChange, max, step = 1, id }: {
+  label: string; value: string; onChange: (value: string) => void;
+  max?: number; step?: number; id: string;
+}) {
+  return (
+    <label htmlFor={id} className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+      {label}
+      <input
+        id={id}
+        data-testid={id}
+        type="number"
+        min={0}
+        max={max}
+        step={step}
+        value={value}
+        placeholder="No minimum"
+        onChange={(event) => {
+          const raw = event.target.value;
+          if (raw === '') { onChange(''); return; }
+          const n = Number(raw);
+          if (!Number.isFinite(n)) return;
+          const bounded = Math.max(0, Math.min(max ?? Infinity, n));
+          onChange(String(step === 1 ? Math.floor(bounded) : bounded));
+        }}
+        className="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+      />
+    </label>
+  );
+}
+
 function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [q, setQ] = useState('');
   const [sem, setSem] = useState('all');
   const [sort, setSort] = useState<SortKey>('rating');
   const [limit, setLimit] = useState(100);
+  const [minPartners, setMinPartners] = useState('');
+  const [minOfferings, setMinOfferings] = useState('');
+  const [minResponses, setMinResponses] = useState('');
+  const [minScore, setMinScore] = useState('');
   const metricIdx = kind === 'professors' ? 5 : 8;
+  const hasFilters = q !== '' || sem !== 'all' || [minPartners, minOfferings, minResponses, minScore].some((v) => v !== '');
+  const updateMinimum = (setValue: (value: string) => void) => (value: string) => {
+    setValue(value);
+    setLimit(100);
+  };
+  const clearFilters = () => {
+    setQ('');
+    setSem('all');
+    setMinPartners('');
+    setMinOfferings('');
+    setMinResponses('');
+    setMinScore('');
+    setLimit(100);
+  };
 
   const rows = useMemo(() => {
     const terms = norm(q).split(' ').filter(Boolean);
@@ -40,7 +88,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         const teach = kind === 'courses' ? aggregate(recs, 5) : null;
         const partners = new Set(recs.map((r) => (kind === 'professors' ? r.course : r.professor))).size;
         return { g, m, teach, offerings: recs.length, partners, latest: recs[0]?.semester ?? '' };
-      });
+      })
+      .filter((r) =>
+        r.partners >= Number(minPartners) &&
+        r.offerings >= Number(minOfferings) &&
+        r.m.responses >= Number(minResponses) &&
+        (minScore === '' || (r.m.avg !== null && r.m.avg >= Number(minScore)))
+      );
     const byAvg = (a: number | null, b: number | null, dir: 1 | -1) => (a == null && b == null ? 0 : a == null ? 1 : b == null ? -1 : dir * (b - a));
     out.sort((a, b) => {
       switch (sort) {
@@ -53,7 +107,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       }
     });
     return out;
-  }, [ds, kind, q, sem, sort, metricIdx]);
+  }, [ds, kind, q, sem, sort, metricIdx, minPartners, minOfferings, minResponses, minScore]);
 
   const isProf = kind === 'professors';
   const total = isProf ? ds.professors.length : ds.courses.length;
@@ -65,6 +119,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">
           {fmtInt(total)} {isProf ? 'instructors, ranked by response-weighted "Overall this professor was effective."' : 'distinct course titles, scored by response-weighted "Overall course effective."'} Search also matches {isProf ? 'course titles they taught' : 'instructor names'}.
+        </p>
+        <p className="text-xs text-muted-foreground mt-3" role="status" aria-live="polite" data-testid="filter-summary">
+          {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
         </p>
       </div>
 
@@ -84,8 +141,28 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </NativeSelect>
       </div>
 
+      <fieldset className="mb-6 rounded-xl border bg-card px-4 pb-4">
+        <legend className="px-2 text-sm font-semibold">Filter</legend>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-1">
+          <MinimumFilter
+            label={isProf ? 'Minimum courses taught' : 'Minimum professors'}
+            value={minPartners} onChange={updateMinimum(setMinPartners)} id={`filter-min-${isProf ? 'courses' : 'professors'}`}
+          />
+          <MinimumFilter label="Minimum class offerings" value={minOfferings} onChange={updateMinimum(setMinOfferings)} id="filter-min-offerings" />
+          <MinimumFilter label="Minimum rating responses" value={minResponses} onChange={updateMinimum(setMinResponses)} id="filter-min-responses" />
+          <MinimumFilter label={`Minimum ${isProf ? 'teaching' : 'course'} score (0–5)`} value={minScore} onChange={updateMinimum(setMinScore)} max={5} step={0.1} id="filter-min-score" />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+          <p className="text-xs text-muted-foreground max-w-3xl">
+            {isProf ? 'Courses taught counts distinct course titles; offerings counts individual sections, including repeats.' : 'Professors counts distinct instructors; offerings counts individual sections of each course.'}
+            {' '}Minimums include the selected value and apply within the selected semester. Rating responses count only offerings contributing to the displayed score.
+          </p>
+          {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
+        </div>
+      </fieldset>
+
       {rows.length === 0 ? (
-        <Empty title="Nothing matches." hint="Try a shorter query, a surname only, or All semesters." />
+        <Empty title="Nothing matches." hint="Lower the minimums, clear filters, or try a shorter search." />
       ) : (
         <>
           <div className="bg-card border rounded-xl overflow-hidden">
@@ -131,7 +208,7 @@ export function DirectoryPage({ kind }: { kind: Kind }) {
   const { data, isLoading, error, refetch } = useDataset();
   if (isLoading) return <PageLoading />;
   if (error || !data) return <PageError error={error} onRetry={() => refetch()} />;
-  return <DirectoryInner ds={data} kind={kind} />;
+  return <DirectoryInner key={kind} ds={data} kind={kind} />;
 }
 
 export const ProfessorsPage = () => <DirectoryPage kind="professors" />;
