@@ -5,6 +5,7 @@ export interface EvalRecord {
   id: number;
   course: string;
   courseCategories: CourseCategory[];
+  is1LCourse: boolean;
   professor: string;
   semester: string;
   enrolled: number | null;
@@ -15,7 +16,7 @@ export interface EvalRecord {
 
 export interface RawData {
   questions: string[];
-  records: Array<Omit<EvalRecord, 'courseCategories'>>;
+  records: Array<Omit<EvalRecord, 'courseCategories' | 'is1LCourse'>>;
   sourceNotes: string[];
 }
 
@@ -51,6 +52,25 @@ export interface Dataset {
 
 export const COURSE_CATEGORIES = ['Course', 'Seminar', 'Clinic', 'Colloquium', 'Externship'] as const;
 export type CourseCategory = typeof COURSE_CATEGORIES[number];
+
+const FIRST_YEAR_COURSE_NAMES = new Set([
+  'Procedure',
+  'Torts',
+  'Legislation and the Regulatory State',
+  'Criminal Law',
+  'Lawyering',
+  'Contracts',
+]);
+
+export function is1LCourse(course: string): boolean {
+  const compactName = course
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  if (compactName.includes('forllm')) return false;
+  return FIRST_YEAR_COURSE_NAMES.has(course);
+}
 
 export function classifyCourse(course: string): CourseCategory[] {
   const title = course.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -163,6 +183,7 @@ export function buildDataset(raw: RawData): Dataset {
       ...record,
       professor: professorNames.canonicalByName.get(record.professor) ?? record.professor,
       courseCategories: classifyCourse(record.course),
+      is1LCourse: is1LCourse(record.course),
     }));
   const professors = buildGroups(records, 'professor');
   const courses = buildGroups(records, 'course');
