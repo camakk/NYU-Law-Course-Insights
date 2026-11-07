@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowUpRight } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
@@ -21,7 +21,7 @@ function matches(g: Group, terms: string[], kind: Kind, records = g.records) {
   return terms.every((t) => hay.includes(t) || other.includes(t));
 }
 
-function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatValue, minLabel, maxLabel }: {
+function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatValue, minLabel, maxLabel, snapPoints, snapRange = 1 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -32,9 +32,19 @@ function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatVal
   formatValue: (value: number) => string;
   minLabel?: string;
   maxLabel?: string;
+  snapPoints?: number[];
+  snapRange?: number;
 }) {
   const numericValue = value === '' ? min : Number(value);
   const labelId = `${id}-label`;
+  const pointerActive = useRef(false);
+  const snapValue = (nextValue: number) => {
+    if (!pointerActive.current || !snapPoints?.length) return nextValue;
+    const nearest = snapPoints.reduce((closest, point) =>
+      Math.abs(point - nextValue) < Math.abs(closest - nextValue) ? point : closest,
+    );
+    return Math.abs(nearest - nextValue) <= snapRange ? nearest : nextValue;
+  };
   return (
     <div className="flex min-w-0 flex-col gap-2" data-testid={id}>
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -51,9 +61,25 @@ function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatVal
         min={min}
         max={max}
         step={step}
-        onValueChange={([nextValue]) => onChange(String(nextValue))}
+        onPointerDown={() => { pointerActive.current = true; }}
+        onPointerUp={() => { pointerActive.current = false; }}
+        onPointerCancel={() => { pointerActive.current = false; }}
+        onValueChange={([nextValue]) => onChange(String(snapValue(nextValue)))}
         className="cursor-pointer py-1.5"
       />
+      {snapPoints && snapPoints.length > 0 && (
+        <div className="relative h-4 text-[9px] text-muted-foreground" aria-hidden="true">
+          {snapPoints.map((point) => (
+            <span
+              key={point}
+              className="absolute -translate-x-1/2 whitespace-nowrap"
+              style={{ left: `${((point - min) / (max - min)) * 100}%` }}
+            >
+              {fmtInt(point)}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="flex justify-between text-[10px] text-muted-foreground">
         <span>{minLabel ?? min}</span>
         <span>{maxLabel ?? max}</span>
@@ -112,7 +138,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const metricIdx = kind === 'professors' ? 5 : 8;
   const groupsForKind = kind === 'professors' ? ds.professors : ds.courses;
   const maxOfferings = Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
-  const maxReviews = kind === 'courses' ? 500 : Math.max(100, ...groupsForKind.map((group) => group.metrics[metricIdx].responses + 100));
+  const maxReviews = kind === 'professors' ? 300 : 500;
   const hasFilters = q !== '' || sem !== 'all' ||
     (minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||
@@ -248,6 +274,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
             minLabel="No minimum"
             maxLabel={`${fmtInt(maxReviews)}+`}
+            snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
           />
           <RangeBandFilter
             label={isProf ? 'Teaching score' : 'Average Course Rating'}
