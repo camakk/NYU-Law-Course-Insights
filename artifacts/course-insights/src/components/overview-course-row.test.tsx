@@ -21,13 +21,14 @@ beforeEach(() => window.history.replaceState(null, '', '/'));
 describe('Overview course expansion', () => {
   it('shows the top three course-specific, response-weighted teaching ratings and collapses without navigation', () => {
     renderCourse([
-      record(1, 'Alpha, Alice', 5, 1),
-      record(2, 'Alpha, Alice', 3, 9),
+      record(1, 'Alpha, Alice', 5, 4),
+      record(2, 'Alpha, Alice', 3, 36),
       record(3, 'Alpha, Alice', 5, 100, 'Contracts'),
       record(4, 'Beta, Beth', 4.6, 20),
-      record(5, 'Gamma, Grace', 4.8, 2),
-      record(6, 'Delta, Diana', 4.5, 15),
+      record(5, 'Gamma, Grace', 4.8, 20),
+      record(6, 'Delta, Diana', 4.5, 20),
       record(7, 'Unrated, Una', null, 20),
+      record(8, 'Small, Sally', 5, 19),
     ]);
     const panel = screen.getByTestId('panel-top-professors-evidence');
     expect(panel.hidden).toBe(true);
@@ -42,8 +43,8 @@ describe('Overview course expansion', () => {
       'Grace Gamma', 'Beth Beta', 'Diana Delta',
     ]);
     expect(within(entries[0]).getByRole('meter').getAttribute('aria-valuenow')).toBe('4.8');
-    expect(within(entries[0]).getByText('2 reviews · 1 rated offering')).toBeTruthy();
-    expect(within(entries[0]).getByText('Small Sample')).toBeTruthy();
+    expect(within(entries[0]).getByText('20 reviews · 1 rated offering')).toBeTruthy();
+    expect(within(panel).queryByText('Small Sample')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }));
     expect(panel.hidden).toBe(true);
     expect(window.location.pathname).toBe('/');
@@ -70,6 +71,26 @@ describe('Overview course expansion', () => {
   it('explains when there are no usable teaching ratings', () => {
     renderCourse([record(1, 'Unrated, Una', null, 20), record(2, 'Zero, Zoe', 5, 0)]);
     fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
-    expect(screen.getByText('No teaching ratings are available for this course.')).toBeTruthy();
+    expect(screen.getByText('No professors have teaching ratings with at least 20 reviews for this course.')).toBeTruthy();
+  });
+
+  it('counts reviews across the same course’s offerings, never other courses', () => {
+    renderCourse([
+      record(1, 'Beta, Beth', 4.6, 10),
+      record(2, 'Beta, Beth', 4.4, 10),
+      record(3, 'Small, Sally', 5, 19),
+      record(4, 'Small, Sally', 5, 100, 'Contracts'),
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
+    const entries = within(screen.getByTestId('panel-top-professors-evidence')).getAllByRole('listitem');
+    expect(entries).toHaveLength(1);
+    expect(within(entries[0]).getByRole('link').textContent).toBe('Beth Beta');
+    expect(within(entries[0]).getByText('20 reviews · 2 rated offerings')).toBeTruthy();
+  });
+
+  it('explains when all rated professors fall below the minimum', () => {
+    renderCourse([record(1, 'Small, Sally', 5, 19)]);
+    fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
+    expect(screen.getByText('No professors have teaching ratings with at least 20 reviews for this course.')).toBeTruthy();
   });
 });

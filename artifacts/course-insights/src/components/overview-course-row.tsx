@@ -4,6 +4,8 @@ import { ChevronDown } from 'lucide-react';
 import { fmtInt, PROF_OVERALL, rankBy, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { SmallSample, RatingBar, Score } from '@/components/kit';
 
+const MIN_PROFESSOR_COURSE_REVIEWS = 20;
+
 export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
   course: Group;
   dataset: Dataset;
@@ -23,7 +25,9 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
     return rankBy([...byProfessor.entries()].map(([name, records]) => ({
       group: dataset.profBySlug.get(dataset.profSlugByName.get(name)!)!,
       records,
-    })), PROF_OVERALL).filter((row) => row.metric.avg !== null).slice(0, 3);
+    })), PROF_OVERALL)
+      .filter((row) => row.metric.avg !== null && row.metric.responses >= MIN_PROFESSOR_COURSE_REVIEWS)
+      .slice(0, 3);
   }, [course, dataset, expanded]);
   const courseLabels = course.courseLabels ?? [];
   const nonLlmLabels = courseLabels.filter((label) => label !== 'LLM');
@@ -83,7 +87,7 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
         data-testid={`panel-top-professors-${course.slug}`}
       >
         <h3 className="text-xs font-semibold">Top professors for this course</h3>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">Overall teaching rating · response-weighted across this course’s offerings</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">Overall teaching rating · response-weighted across this course’s offerings · at least {MIN_PROFESSOR_COURSE_REVIEWS} reviews per professor</p>
         {topProfessors.length > 0 ? (
           <ol className="mt-2 divide-y divide-border/70">
             {topProfessors.map(({ group, metric }, index) => (
@@ -105,7 +109,7 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
             ))}
           </ol>
         ) : (
-          <p className="mt-2 text-sm text-muted-foreground">No teaching ratings are available for this course.</p>
+          <p className="mt-2 text-sm text-muted-foreground">No professors have teaching ratings with at least {MIN_PROFESSOR_COURSE_REVIEWS} reviews for this course.</p>
         )}
       </div>
     </li>

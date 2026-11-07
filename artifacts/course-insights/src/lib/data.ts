@@ -99,7 +99,7 @@ export const TEACHING = [0, 1, 2, 3, 4, 5];
 export const COURSE_Q = [6, 7, 8, 9];
 export const PROF_OVERALL = 5;
 export const COURSE_OVERALL = 8;
-export const SMALL_SAMPLE = 10;
+export const SMALL_SAMPLE = 20;
 
 export function friendlyName(raw: string): string {
   const t = raw.trim();
