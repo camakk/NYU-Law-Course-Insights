@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "qZou9rIhiy_-t4jQ8NrvM"
+uri = "file://generated-artifacts/nyu-course-insights-self-host.zip"
+type = "unspecified"
+title = "NYU Course Insights — Self-Hosting ZIP"
+description = "Complete source, prebuilt website and Node.js API, evaluation dataset, PostgreSQL setup, and README. Requires Node.js 22.12+ and PostgreSQL. Existing submitted feedback and credentials are not included."
+logical_id = "3c1f872d-6bab-4c9a-b819-80653b74d77d"
+content_hash = "sha256:afa5b6b33108bc0a77a2fddbc724d5fd2e2f1a420c3a009235594aab36d766a3"
+size = 1667702
+mtime_ms = 1794087670030
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:eb85ca93-f594-439c-9cd9-5e80b100a3d8/3c1f872d-6bab-4c9a-b819-80653b74d77d/dc428c45-b1c3-4aa9-9299-5c81a70083a3"
+storage_version_token = "1794087679467815"
+content_type = "application/octet-stream"
