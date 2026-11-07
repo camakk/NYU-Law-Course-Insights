@@ -117,7 +117,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     (minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||
     (minScore !== '' && Number(minScore) > 0) ||
-    (kind === 'professors' && maxScore !== '' && Number(maxScore) < 5) ||
+    (maxScore !== '' && Number(maxScore) < 5) ||
     includedCategories.length !== COURSE_CATEGORIES.length;
   const updateMinimum = (setValue: (value: string) => void) => (value: string) => {
     setValue(value);
@@ -178,7 +178,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         r.offerings >= Number(minOfferings) &&
         r.m.responses >= Number(minResponses) &&
         (Number(minScore) === 0 || (r.m.avg !== null && r.m.avg >= Number(minScore))) &&
-        (kind !== 'professors' || maxScore === '' || Number(maxScore) >= 5 || (r.m.avg !== null && r.m.avg <= Number(maxScore)))
+        (maxScore === '' || Number(maxScore) >= 5 || (r.m.avg !== null && r.m.avg <= Number(maxScore)))
       );
     const byAvg = (a: number | null, b: number | null, dir: 1 | -1) => (a == null && b == null ? 0 : a == null ? 1 : b == null ? -1 : dir * (b - a));
     out.sort((a, b) => {
@@ -249,32 +249,17 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             minLabel="No minimum"
             maxLabel={`${fmtInt(maxReviews)}+`}
           />
-          {isProf ? (
-            <RangeBandFilter
-              label="Teaching score"
-              minValue={minScore === '' ? 0 : Number(minScore)}
-              maxValue={maxScore === '' ? 5 : Number(maxScore)}
-              onChange={([minimum, maximum]) => {
-                setMinScore(minimum === 0 ? '' : minimum.toFixed(1));
-                setMaxScore(maximum === 5 ? '' : maximum.toFixed(1));
-                setLimit(100);
-              }}
-              id="filter-score-range"
-            />
-          ) : (
-            <RangeFilter
-              label="Minimum course score"
-              value={minScore}
-              onChange={updateMinimum(setMinScore)}
-              min={0}
-              max={5}
-              step={0.1}
-              id="filter-min-score"
-              formatValue={(value) => value === 0 ? 'No minimum' : `≥ ${value.toFixed(1)}`}
-              minLabel="No minimum"
-              maxLabel="5.0"
-            />
-          )}
+          <RangeBandFilter
+            label={isProf ? 'Teaching score' : 'Average Course Rating'}
+            minValue={minScore === '' ? 0 : Number(minScore)}
+            maxValue={maxScore === '' ? 5 : Number(maxScore)}
+            onChange={([minimum, maximum]) => {
+              setMinScore(minimum === 0 ? '' : minimum.toFixed(1));
+              setMaxScore(maximum === 5 ? '' : maximum.toFixed(1));
+              setLimit(100);
+            }}
+            id={isProf ? 'filter-score-range' : 'filter-course-rating-range'}
+          />
         </div>
         <div className="mt-4 border-t pt-4">
           <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
