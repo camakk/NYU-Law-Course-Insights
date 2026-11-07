@@ -28,7 +28,9 @@ export interface ExamFeedbackInput {
      * @nullable
      */
   comment: string | null;
-  examTaken: boolean;
+  /** @nullable */
+  examTaken?: boolean | null;
+  examCompleted: boolean;
   /**
      * @maxLength 30
      * @nullable

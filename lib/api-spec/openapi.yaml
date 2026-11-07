@@ -148,9 +148,10 @@ components:
         difficulty: { type: ["integer", "null"] }
         comment: { type: ["string", "null"] }
         examTaken: { type: ["boolean", "null"] }
+        examCompleted: { type: ["boolean", "null"] }
         grade: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
-      required: [id, professor, course, difficulty, comment, examTaken, grade, createdAt]
+      required: [id, professor, course, difficulty, comment, examTaken, examCompleted, grade, createdAt]
     ExamFeedbackSummary:
       type: object
       properties:
@@ -173,10 +174,11 @@ components:
         course: { type: string, minLength: 1, maxLength: 300 }
         difficulty: { type: ["integer", "null"], minimum: 1, maximum: 5 }
         comment: { type: ["string", "null"], maxLength: 1200 }
-        examTaken: { type: boolean }
+        examTaken: { type: ["boolean", "null"] }
+        examCompleted: { type: boolean }
         grade: { type: ["string", "null"], maxLength: 30 }
         website: { type: string, maxLength: 300 }
-      required: [professor, course, difficulty, comment, examTaken, grade]
+      required: [professor, course, difficulty, comment, examCompleted, grade]
     ExamFeedbackCreated:
       type: object
       properties:

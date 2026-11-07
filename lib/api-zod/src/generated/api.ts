@@ -52,6 +52,7 @@ export const ListExamFeedbackResponse = zod.object({
   "difficulty": zod.number().int().nullable(),
   "comment": zod.string().nullable(),
   "examTaken": zod.boolean().nullable(),
+  "examCompleted": zod.boolean().nullable(),
   "grade": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 }))
@@ -80,7 +81,8 @@ export const CreateExamFeedbackBody = zod.object({
   "course": zod.string().min(1).max(createExamFeedbackBodyCourseMax),
   "difficulty": zod.number().int().min(1).max(createExamFeedbackBodyDifficultyMax).nullable(),
   "comment": zod.string().max(createExamFeedbackBodyCommentMax).nullable(),
-  "examTaken": zod.boolean(),
+  "examTaken": zod.boolean().nullish(),
+  "examCompleted": zod.boolean(),
   "grade": zod.string().max(createExamFeedbackBodyGradeMax).nullable(),
   "website": zod.string().max(createExamFeedbackBodyWebsiteMax).optional()
 })

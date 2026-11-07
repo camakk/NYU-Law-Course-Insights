@@ -17,6 +17,8 @@ export interface ExamFeedback {
   /** @nullable */
   examTaken: boolean | null;
   /** @nullable */
+  examCompleted: boolean | null;
+  /** @nullable */
   grade: string | null;
   createdAt: Date;
 }

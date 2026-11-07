@@ -1,1 +1,2 @@
 - [Evaluation comparison policy](evaluation-comparisons.md) — use reported feedback with response-count context; preserve missing and source-anomalous offerings.
+- [Exam completion labels](exam-completion-labels.md) — require finished/not-finished for new posts; never reinterpret legacy attendance answers as completion.

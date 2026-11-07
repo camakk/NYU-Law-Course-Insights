@@ -20,6 +20,7 @@ export const examFeedbackTable = pgTable(
     difficulty: integer("difficulty"),
     comment: text("comment"),
     examTaken: boolean("exam_taken"),
+    examCompleted: boolean("exam_completed"),
     grade: varchar("grade", { length: 30 }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

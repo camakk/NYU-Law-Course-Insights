@@ -231,7 +231,8 @@ router.post("/exam-feedback", async (req, res): Promise<void> => {
       course,
       difficulty: body.difficulty,
       comment,
-      examTaken: body.examTaken,
+      examTaken: body.examTaken ?? null,
+      examCompleted: body.examCompleted,
       grade,
     })
     .returning({ id: examFeedbackTable.id });

@@ -24,6 +24,8 @@ export interface ExamFeedback {
   /** @nullable */
   examTaken: boolean | null;
   /** @nullable */
+  examCompleted: boolean | null;
+  /** @nullable */
   grade: string | null;
   createdAt: string;
 }
@@ -63,7 +65,9 @@ export interface ExamFeedbackInput {
      * @nullable
      */
   comment: string | null;
-  examTaken: boolean;
+  /** @nullable */
+  examTaken?: boolean | null;
+  examCompleted: boolean;
   /**
      * @maxLength 30
      * @nullable

@@ -40,14 +40,14 @@ function FeedbackComposer({
   const queryClient = useQueryClient();
   const [difficulty, setDifficulty] = useState<number | null>(null);
   const [comment, setComment] = useState('');
-  const [examTaken, setExamTaken] = useState<boolean | null>(null);
+  const [examCompleted, setExamCompleted] = useState<boolean | null>(null);
   const [grade, setGrade] = useState('');
   const mutation = useCreateExamFeedback({
     mutation: {
       onSuccess: async () => {
         setDifficulty(null);
         setComment('');
-        setExamTaken(null);
+        setExamCompleted(null);
         setGrade('');
         await queryClient.invalidateQueries({ queryKey: summaryQueryKey });
       },
@@ -55,20 +55,20 @@ function FeedbackComposer({
   });
   const cleanComment = comment.trim();
   const cleanGrade = grade.trim();
-  const valid = examTaken != null &&
+  const valid = examCompleted != null &&
     (difficulty != null || cleanComment.length >= 10) &&
     (!cleanGrade || cleanComment.length >= 10);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!valid || examTaken == null || mutation.isPending) return;
+    if (!valid || examCompleted == null || mutation.isPending) return;
     mutation.mutate({
       data: {
         professor,
         course,
         difficulty,
         comment: cleanComment || null,
-        examTaken,
+        examCompleted,
         grade: cleanGrade || null,
         website: '',
       },
@@ -80,30 +80,30 @@ function FeedbackComposer({
       <div>
         <div className="text-[11px] uppercase tracking-[0.2em] text-primary font-semibold">Your experience</div>
         <h2 className="font-display text-2xl mt-1">How difficult was the exam?</h2>
-        <p className="text-sm text-muted-foreground mt-1">Tell us whether you took the exam. Then choose a difficulty, leave a comment, or both.</p>
+        <p className="text-sm text-muted-foreground mt-1">Tell us whether you finished the exam. Then choose a difficulty, leave a comment, or both.</p>
       </div>
 
       <fieldset>
         <legend className="text-sm font-medium mb-2">
-          Did you take this exam? <span className="text-muted-foreground font-normal">(required)</span>
+          Did you finish this exam? <span className="text-muted-foreground font-normal">(required)</span>
         </legend>
         <div className="flex flex-wrap gap-3">
           {[
-            { value: true, label: 'Yes, I took it' },
-            { value: false, label: 'No, I did not' },
+            { value: true, label: 'Yes, I finished' },
+            { value: false, label: 'No, I did not finish' },
           ].map((option) => (
             <label
               key={String(option.value)}
-              className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${examTaken === option.value ? 'border-primary bg-primary/5' : 'bg-background hover:border-primary/60'}`}
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${examCompleted === option.value ? 'border-primary bg-primary/5' : 'bg-background hover:border-primary/60'}`}
             >
               <input
                 type="radio"
-                name="exam-taken"
+                name="exam-completed"
                 value={String(option.value)}
                 required={option.value}
-                checked={examTaken === option.value}
-                onChange={() => setExamTaken(option.value)}
-                data-testid={`radio-exam-taken-${option.value}`}
+                checked={examCompleted === option.value}
+                onChange={() => setExamCompleted(option.value)}
+                data-testid={`radio-exam-completed-${option.value}`}
                 className="accent-primary"
               />
               {option.label}
@@ -158,7 +158,7 @@ function FeedbackComposer({
 
       <label className="block space-y-2">
         <span className="text-sm font-medium">
-          Your grade <span className="text-muted-foreground font-normal">(optional)</span>
+          Exam grade <span className="text-muted-foreground font-normal">(optional)</span>
         </span>
         <input
           type="text"
@@ -171,7 +171,7 @@ function FeedbackComposer({
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
         <span id="grade-guidance" className="block text-xs text-muted-foreground">
-          Your grade is public with your anonymous comment. Add a comment of at least 10 characters to include it.
+          Your self-reported grade is shared anonymously with your comment and is not verified. Add a comment of at least 10 characters to include it.
         </span>
       </label>
 
@@ -241,8 +241,12 @@ function CommentCard({
         )}
       </header>
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
-        <span className="rounded-full bg-secondary px-3 py-1.5 font-medium" data-testid={`feedback-exam-taken-${feedback.id}`}>
-          {feedback.examTaken == null ? 'Exam participation not recorded' : feedback.examTaken ? 'Took exam' : 'Did not take exam'}
+        <span className="rounded-full bg-secondary px-3 py-1.5 font-medium" data-testid={`feedback-exam-completed-${feedback.id}`}>
+          {feedback.examCompleted != null
+            ? feedback.examCompleted ? 'Finished exam' : 'Did not finish exam'
+            : feedback.examTaken != null
+              ? feedback.examTaken ? 'Took exam' : 'Did not take exam'
+              : 'Exam completion not recorded'}
         </span>
         {feedback.grade && (
           <span className="rounded-full bg-secondary px-3 py-1.5 font-medium" data-testid={`feedback-grade-${feedback.id}`}>
@@ -316,6 +320,19 @@ export default function AfterExamPage() {
   }
 
   function handleProfessorSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      if (professorSearch || selectedProfessor) {
+        event.preventDefault();
+        setProfessorSearch('');
+        setSelectedProfessor('');
+        setSelectedCourse('');
+        setActiveSuggestionIndex(0);
+        setCommentLimit(INITIAL_COMMENT_LIMIT);
+        setReportedIds(new Set());
+        setReportMessage('');
+      }
+      return;
+    }
     if (!professorSuggestions.length) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -326,10 +343,6 @@ export default function AfterExamPage() {
     } else if (event.key === 'Enter') {
       event.preventDefault();
       chooseProfessor(professorSuggestions[activeSuggestionIndex] ?? professorSuggestions[0]);
-    } else if (event.key === 'Escape') {
-      setProfessorSearch('');
-      setSelectedProfessor('');
-      setSelectedCourse('');
     }
   }
 
@@ -362,11 +375,11 @@ export default function AfterExamPage() {
       <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">After the exam</div>
       <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">Share how the exam felt</h1>
       <p className="text-muted-foreground mt-3 max-w-3xl leading-relaxed">
-        Leave an anonymous difficulty rating, a comment, or both for a professor and course. New posts include whether you took the exam; comments can include an optional grade.
+        Leave an anonymous difficulty rating, a comment, or both for a professor and course. New posts include whether you finished the exam; comments can include an optional grade.
       </p>
       <div className="mt-5 flex items-start gap-3 rounded-lg border border-accent/50 bg-accent/30 p-4 text-sm leading-relaxed">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent-foreground" />
-        <p>Posts are public immediately. Your exam participation and any grade you include will appear with your anonymous post. Keep comments respectful and based on your own experience; don’t include personal details or private exam questions. Comments with three separate reports are hidden automatically.</p>
+        <p>Posts are public immediately. Your exam completion status and any grade you include will appear with your anonymous post. Keep comments respectful and based on your own experience; don’t include personal details or private exam questions. Comments with three separate reports are hidden automatically.</p>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
         No account or display name is attached to a post. The app does not store raw IP addresses; it uses a one-way network fingerprint for short-term spam limits and to prevent repeat reports.
@@ -381,11 +394,12 @@ export default function AfterExamPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 id="feedback-professor-search"
-                type="search"
+                type="text"
+                inputMode="search"
                 role="combobox"
                 aria-autocomplete="list"
                 aria-expanded={!selectedProfessor && Boolean(professorSearch.trim())}
-                aria-controls="feedback-professor-suggestions"
+                aria-controls={!selectedProfessor && professorSearch.trim() ? 'feedback-professor-suggestions' : undefined}
                 aria-activedescendant={!selectedProfessor && professorSuggestions.length ? `feedback-professor-option-${activeSuggestionIndex}` : undefined}
                 aria-label="Search professors"
                 value={selectedProfessor
@@ -403,39 +417,42 @@ export default function AfterExamPage() {
                 onKeyDown={handleProfessorSearchKeyDown}
                 placeholder="Search professors by name"
                 autoComplete="off"
+                autoCapitalize="words"
+                spellCheck={false}
                 className="h-11 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-sm font-normal outline-none focus:border-primary focus:ring-2 focus:ring-ring/20"
                 data-testid="input-feedback-professor"
               />
-              {!selectedProfessor && professorSearch.trim() && professorSuggestions.length > 0 && (
+              {!selectedProfessor && professorSearch.trim() && (
                 <ul
                   id="feedback-professor-suggestions"
                   role="listbox"
                   aria-label="Matching professors"
                   className="absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border bg-card p-1 shadow-lg"
                 >
-                  {professorSuggestions.map((professor, index) => (
-                    <li key={professor.slug}>
-                      <button
-                        id={`feedback-professor-option-${index}`}
-                        type="button"
-                        role="option"
-                        aria-selected={index === activeSuggestionIndex}
-                        tabIndex={-1}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onMouseEnter={() => setActiveSuggestionIndex(index)}
-                        onClick={() => chooseProfessor(professor)}
-                        className={`w-full rounded-md px-3 py-2 text-left text-sm font-normal ${index === activeSuggestionIndex ? 'bg-secondary text-foreground' : 'hover:bg-secondary/70'}`}
-                      >
-                        {professor.label}
-                      </button>
+                  {professorSuggestions.length ? (
+                    professorSuggestions.map((professor, index) => (
+                      <li key={professor.slug}>
+                        <button
+                          id={`feedback-professor-option-${index}`}
+                          type="button"
+                          role="option"
+                          aria-selected={index === activeSuggestionIndex}
+                          tabIndex={-1}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onMouseEnter={() => setActiveSuggestionIndex(index)}
+                          onClick={() => chooseProfessor(professor)}
+                          className={`w-full rounded-md px-3 py-2 text-left text-sm font-normal ${index === activeSuggestionIndex ? 'bg-secondary text-foreground' : 'hover:bg-secondary/70'}`}
+                        >
+                          {professor.label}
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li role="option" aria-disabled="true" className="px-3 py-2 text-sm text-muted-foreground">
+                      No matching professors found.
                     </li>
-                  ))}
+                  )}
                 </ul>
-              )}
-              {!selectedProfessor && professorSearch.trim() && professorSuggestions.length === 0 && (
-                <p role="status" className="absolute inset-x-0 top-full z-20 mt-1 rounded-lg border bg-card p-3 text-sm font-normal text-muted-foreground shadow-lg">
-                  No matching professors found.
-                </p>
               )}
             </div>
           </div>
