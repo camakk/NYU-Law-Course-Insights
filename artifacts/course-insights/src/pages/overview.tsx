@@ -66,7 +66,7 @@ function ReviewedCoursesPanel({
         <h2 className="font-display text-2xl">{title}</h2>
       </div>
       <ul>
-        {courses.map((course) => {
+        {courses.map((course, index) => {
           const courseLabels = course.courseLabels ?? [];
           const nonLlmLabels = courseLabels.filter((label) => label !== 'LLM');
           return (
@@ -76,6 +76,7 @@ function ReviewedCoursesPanel({
                 className="flex items-center gap-3 px-5 py-2.5 border-t hover:bg-secondary/60 transition-colors"
                 data-testid={`link-course-${testIdPrefix}${course.slug}`}
               >
+                <span className="num w-5 shrink-0 text-right text-xs text-muted-foreground">{index + 1}</span>
                 <span className="flex-1 min-w-0">
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="min-w-0 truncate font-medium">{course.label}</span>
