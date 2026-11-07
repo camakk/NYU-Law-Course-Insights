@@ -11,6 +11,7 @@ interface RecentCourseOffering {
   course: string;
   semester: string;
   rating: number | null;
+  reviews: number;
 }
 
 function RatingBar({ rating, label, testId }: { rating: number | null; label: string; testId?: string }) {
@@ -34,8 +35,8 @@ function RatingBar({ rating, label, testId }: { rating: number | null; label: st
         </span>
         <span className="num w-16 text-right text-xs font-medium tabular-nums">{rating.toFixed(2)} / 5</span>
       </div>
-      <div className="mt-0.5 flex w-[calc(100%-4.5rem)] justify-between text-[9px] leading-none text-muted-foreground" aria-hidden="true">
-        <span>0</span><span>5.00</span>
+      <div className="mt-0.5 flex w-[calc(100%-4.5rem)] justify-end text-[9px] leading-none text-muted-foreground" aria-hidden="true">
+        <span>5.00</span>
       </div>
     </div>
   );
@@ -55,6 +56,11 @@ function recentCourseOfferings(records: EvalRecord[]): RecentCourseOffering[] {
       course: offeringRecords[0].course,
       semester: offeringRecords[0].semester || 'Semester unavailable',
       rating: aggregate(offeringRecords, 5).avg,
+      reviews: offeringRecords.reduce(
+        (total, record) =>
+          total + (!record.inaccessible && record.responded != null ? record.responded : 0),
+        0,
+      ),
     }))
     .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.course.localeCompare(b.course))
     .slice(0, 5);
@@ -168,6 +174,9 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                             {isExpanded ? 'Collapse' : 'Expand'}
                           </button>
                         </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground" data-testid={`text-professor-reviews-${group.slug}`}>
+                          Total student reviews: <span className="num text-foreground">{fmtInt(group.totalResponded)}</span>
+                        </p>
                       </div>
                       <div className="justify-self-end">
                         <RatingBar rating={value} label={`${group.label} overall teaching rating`} testId={`rating-teacher-${group.slug}`} />
@@ -184,7 +193,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                           <li key={`${offering.course}-${offering.semester}`} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 first:pt-1">
                             <span className="min-w-0 flex-1">
                               <span className="block text-sm">{offering.course}</span>
-                              <span className="block text-xs text-muted-foreground">{offering.semester}</span>
+                              <span className="block text-xs text-muted-foreground">{offering.semester} — {fmtInt(offering.reviews)} reviews</span>
                             </span>
                             <div className="ml-auto">
                               <RatingBar
