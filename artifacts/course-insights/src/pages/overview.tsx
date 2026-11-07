@@ -233,7 +233,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
               const latest = recentCourses[0];
               const coursesId = `recent-courses-${group.slug}`;
               return (
-                <li key={group.slug} className="py-3 first:border-t-0" data-testid={`teacher-row-${group.slug}`}>
+                <li key={group.slug} className="cursor-pointer py-3 first:border-t-0 hover:bg-secondary/60 transition-colors" data-testid={`teacher-row-${group.slug}`}>
                   <div className="flex items-start gap-3">
                     <span className="num text-xs text-muted-foreground pt-1.5 w-5 shrink-0 text-right">{index + 1}</span>
                     <div className="grid min-w-0 flex-1 grid-cols-1 gap-y-2 sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-x-4">
@@ -255,7 +255,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                             aria-expanded={isExpanded}
                             aria-controls={coursesId}
                             data-testid={`button-expand-teacher-${group.slug}`}
-                            className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-primary hover:underline"
+                            className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap font-medium text-primary hover:underline"
                           >
                             <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
                             {isExpanded ? 'Collapse' : 'Expand'}
