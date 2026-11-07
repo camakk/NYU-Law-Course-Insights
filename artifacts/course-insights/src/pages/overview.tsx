@@ -145,16 +145,24 @@ function OverviewInner({ ds }: { ds: Dataset }) {
   const recentProfessorCount = useMemo(() => ds.professors
     .filter((professor) => professor.records.some((record) => RECENT_TEACHING_SEMESTERS.has(record.semester)))
     .length, [ds]);
+  const recentSeminarOfferings = useMemo(() => ds.records.filter((record) =>
+    (record.courseCategories.includes('Seminar') || record.courseCategories.includes('Colloquium'))
+    && RECENT_TEACHING_SEMESTERS.has(record.semester),
+  ).length, [ds]);
+  const recentClinicOfferings = useMemo(() => ds.records.filter((record) =>
+    (record.courseCategories.includes('Clinic') || record.courseCategories.includes('Externship'))
+    && RECENT_TEACHING_SEMESTERS.has(record.semester),
+  ).length, [ds]);
   const mostReviewedUpperclassman = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course') && !course.records.some((record) => record.is1LCourse))
     .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
     .slice(0, 10), [ds]);
-  const categoryCounts = useMemo(() => ({
-    seminars: ds.courses.filter((course) =>
-      course.courseCategories?.some((category) => category === 'Seminar' || category === 'Colloquium'),
+  const categoryOfferings = useMemo(() => ({
+    seminars: ds.records.filter((record) =>
+      record.courseCategories.includes('Seminar') || record.courseCategories.includes('Colloquium'),
     ).length,
-    clinics: ds.courses.filter((course) =>
-      course.courseCategories?.some((category) => category === 'Clinic' || category === 'Externship'),
+    clinics: ds.records.filter((record) =>
+      record.courseCategories.includes('Clinic') || record.courseCategories.includes('Externship'),
     ).length,
   }), [ds]);
   const usable = ds.records.filter((r) => !r.inaccessible && (r.responded ?? 0) > 0).length;
@@ -174,8 +182,16 @@ function OverviewInner({ ds }: { ds: Dataset }) {
             value={fmtInt(ds.professors.length)}
             sub={`${fmtInt(recentProfessorCount)} taught in the last three years`}
           />
-          <Stat label="Seminars" value={fmtInt(categoryCounts.seminars)} />
-          <Stat label="Clinics" value={fmtInt(categoryCounts.clinics)} />
+          <Stat
+            label="Seminars Reviewed"
+            value={fmtInt(categoryOfferings.seminars)}
+            sub={`${fmtInt(recentSeminarOfferings)} in the last three years`}
+          />
+          <Stat
+            label="Clinics Reviewed"
+            value={fmtInt(categoryOfferings.clinics)}
+            sub={`${fmtInt(recentClinicOfferings)} in the last three years`}
+          />
         </div>
       </section>
 
