@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { aggregate, bySemesterDesc, COURSE_OVERALL, fmtInt, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
+import { aggregate, bySemesterDesc, fmtInt, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { PageError, PageLoading, Score, SearchBox, Stat, useTitle } from '@/components/kit';
 import { norm } from './directory';
 
@@ -67,24 +67,15 @@ function ReviewedCoursesPanel({
   title,
   courses,
   testIdPrefix,
-  ratingMetricIndex = 5,
-  showAllLink = false,
 }: {
   title: string;
   courses: Group[];
   testIdPrefix: string;
-  ratingMetricIndex?: number;
-  showAllLink?: boolean;
 }) {
   return (
     <div className="bg-card border rounded-xl">
       <div className="p-5 pb-3 flex items-baseline justify-between gap-4">
         <h2 className="font-display text-2xl">{title}</h2>
-        {showAllLink && (
-          <Link href="/courses" className="shrink-0 text-sm text-primary inline-flex items-center gap-1 hover:gap-2 transition-all">
-            All courses <ArrowRight className="h-4 w-4" />
-          </Link>
-        )}
       </div>
       <ul>
         {courses.map((course) => (
@@ -106,7 +97,7 @@ function ReviewedCoursesPanel({
                   {course.records.length} offerings · {new Set(course.records.map((record) => record.professor)).size} instructors
                 </span>
               </span>
-              <Score v={course.metrics[ratingMetricIndex].avg} size="sm" />
+              <Score v={course.metrics[5].avg} size="sm" />
             </Link>
           </li>
         ))}
@@ -135,23 +126,8 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     }))
     .sort((a, b) => b.value - a.value || a.group.label.localeCompare(b.group.label))
     .slice(0, 10), [ds]);
-  const highestRatedCourses = useMemo(() => ds.courses
-    .filter((course) =>
-      course.courseCategories?.includes('Course')
-      && course.totalResponded >= 100
-      && course.metrics[COURSE_OVERALL].avg != null)
-    .sort((a, b) =>
-      b.metrics[COURSE_OVERALL].avg! - a.metrics[COURSE_OVERALL].avg!
-      || b.totalResponded - a.totalResponded
-      || b.records.length - a.records.length
-      || a.label.localeCompare(b.label))
-    .slice(0, 10), [ds]);
   const mostReviewedUpperclassman = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course') && !course.records.some((record) => record.is1LCourse))
-    .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
-    .slice(0, 30), [ds]);
-  const mostReviewed1L = useMemo(() => ds.courses
-    .filter((course) => course.courseCategories?.includes('Course') && course.records.some((record) => record.is1LCourse))
     .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
     .slice(0, 30), [ds]);
   const usable = ds.records.filter((r) => !r.inaccessible && (r.responded ?? 0) > 0).length;
@@ -279,24 +255,9 @@ function OverviewInner({ ds }: { ds: Dataset }) {
           </ol>
         </div>
         <ReviewedCoursesPanel
-          title="Highest-rated courses"
-          courses={highestRatedCourses}
-          testIdPrefix=""
-          ratingMetricIndex={COURSE_OVERALL}
-          showAllLink
-        />
-      </section>
-
-      <section className="mt-6 grid lg:grid-cols-[1.3fr_1fr] gap-6">
-        <ReviewedCoursesPanel
           title="Most reviewed upperclassman courses"
           courses={mostReviewedUpperclassman}
           testIdPrefix="upperclassman-"
-        />
-        <ReviewedCoursesPanel
-          title="Most reviewed 1L courses"
-          courses={mostReviewed1L}
-          testIdPrefix="1l-"
         />
       </section>
     </div>
