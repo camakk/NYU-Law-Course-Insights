@@ -28,12 +28,12 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     <div>
       <section className="rise grid lg:grid-cols-[1.4fr_1fr] gap-10 items-end pb-10 rule-double pt-6">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.3em] text-primary font-semibold">NYU School of Law · {ds.semesters[ds.semesters.length - 1]} to {ds.semesters[0]}</div>
+          <div className="text-[11px] uppercase tracking-[0.3em] text-primary font-semibold">The NYU Law Unofficial Course Catalog · {ds.semesters[ds.semesters.length - 1]} to {ds.semesters[0]}.</div>
           <h1 className="font-display text-5xl md:text-7xl font-semibold leading-[0.95] mt-4">Pick the teacher,<br /><span className="italic text-primary">not just the class.</span></h1>
           <p className="text-muted-foreground mt-5 max-w-xl">Ten years of student evaluations, organized so you can see who taught a course, how students rated them, and how much evidence stands behind each number.</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Offerings" value={fmtInt(ds.records.length)} sub={`${fmtInt(usable)} with responses`} />
+          <Stat label="Unique Course Offerings" value={fmtInt(ds.records.length)} sub={`${fmtInt(usable)} with responses`} />
           <Stat label="Professors" value={fmtInt(ds.professors.length)} />
           <Stat label="Course titles" value={fmtInt(ds.courses.length)} />
           <Stat label="Semesters" value={ds.semesters.length} />
