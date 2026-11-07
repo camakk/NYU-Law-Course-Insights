@@ -22,7 +22,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     .sort((a, b) => b.metrics[5].avg! - a.metrics[5].avg!).slice(0, 12)
     .map((g) => ({ name: g.label, value: g.metrics[5].avg!, responses: g.metrics[5].responses, offerings: g.metrics[5].offerings, href: `/professors/${g.slug}` })), [ds]);
   const busiest = useMemo(() => ds.courses
-    .filter((course) => course.courseCategory === 'Course')
+    .filter((course) => course.courseCategories?.includes('Course'))
     .sort((a, b) => b.records.length - a.records.length)
     .slice(0, 10), [ds]);
   const usable = ds.records.filter((r) => !r.inaccessible && (r.responded ?? 0) > 0).length;

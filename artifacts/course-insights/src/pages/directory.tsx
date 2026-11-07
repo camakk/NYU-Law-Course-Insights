@@ -146,8 +146,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     const out = groups
       .map((g) => {
         const categoryRecords = kind === 'professors'
-          ? g.records.filter((record) => includedCategories.includes(record.courseCategory))
-          : g.courseCategory && includedCategories.includes(g.courseCategory) ? g.records : [];
+          ? g.records.filter((record) => record.courseCategories.some((category) => includedCategories.includes(category)))
+          : g.courseCategories?.some((category) => includedCategories.includes(category)) ? g.records : [];
         return { g, categoryRecords };
       })
       .filter(({ g, categoryRecords }) =>
@@ -315,9 +315,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   <span className="block font-medium truncate group-hover:text-primary transition-colors">{r.g.label}</span>
                   <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>Latest {r.latest}</span>
-                    {!isProf && r.g.courseCategory && (
-                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{r.g.courseCategory}</span>
-                    )}
+                    {!isProf && r.g.courseCategories?.map((category) => (
+                      <span key={category} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{category}</span>
+                    ))}
                     {isProf && <span className="md:hidden num">· {r.offerings} times taught</span>}
                     <span className="md:hidden num">· {fmtInt(r.m.responses)} reviews</span>
                     <LowSample responses={r.m.responses} />

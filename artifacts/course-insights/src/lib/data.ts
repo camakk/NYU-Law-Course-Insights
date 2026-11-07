@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 export interface EvalRecord {
   id: number;
   course: string;
-  courseCategory: CourseCategory;
+  courseCategories: CourseCategory[];
   professor: string;
   semester: string;
   enrolled: number | null;
@@ -14,7 +14,7 @@ export interface EvalRecord {
 
 export interface RawData {
   questions: string[];
-  records: Array<Omit<EvalRecord, 'courseCategory'>>;
+  records: Array<Omit<EvalRecord, 'courseCategories'>>;
   sourceNotes: string[];
 }
 
@@ -28,7 +28,7 @@ export interface Group {
   slug: string;
   name: string; // raw identity
   label: string; // display
-  courseCategory: CourseCategory | null;
+  courseCategories: CourseCategory[] | null;
   records: EvalRecord[];
   metrics: Metric[]; // 10
   semesters: string[];
@@ -51,13 +51,14 @@ export interface Dataset {
 export const COURSE_CATEGORIES = ['Course', 'Seminar', 'Clinic', 'Colloquium', 'Externship'] as const;
 export type CourseCategory = typeof COURSE_CATEGORIES[number];
 
-export function classifyCourse(course: string): CourseCategory {
+export function classifyCourse(course: string): CourseCategory[] {
   const title = course.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  if (/\bexternships?\b/.test(title)) return 'Externship';
-  if (/\bclinics?\b|\bclinical\b/.test(title)) return 'Clinic';
-  if (/\bcolloquium\b|\bcolloquia\b/.test(title)) return 'Colloquium';
-  if (/\bseminars?\b/.test(title)) return 'Seminar';
-  return 'Course';
+  if (/\bclinic\s+seminar\b/.test(title)) return ['Clinic', 'Seminar'];
+  if (/\bexternships?\b/.test(title)) return ['Externship'];
+  if (/\bclinics?\b|\bclinical\b/.test(title)) return ['Clinic'];
+  if (/\bcolloquium\b|\bcolloquia\b/.test(title)) return ['Colloquium'];
+  if (/\bseminars?\b/.test(title)) return ['Seminar'];
+  return ['Course'];
 }
 
 export const TEACHING = [0, 1, 2, 3, 4, 5];
@@ -140,7 +141,7 @@ function buildGroups(records: EvalRecord[], key: 'professor' | 'course') {
       slug,
       name,
       label,
-      courseCategory: key === 'course' ? recs[0]?.courseCategory ?? classifyCourse(name) : null,
+      courseCategories: key === 'course' ? recs[0]?.courseCategories ?? classifyCourse(name) : null,
       records: recs,
       metrics,
       semesters,
@@ -153,7 +154,7 @@ function buildGroups(records: EvalRecord[], key: 'professor' | 'course') {
 export function buildDataset(raw: RawData): Dataset {
   const records = (raw.records ?? [])
     .filter((r) => r && r.course && r.professor)
-    .map((record) => ({ ...record, courseCategory: classifyCourse(record.course) }));
+    .map((record) => ({ ...record, courseCategories: classifyCourse(record.course) }));
   const professors = buildGroups(records, 'professor');
   const courses = buildGroups(records, 'course');
   return {
