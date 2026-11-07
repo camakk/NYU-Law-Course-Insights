@@ -508,7 +508,7 @@ test("anonymous feedback accepts the configured limit and rejects the next submi
   );
 });
 
-test("reports count distinct visitors once and hide a comment after three reports", async (t) => {
+test("reports hide only the reported comment after three distinct visitors", async (t) => {
   const memory = newDb();
   memory.public.none(`
     CREATE TABLE exam_feedback (
@@ -533,7 +533,9 @@ test("reports count distinct visitors once and hide a comment after three report
   const quoteSql = (value) => `'${value.replaceAll("'", "''")}'`;
   memory.public.none(`
     INSERT INTO exam_feedback (id, professor, course, comment)
-    VALUES (1, ${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'A useful comment for moderation testing.');
+    VALUES
+      (1, ${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'A comment that will be reported.'),
+      (2, ${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'A separate comment that should stay visible.');
   `);
 
   const database = drizzle(async (query, params) => {
@@ -579,21 +581,30 @@ test("reports count distinct visitors once and hide a comment after three report
   assert.deepEqual(await repeatedReport.json(), { reported: false });
   let freshList = await listComments();
   assert.equal(freshList.status, 200);
-  assert.equal((await freshList.json()).comments.length, 1);
+  assert.deepEqual(
+    (await freshList.json()).comments.map((comment) => comment.id).sort(),
+    [1, 2],
+  );
 
   const secondReport = await report(1, "198.51.100.11");
   assert.equal(secondReport.status, 200);
   assert.deepEqual(await secondReport.json(), { reported: true });
   freshList = await listComments();
   assert.equal(freshList.status, 200);
-  assert.equal((await freshList.json()).comments.length, 1);
+  assert.deepEqual(
+    (await freshList.json()).comments.map((comment) => comment.id).sort(),
+    [1, 2],
+  );
 
   const thirdReport = await report(1, "198.51.100.12");
   assert.equal(thirdReport.status, 200);
   assert.deepEqual(await thirdReport.json(), { reported: true });
   freshList = await listComments();
   assert.equal(freshList.status, 200);
-  assert.equal((await freshList.json()).comments.length, 0);
+  assert.deepEqual(
+    (await freshList.json()).comments.map((comment) => comment.id),
+    [2],
+  );
 
   const reportAfterHidden = await report(1, "198.51.100.13");
   assert.equal(reportAfterHidden.status, 404);
