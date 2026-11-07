@@ -19,7 +19,7 @@ function renderCourse(records: RawData['records']) {
 beforeEach(() => window.history.replaceState(null, '', '/'));
 
 describe('Overview course expansion', () => {
-  it('shows the top three course-specific, response-weighted teaching ratings and collapses without navigation', () => {
+  it('shows all eligible course-specific, response-weighted teaching ratings and collapses without navigation', () => {
     renderCourse([
       record(1, 'Alpha, Alice', 5, 4),
       record(2, 'Alpha, Alice', 3, 36),
@@ -38,9 +38,9 @@ describe('Overview course expansion', () => {
     expect(panel.hidden).toBe(false);
     expect(window.location.pathname).toBe('/');
     const entries = within(panel).getAllByRole('listitem');
-    expect(entries).toHaveLength(3);
+    expect(entries).toHaveLength(4);
     expect(entries.map((entry) => within(entry).getByRole('link').textContent)).toEqual([
-      'Grace Gamma', 'Beth Beta', 'Diana Delta',
+      'Grace Gamma', 'Beth Beta', 'Diana Delta', 'Alice Alpha',
     ]);
     expect(within(entries[0]).getByRole('meter').getAttribute('aria-valuenow')).toBe('4.8');
     expect(within(entries[0]).getByText('20 reviews · 1 time taught')).toBeTruthy();
@@ -49,6 +49,9 @@ describe('Overview course expansion', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }));
     expect(panel.hidden).toBe(true);
     expect(window.location.pathname).toBe('/');
+    fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
+    expect(panel.hidden).toBe(false);
+    expect(within(panel).getAllByRole('listitem')).toHaveLength(4);
   });
 
   it('only navigates to the course when the title is clicked', () => {
@@ -63,7 +66,7 @@ describe('Overview course expansion', () => {
     expect(window.location.pathname).toBe('/courses/evidence');
   });
 
-  it('shows fewer than three when fewer professors have ratings', () => {
+  it('shows only professors with usable ratings and enough reviews', () => {
     renderCourse([record(1, 'Beta, Beth', 4.6, 20), record(2, 'Unrated, Una', null, 20)]);
     fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
     expect(within(screen.getByTestId('panel-top-professors-evidence')).getAllByRole('listitem')).toHaveLength(1);

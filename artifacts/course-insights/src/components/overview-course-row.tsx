@@ -26,8 +26,7 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
       group: dataset.profBySlug.get(dataset.profSlugByName.get(name)!)!,
       records,
     })), PROF_OVERALL)
-      .filter((row) => row.metric.avg !== null && row.metric.responses >= MIN_PROFESSOR_COURSE_REVIEWS)
-      .slice(0, 3);
+      .filter((row) => row.metric.avg !== null && row.metric.responses >= MIN_PROFESSOR_COURSE_REVIEWS);
   }, [course, dataset, expanded]);
   const courseLabels = course.courseLabels ?? [];
   const nonLlmLabels = courseLabels.filter((label) => label !== 'LLM');
@@ -86,7 +85,7 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
         className="mx-5 mb-3 rounded-lg bg-secondary/40 px-3 py-2.5"
         data-testid={`panel-top-professors-${course.slug}`}
       >
-        <h3 className="text-xs font-semibold">Top professors for this course</h3>
+        <h3 className="text-xs font-semibold">Professors for this course</h3>
         {topProfessors.length > 0 ? (
           <ol className="mt-2 divide-y divide-border/70">
             {topProfessors.map(({ group, metric }, index) => (
