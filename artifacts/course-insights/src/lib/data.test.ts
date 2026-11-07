@@ -47,3 +47,32 @@ describe('course audience labels', () => {
     expect(is1LCourse('Torts')).toBe(true);
   });
 });
+
+describe('professor identity aliases', () => {
+  it('groups Adam Cox with Adam B. Cox without merging Adam M. Cox', () => {
+    const dataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: ['Cox, Adam B.', 'Cox, Adam', 'Cox, Adam M.'].map((professor, index) => ({
+        id: index + 1,
+        course: 'Contracts',
+        professor,
+        semester: 'Fall 2025',
+        enrolled: 10,
+        responded: 5,
+        scores: Array(10).fill(4),
+        inaccessible: false,
+      })),
+    });
+
+    const adamB = dataset.professors.find((group) => group.label === 'Adam B. Cox');
+    const adamM = dataset.professors.find((group) => group.label === 'Adam M. Cox');
+
+    expect(adamB?.records.map((record) => record.professor)).toEqual([
+      'Cox, Adam B.',
+      'Cox, Adam B.',
+    ]);
+    expect(dataset.profSlugByName.get('Cox, Adam')).toBe(adamB?.slug);
+    expect(adamM?.records).toHaveLength(1);
+  });
+});

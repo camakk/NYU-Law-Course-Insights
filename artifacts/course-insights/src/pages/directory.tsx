@@ -128,7 +128,7 @@ function RangeBandFilter({ label, minValue, maxValue, onChange, id }: {
 function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [q, setQ] = useState('');
   const [sem, setSem] = useState('all');
-  const [sort, setSort] = useState<SortKey>('rating');
+  const [sort, setSort] = useState<SortKey>('name');
   const [limit, setLimit] = useState(100);
   const [minOfferings, setMinOfferings] = useState('1');
   const [minResponses, setMinResponses] = useState('50');
