@@ -142,7 +142,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Stat label="Unique Course Offerings" value={fmtInt(ds.records.length)} sub={`${fmtInt(usable)} with responses`} />
-          <Stat label="Professors" value={fmtInt(ds.professors.length)} />
+          <Stat label="NYU Law Professors Reviewed" value={fmtInt(ds.professors.length)} />
           <Stat label="Course titles" value={fmtInt(ds.courses.length)} />
           <Stat label="Semesters" value={ds.semesters.length} />
         </div>
