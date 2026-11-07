@@ -232,7 +232,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Directory</div>
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">
-          {fmtInt(total)} {isProf ? 'instructors, ranked by response-weighted "Overall this professor was effective."' : 'distinct course titles, scored by response-weighted "Overall course effective."'} Search also matches {isProf ? 'course titles they taught' : 'instructor names'}.
+          {isProf
+            ? <>We indexed {fmtInt(total)} instructors' ratings under the question 'Overall this professor was effective' across all the courses they have ever taught at NYU.</>
+            : <>{fmtInt(total)} distinct course titles, scored by response-weighted "Overall course effective." Search also matches instructor names.</>}
         </p>
         <p className="text-xs text-muted-foreground mt-3" role="status" aria-live="polite" data-testid="filter-summary">
           {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
