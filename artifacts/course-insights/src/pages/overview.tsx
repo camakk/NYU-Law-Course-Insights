@@ -61,41 +61,50 @@ function ReviewedCoursesPanel({
   onShowMore: () => void;
 }) {
   return (
-    <div className="bg-card border rounded-xl overflow-hidden">
+    <div className="bg-card border rounded-xl overflow-hidden self-start">
       <div className="p-5 pb-3 flex items-baseline justify-between gap-4">
         <h2 className="font-display text-2xl">{title}</h2>
       </div>
       <ul>
-        {courses.map((course) => (
-          <li key={course.slug}>
-            <Link
-              href={`/courses/${course.slug}`}
-              className="flex items-center gap-3 px-5 py-2.5 border-t hover:bg-secondary/60 transition-colors"
-              data-testid={`link-course-${testIdPrefix}${course.slug}`}
-            >
-              <span className="flex-1 min-w-0">
-                <span className="block truncate font-medium">{course.label}</span>
-                {course.courseLabels?.length ? (
+        {courses.map((course) => {
+          const courseLabels = course.courseLabels ?? [];
+          const nonLlmLabels = courseLabels.filter((label) => label !== 'LLM');
+          return (
+            <li key={course.slug}>
+              <Link
+                href={`/courses/${course.slug}`}
+                className="flex items-center gap-3 px-5 py-2.5 border-t hover:bg-secondary/60 transition-colors"
+                data-testid={`link-course-${testIdPrefix}${course.slug}`}
+              >
+                <span className="flex-1 min-w-0">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="min-w-0 truncate font-medium">{course.label}</span>
+                    {courseLabels.includes('LLM') && (
+                      <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">LLM</span>
+                    )}
+                  </span>
+                  {nonLlmLabels.length > 0 ? (
                   <span className="mt-1 flex flex-wrap gap-1">
-                    {course.courseLabels.map((label) => (
+                    {nonLlmLabels.map((label) => (
                       <span key={label} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
                     ))}
                   </span>
                 ) : null}
-                <span
-                  className="num block text-xs text-muted-foreground"
-                  data-testid={`text-${testIdPrefix}course-reviews-${course.slug}`}
-                >
-                  {fmtInt(course.totalResponded)} student reviews
+                  <span
+                    className="num block text-xs text-muted-foreground"
+                    data-testid={`text-${testIdPrefix}course-reviews-${course.slug}`}
+                  >
+                    {fmtInt(course.totalResponded)} student reviews
+                  </span>
+                  <span className="num block text-xs text-muted-foreground">
+                    {course.records.length} offerings · {new Set(course.records.map((record) => record.professor)).size} instructors
+                  </span>
                 </span>
-                <span className="num block text-xs text-muted-foreground">
-                  {course.records.length} offerings · {new Set(course.records.map((record) => record.professor)).size} instructors
-                </span>
-              </span>
-              <Score v={course.metrics[5].avg} size="sm" />
-            </Link>
-          </li>
-        ))}
+                <Score v={course.metrics[5].avg} size="sm" />
+              </Link>
+            </li>
+          );
+        })}
       </ul>
       {hasMore && (
         <div className="border-t">
