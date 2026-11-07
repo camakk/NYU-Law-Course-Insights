@@ -3,6 +3,7 @@ import { Link } from 'wouter';
 import { ArrowUpRight } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, LoadMore, LowSample, NativeSelect, PageError, PageLoading, Score, SearchBox, useTitle } from '@/components/kit';
+import { Slider } from '@/components/ui/slider';
 
 type Kind = 'professors' | 'courses';
 type SortKey = 'rating' | 'rating-asc' | 'responses' | 'offerings' | 'name' | 'recent';
@@ -20,9 +21,9 @@ function matches(g: Group, terms: string[], kind: Kind, records = g.records) {
   return terms.every((t) => hay.includes(t) || other.includes(t));
 }
 
-function MinimumFilter({ label, value, onChange, max, step = 1, id }: {
+function MinimumFilter({ label, value, onChange, id }: {
   label: string; value: string; onChange: (value: string) => void;
-  max?: number; step?: number; id: string;
+  id: string;
 }) {
   return (
     <label htmlFor={id} className="flex flex-col gap-1.5 text-xs text-muted-foreground">
@@ -32,8 +33,6 @@ function MinimumFilter({ label, value, onChange, max, step = 1, id }: {
         data-testid={id}
         type="number"
         min={0}
-        max={max}
-        step={step}
         value={value}
         placeholder="No minimum"
         onChange={(event) => {
@@ -41,12 +40,52 @@ function MinimumFilter({ label, value, onChange, max, step = 1, id }: {
           if (raw === '') { onChange(''); return; }
           const n = Number(raw);
           if (!Number.isFinite(n)) return;
-          const bounded = Math.max(0, Math.min(max ?? Infinity, n));
-          onChange(String(step === 1 ? Math.floor(bounded) : bounded));
+          onChange(String(Math.max(0, Math.floor(n))));
         }}
         className="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
       />
     </label>
+  );
+}
+
+function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatValue, minLabel, maxLabel }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  min: number;
+  max: number;
+  step?: number;
+  id: string;
+  formatValue: (value: number) => string;
+  minLabel?: string;
+  maxLabel?: string;
+}) {
+  const numericValue = value === '' ? min : Number(value);
+  const labelId = `${id}-label`;
+  return (
+    <div className="flex min-w-0 flex-col gap-2" data-testid={id}>
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span id={labelId}>{label}</span>
+        <output className="shrink-0 font-medium text-foreground" data-testid={`${id}-value`}>
+          {formatValue(numericValue)}
+        </output>
+      </div>
+      <Slider
+        id={`${id}-slider`}
+        aria-labelledby={labelId}
+        data-testid={`${id}-slider`}
+        value={[numericValue]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={([nextValue]) => onChange(String(nextValue))}
+        className="cursor-pointer py-1.5"
+      />
+      <div className="flex justify-between text-[10px] text-muted-foreground">
+        <span>{minLabel ?? min}</span>
+        <span>{maxLabel ?? max}</span>
+      </div>
+    </div>
   );
 }
 
@@ -56,12 +95,20 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [sort, setSort] = useState<SortKey>('rating');
   const [limit, setLimit] = useState(100);
   const [minPartners, setMinPartners] = useState('');
-  const [minOfferings, setMinOfferings] = useState('');
+  const [minOfferings, setMinOfferings] = useState('1');
   const [minResponses, setMinResponses] = useState(kind === 'professors' ? '50' : '');
   const [minScore, setMinScore] = useState('');
   const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>([...COURSE_CATEGORIES]);
   const metricIdx = kind === 'professors' ? 5 : 8;
-  const hasFilters = q !== '' || sem !== 'all' || [minPartners, minOfferings, minResponses, minScore].some((v) => v !== '') || includedCategories.length !== COURSE_CATEGORIES.length;
+  const groupsForKind = kind === 'professors' ? ds.professors : ds.courses;
+  const maxOfferings = Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
+  const maxReviews = Math.max(100, ...groupsForKind.map((group) => group.metrics[metricIdx].responses + 100));
+  const hasFilters = q !== '' || sem !== 'all' ||
+    (kind === 'courses' && minPartners !== '') ||
+    (minOfferings !== '' && Number(minOfferings) > 1) ||
+    (minResponses !== '' && Number(minResponses) > 0) ||
+    (minScore !== '' && Number(minScore) > 0) ||
+    includedCategories.length !== COURSE_CATEGORIES.length;
   const updateMinimum = (setValue: (value: string) => void) => (value: string) => {
     setValue(value);
     setLimit(100);
@@ -70,7 +117,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setQ('');
     setSem('all');
     setMinPartners('');
-    setMinOfferings('');
+    setMinOfferings('1');
     setMinResponses('');
     setMinScore('');
     setIncludedCategories([...COURSE_CATEGORIES]);
@@ -121,7 +168,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         r.partners >= Number(minPartners) &&
         r.offerings >= Number(minOfferings) &&
         r.m.responses >= Number(minResponses) &&
-        (minScore === '' || (r.m.avg !== null && r.m.avg >= Number(minScore)))
+        (Number(minScore) === 0 || (r.m.avg !== null && r.m.avg >= Number(minScore)))
       );
     const byAvg = (a: number | null, b: number | null, dir: 1 | -1) => (a == null && b == null ? 0 : a == null ? 1 : b == null ? -1 : dir * (b - a));
     out.sort((a, b) => {
@@ -171,14 +218,47 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
 
       <fieldset className="mb-6 rounded-xl border bg-card px-4 pb-4">
         <legend className="px-2 text-sm font-semibold">Filter</legend>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-1">
-          <MinimumFilter
-            label={isProf ? 'Minimum courses taught' : 'Minimum professors'}
-            value={minPartners} onChange={updateMinimum(setMinPartners)} id={`filter-min-${isProf ? 'courses' : 'professors'}`}
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isProf ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4 mt-1`}>
+          {!isProf && (
+            <MinimumFilter
+              label="Minimum professors"
+              value={minPartners}
+              onChange={updateMinimum(setMinPartners)}
+              id="filter-min-professors"
+            />
+          )}
+          <RangeFilter
+            label="Minimum class offerings"
+            value={minOfferings}
+            onChange={updateMinimum(setMinOfferings)}
+            min={1}
+            max={maxOfferings}
+            id="filter-min-offerings"
+            formatValue={(value) => `${fmtInt(value)}+`}
           />
-          <MinimumFilter label="Minimum class offerings" value={minOfferings} onChange={updateMinimum(setMinOfferings)} id="filter-min-offerings" />
-          <MinimumFilter label="Minimum reviews" value={minResponses} onChange={updateMinimum(setMinResponses)} id="filter-min-responses" />
-          <MinimumFilter label={`Minimum ${isProf ? 'teaching' : 'course'} score (0–5)`} value={minScore} onChange={updateMinimum(setMinScore)} max={5} step={0.1} id="filter-min-score" />
+          <RangeFilter
+            label="Minimum reviews"
+            value={minResponses}
+            onChange={updateMinimum(setMinResponses)}
+            min={0}
+            max={maxReviews}
+            id="filter-min-responses"
+            formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
+            minLabel="No minimum"
+            maxLabel={`${fmtInt(maxReviews)}+`}
+          />
+          <RangeFilter
+            label={`Minimum ${isProf ? 'teaching' : 'course'} score`}
+            value={minScore}
+            onChange={updateMinimum(setMinScore)}
+            min={0}
+            max={5}
+            step={0.1}
+            id="filter-min-score"
+            formatValue={(value) => value === 0 ? 'No minimum' : `≥ ${value.toFixed(1)}`}
+            minLabel="No minimum"
+            maxLabel="5.0"
+          />
         </div>
         <div className="mt-4 border-t pt-4">
           <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
