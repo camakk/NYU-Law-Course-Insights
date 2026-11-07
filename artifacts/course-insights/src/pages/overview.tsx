@@ -15,24 +15,29 @@ interface RecentCourseOffering {
 
 function RatingBar({ rating, label, testId }: { rating: number | null; label: string; testId?: string }) {
   if (rating == null) {
-    return <span className="num text-xs text-muted-foreground" data-testid={testId}>N/A / 5</span>;
+    return <div className="w-60 text-right num text-xs text-muted-foreground" data-testid={testId}>N/A / 5</div>;
   }
   const width = `${Math.max(0, Math.min(100, (rating / 5) * 100))}%`;
   return (
-    <span className="inline-flex shrink-0 items-center gap-2" data-testid={testId}>
-      <span
+    <div className="flex w-60 flex-col items-end" data-testid={testId}>
+      <div className="flex w-full items-center gap-2">
+        <span
         role="meter"
         aria-label={label}
         aria-valuemin={0}
         aria-valuemax={5}
         aria-valuenow={rating}
         aria-valuetext={`${rating.toFixed(2)} out of 5`}
-        className="h-2 w-20 overflow-hidden rounded-full bg-secondary sm:w-24"
+        className="h-2 flex-1 overflow-hidden rounded-full bg-muted-foreground/25"
       >
         <span className="block h-full rounded-full bg-primary" style={{ width }} />
-      </span>
-      <span className="num text-xs font-medium tabular-nums">{rating.toFixed(2)} / 5</span>
-    </span>
+        </span>
+        <span className="num w-16 text-right text-xs font-medium tabular-nums">{rating.toFixed(2)} / 5</span>
+      </div>
+      <div className="mt-0.5 flex w-[calc(100%-4.5rem)] justify-between text-[9px] leading-none text-muted-foreground" aria-hidden="true">
+        <span>0</span><span>5.00</span>
+      </div>
+    </div>
   );
 }
 
@@ -138,30 +143,34 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                 <li key={group.slug} className="py-3 first:border-t-0" data-testid={`teacher-row-${group.slug}`}>
                   <div className="flex items-start gap-3">
                     <span className="num text-xs text-muted-foreground pt-1.5 w-5 shrink-0 text-right">{index + 1}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                        <span className="min-w-0 truncate text-sm font-semibold">{group.label}</span>
-                        <RatingBar rating={value} label={`${group.label} overall teaching rating`} testId={`rating-teacher-${group.slug}`} />
-                        <button
-                          type="button"
-                          onClick={() => setExpandedProfessor(isExpanded ? null : group.slug)}
-                          aria-expanded={isExpanded}
-                          aria-controls={coursesId}
-                          data-testid={`button-expand-teacher-${group.slug}`}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                        >
-                          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                          {isExpanded ? 'Collapse' : 'Expand'}
-                        </button>
-                        <Link href={`/professors/${group.slug}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline" data-testid={`link-teacher-profile-${group.slug}`}>
-                          Profile <ArrowRight className="h-3 w-3" />
-                        </Link>
+                    <div className="grid min-w-0 flex-1 grid-cols-1 gap-y-2 sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-x-4">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                          <span className="min-w-0 truncate text-sm font-semibold">{group.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProfessor(isExpanded ? null : group.slug)}
+                            aria-expanded={isExpanded}
+                            aria-controls={coursesId}
+                            data-testid={`button-expand-teacher-${group.slug}`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                          >
+                            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                            {isExpanded ? 'Collapse' : 'Expand'}
+                          </button>
+                          <Link href={`/professors/${group.slug}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline" data-testid={`link-teacher-profile-${group.slug}`}>
+                            Profile <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground" data-testid={`text-latest-course-${group.slug}`}>
+                          {latest
+                            ? <>Most recent: <span className="text-foreground">{latest.course}</span> · {latest.semester}</>
+                            : 'No course history available.'}
+                        </p>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground" data-testid={`text-latest-course-${group.slug}`}>
-                        {latest
-                          ? <>Most recent: <span className="text-foreground">{latest.course}</span> · {latest.semester}</>
-                          : 'No course history available.'}
-                      </p>
+                      <div className="justify-self-end">
+                        <RatingBar rating={value} label={`${group.label} overall teaching rating`} testId={`rating-teacher-${group.slug}`} />
+                      </div>
                     </div>
                   </div>
                   <div id={coursesId} hidden={!isExpanded} className="ml-8 mt-3 rounded-lg bg-secondary/40 px-3 py-2.5">
@@ -176,11 +185,13 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                               <span className="block text-sm">{offering.course}</span>
                               <span className="block text-xs text-muted-foreground">{offering.semester}</span>
                             </span>
-                            <RatingBar
-                              rating={offering.rating}
-                              label={`${offering.course}, ${offering.semester} overall teaching rating`}
-                              testId={`rating-offering-${group.slug}-${offering.semester}`}
-                            />
+                            <div className="ml-auto">
+                              <RatingBar
+                                rating={offering.rating}
+                                label={`${offering.course}, ${offering.semester} overall teaching rating`}
+                                testId={`rating-offering-${group.slug}-${offering.semester}`}
+                              />
+                            </div>
                           </li>
                         ))}
                       </ul>
