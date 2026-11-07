@@ -1,3 +1,4 @@
 - [Evaluation comparison policy](evaluation-comparisons.md) — use reported feedback with response-count context; preserve missing and source-anomalous offerings.
 - [Exam completion labels](exam-completion-labels.md) — require finished/not-finished for new posts; never reinterpret legacy attendance answers as completion.
 - [Isolated feedback API tests](isolated-feedback-api-tests.md) — exercise public feedback routes against isolated data, not shared app storage.
+- [Feedback report test adapter](feedback-report-test-adapter.md) — pg-mem needs hidden report IDs resolved from its isolated table instead of grouped HAVING subqueries.
