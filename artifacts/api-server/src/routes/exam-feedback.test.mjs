@@ -532,10 +532,10 @@ test("reports hide only the reported comment after three distinct visitors", asy
   `);
   const quoteSql = (value) => `'${value.replaceAll("'", "''")}'`;
   memory.public.none(`
-    INSERT INTO exam_feedback (id, professor, course, comment)
+    INSERT INTO exam_feedback (id, professor, course, difficulty, comment)
     VALUES
-      (1, ${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'A comment that will be reported.'),
-      (2, ${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'A separate comment that should stay visible.');
+      (1, ${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 5, 'A comment that will be reported.'),
+      (2, ${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 3, 'A separate comment that should stay visible.');
   `);
 
   const database = drizzle(async (query, params) => {
@@ -601,10 +601,12 @@ test("reports hide only the reported comment after three distinct visitors", asy
   assert.deepEqual(await thirdReport.json(), { reported: true });
   freshList = await listComments();
   assert.equal(freshList.status, 200);
-  assert.deepEqual(
-    (await freshList.json()).comments.map((comment) => comment.id),
-    [2],
-  );
+  const freshSummary = await freshList.json();
+  assert.deepEqual(freshSummary.comments.map((comment) => comment.id), [2]);
+  assert.equal(freshSummary.commentCount, 1);
+  assert.equal(freshSummary.averageDifficulty, 4);
+  assert.equal(freshSummary.ratingCount, 2);
+  assert.deepEqual(freshSummary.difficultyCounts, [0, 0, 1, 0, 1]);
 
   const reportAfterHidden = await report(1, "198.51.100.13");
   assert.equal(reportAfterHidden.status, 404);
