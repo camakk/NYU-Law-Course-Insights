@@ -43,7 +43,8 @@ describe('Overview course expansion', () => {
       'Grace Gamma', 'Beth Beta', 'Diana Delta',
     ]);
     expect(within(entries[0]).getByRole('meter').getAttribute('aria-valuenow')).toBe('4.8');
-    expect(within(entries[0]).getByText('20 reviews · 1 rated offering')).toBeTruthy();
+    expect(within(entries[0]).getByText('20 reviews · 1 time taught')).toBeTruthy();
+    expect(within(panel).queryByText(/response-weighted across this course/)).toBeNull();
     expect(within(panel).queryByText('Small Sample')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }));
     expect(panel.hidden).toBe(true);
@@ -85,7 +86,7 @@ describe('Overview course expansion', () => {
     const entries = within(screen.getByTestId('panel-top-professors-evidence')).getAllByRole('listitem');
     expect(entries).toHaveLength(1);
     expect(within(entries[0]).getByRole('link').textContent).toBe('Beth Beta');
-    expect(within(entries[0]).getByText('20 reviews · 2 rated offerings')).toBeTruthy();
+    expect(within(entries[0]).getByText('20 reviews · 2 times taught')).toBeTruthy();
   });
 
   it('explains when all rated professors fall below the minimum', () => {

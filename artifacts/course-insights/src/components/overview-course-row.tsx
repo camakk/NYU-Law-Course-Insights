@@ -87,7 +87,6 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
         data-testid={`panel-top-professors-${course.slug}`}
       >
         <h3 className="text-xs font-semibold">Top professors for this course</h3>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">Overall teaching rating · response-weighted across this course’s offerings · at least {MIN_PROFESSOR_COURSE_REVIEWS} reviews per professor</p>
         {topProfessors.length > 0 ? (
           <ol className="mt-2 divide-y divide-border/70">
             {topProfessors.map(({ group, metric }, index) => (
@@ -98,7 +97,7 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
                     {group.label}
                   </Link>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="num">{fmtInt(metric.responses)} reviews · {metric.offerings} rated {metric.offerings === 1 ? 'offering' : 'offerings'}</span>
+                    <span className="num">{fmtInt(metric.responses)} reviews · {metric.offerings} {metric.offerings === 1 ? 'time' : 'times'} taught</span>
                     <SmallSample responses={metric.responses} />
                   </div>
                 </div>
