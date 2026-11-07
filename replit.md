@@ -1,8 +1,10 @@
-# [Project name]
+# NYU Course Insights
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Read-only explorer of the uploaded NYU Law evaluations, with professor profiles and course-specific teacher comparisons.
 
 ## Run & Operate
+- `pnpm --filter @workspace/course-insights run dev` — frontend, via its managed workflow
+- `python scripts/extract-evaluations.py` — regenerate the bundled dataset from the supplied workbook using Python's standard library
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
@@ -26,7 +28,9 @@ _Populate as you build — short repo map plus pointers to the source-of-truth f
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- This is a read-only snapshot explorer, so the supplied dataset is bundled with the frontend. No database or authentication is required.
+- Default instructor comparisons use the overall professor effectiveness question weighted by offering-level responses. These weights are approximate because per-question response counts are unavailable.
+- Preserve distinct offering rows, missing scores, unavailable records and source anomalies; do not silently clean or infer absent data.
 
 ## Product
 

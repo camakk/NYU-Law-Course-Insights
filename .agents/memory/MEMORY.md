@@ -1,0 +1,1 @@
+- [Evaluation comparison policy](evaluation-comparisons.md) — use reported feedback with response-count context; preserve missing and source-anomalous offerings.
