@@ -11,6 +11,7 @@ import { CoursesPage, ProfessorsPage } from '@/pages/directory';
 import ProfessorPage from '@/pages/professor';
 import CoursePage from '@/pages/course';
 import MethodologyPage from '@/pages/methodology';
+import AfterExamPage from '@/pages/after-exam';
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ function Router() {
           <Route path="/courses" component={CoursesPage} />
           <Route path="/courses/:id" component={CoursePage} />
           <Route path="/methodology" component={MethodologyPage} />
+          <Route path="/after-exam" component={AfterExamPage} />
           <Route component={NotFound} />
         </Switch>
       </RoutedErrorBoundary>

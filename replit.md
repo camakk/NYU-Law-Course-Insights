@@ -1,6 +1,6 @@
 # NYU Course Insights
 
-Read-only explorer of the uploaded NYU Law evaluations, with professor profiles and course-specific teacher comparisons.
+Explorer for NYU Law course evaluations, with professor profiles, course-specific teacher comparisons, and anonymous post-exam feedback.
 
 ## Run & Operate
 - `pnpm --filter @workspace/course-insights run dev` — frontend, via its managed workflow
@@ -12,6 +12,7 @@ Read-only explorer of the uploaded NYU Law evaluations, with professor profiles 
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `SESSION_SECRET` — creates non-reversible fingerprints for anonymous spam limits and repeat-report prevention; raw IP addresses are not stored.
 
 ## Stack
 
@@ -28,13 +29,14 @@ _Populate as you build — short repo map plus pointers to the source-of-truth f
 
 ## Architecture decisions
 
-- This is a read-only snapshot explorer, so the supplied dataset is bundled with the frontend. No database or authentication is required.
+- The historical dataset is bundled with the frontend; anonymous post-exam feedback uses PostgreSQL. No sign-in is required.
 - Default instructor comparisons use the overall professor effectiveness question weighted by offering-level responses. These weights are approximate because per-question response counts are unavailable.
 - Preserve distinct offering rows, missing scores, unavailable records and source anomalies; do not silently clean or infer absent data.
+- Anonymous post-exam ratings and comments are attached to a specific professor–course pair across terms, not a specific semester or section. Reports from three distinct network fingerprints hide a comment automatically.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Explore NYU Law course evaluations through professor profiles, course rankings, searchable directories, and a transparent methodology page. Students can anonymously rate exam difficulty and comment on a professor–course pairing across semesters.
 
 ## User preferences
 

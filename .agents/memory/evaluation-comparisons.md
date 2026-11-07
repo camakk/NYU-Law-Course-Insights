@@ -14,3 +14,9 @@ For directory minimums, interpret “courses taught” as distinct course titles
 **Why:** Repeated sections should not imply a broader range of teaching experience. Separate measures let users filter on either breadth or number of offerings.
 
 **How to apply:** Keep these labels distinct in future filters and apply minimums to the selected semester's records.
+
+Anonymous post-exam feedback is attached to a professor–course pair across terms, and uses an optional 1–5 difficulty rating independent of the written comment.
+
+**Why:** This is the audience's chosen grouping; the source has no course codes, and a course pair may recur in many semesters.
+
+**How to apply:** Do not imply that new feedback belongs to a specific semester or exam offering.

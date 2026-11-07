@@ -17,6 +17,7 @@ const NAV = [
   { href: '/professors', label: 'Professors' },
   { href: '/courses', label: 'Courses' },
   { href: '/methodology', label: 'Methodology' },
+  { href: '/after-exam', label: 'After the exam' },
 ];
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -24,12 +25,12 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-[100dvh] flex flex-col">
       <header className="bg-sidebar text-sidebar-foreground sticky top-0 z-40 border-b border-sidebar-border">
-        <div className="mx-auto max-w-7xl px-4 md:px-8 h-14 flex items-center gap-6">
+        <div className="mx-auto max-w-7xl w-full px-4 md:px-6 lg:px-8 min-h-14 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 lg:gap-x-6 lg:py-0">
           <Link href="/" className="flex items-baseline gap-2 shrink-0" data-testid="link-home">
             <span className="font-display text-xl font-semibold">Course Insights</span>
-            <span className="hidden sm:inline text-[11px] uppercase tracking-[0.2em] text-sidebar-primary">NYU Law</span>
+            <span className="hidden md:inline text-[11px] uppercase tracking-[0.2em] text-sidebar-primary">NYU Law</span>
           </Link>
-          <nav className="flex gap-1 overflow-x-auto text-sm">
+          <nav aria-label="Main navigation" className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 text-sm">
             {NAV.map((n) => {
               const active = n.href === '/' ? loc === '/' : loc.startsWith(n.href);
               return (
@@ -38,12 +39,12 @@ export function Shell({ children }: { children: ReactNode }) {
                   href={n.href}
                   data-testid={`link-nav-${n.label.toLowerCase()}`}
                   className={cn(
-                    'relative px-3 py-1.5 rounded-md whitespace-nowrap transition-colors',
+                    'relative px-2 py-1.5 lg:px-3 rounded-md whitespace-nowrap transition-colors',
                     active ? 'text-sidebar-primary' : 'text-sidebar-foreground/75 hover:text-sidebar-foreground hover:bg-sidebar-accent',
                   )}
                 >
                   {n.label}
-                  {active && <span className="absolute left-3 right-3 -bottom-[13px] h-[3px] bg-sidebar-primary rounded-full" />}
+                  {active && <span className="absolute left-2 right-2 -bottom-1 h-0.5 bg-sidebar-primary rounded-full lg:left-3 lg:right-3" />}
                 </Link>
               );
             })}

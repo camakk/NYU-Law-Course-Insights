@@ -6,6 +6,9 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// The public app sits behind Replit's single trusted reverse-proxy hop.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,

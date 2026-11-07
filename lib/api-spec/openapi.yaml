@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: exam-feedback
+    description: Anonymous post-exam feedback
 paths:
   /healthz:
     get:
@@ -24,6 +26,105 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /exam-feedback:
+    get:
+      operationId: listExamFeedback
+      tags: [exam-feedback]
+      summary: List feedback for one professor and course
+      parameters:
+        - name: professor
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: course
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 300 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        "200":
+          description: Aggregate difficulty and the latest comments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamFeedbackSummary"
+        "400":
+          description: Invalid professor or course
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "404":
+          description: This professor and course pairing is not in the evaluation data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+    post:
+      operationId: createExamFeedback
+      tags: [exam-feedback]
+      summary: Submit an anonymous exam rating or comment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamFeedbackInput"
+      responses:
+        "201":
+          description: Feedback was saved anonymously
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamFeedbackCreated"
+        "400":
+          description: The feedback is invalid
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "404":
+          description: This professor and course pairing is not in the evaluation data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "429":
+          description: Too many submissions; please try again later
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "403":
+          description: The submission did not come from this site
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+  /exam-feedback/{id}/report:
+    post:
+      operationId: reportExamFeedback
+      tags: [exam-feedback]
+      summary: Report a publicly displayed comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Report recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamFeedbackReportResult"
+        "404":
+          description: Comment does not exist or is no longer visible
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "403":
+          description: The report did not come from this site
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
 components:
   schemas:
     HealthStatus:
@@ -33,4 +134,53 @@ components:
           type: string
       required:
         - status
+    ApiError:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    ExamFeedback:
+      type: object
+      properties:
+        id: { type: integer }
+        professor: { type: string }
+        course: { type: string }
+        difficulty: { type: ["integer", "null"] }
+        comment: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, professor, course, difficulty, comment, createdAt]
+    ExamFeedbackSummary:
+      type: object
+      properties:
+        averageDifficulty: { type: ["number", "null"] }
+        ratingCount: { type: integer }
+        commentCount: { type: integer }
+        difficultyCounts:
+          type: array
+          items: { type: integer }
+          minItems: 5
+          maxItems: 5
+        comments:
+          type: array
+          items: { $ref: "#/components/schemas/ExamFeedback" }
+      required: [averageDifficulty, ratingCount, commentCount, difficultyCounts, comments]
+    ExamFeedbackInput:
+      type: object
+      properties:
+        professor: { type: string, minLength: 1, maxLength: 200 }
+        course: { type: string, minLength: 1, maxLength: 300 }
+        difficulty: { type: ["integer", "null"], minimum: 1, maximum: 5 }
+        comment: { type: ["string", "null"], maxLength: 1200 }
+        website: { type: string, maxLength: 300 }
+      required: [professor, course, difficulty, comment]
+    ExamFeedbackCreated:
+      type: object
+      properties:
+        id: { type: integer }
+      required: [id]
+    ExamFeedbackReportResult:
+      type: object
+      properties:
+        reported: { type: boolean }
+      required: [reported]
 
