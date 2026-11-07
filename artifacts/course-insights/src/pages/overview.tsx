@@ -80,9 +80,9 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     }))
     .sort((a, b) => b.value - a.value || a.group.label.localeCompare(b.group.label))
     .slice(0, 30), [ds]);
-  const busiest = useMemo(() => ds.courses
+  const mostReviewed = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course'))
-    .sort((a, b) => b.records.length - a.records.length)
+    .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
     .slice(0, 30), [ds]);
   const usable = ds.records.filter((r) => !r.inaccessible && (r.responded ?? 0) > 0).length;
 
@@ -147,17 +147,6 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                           <span className="min-w-0 truncate text-sm font-semibold">{group.label}</span>
-                          <button
-                            type="button"
-                            onClick={() => setExpandedProfessor(isExpanded ? null : group.slug)}
-                            aria-expanded={isExpanded}
-                            aria-controls={coursesId}
-                            data-testid={`button-expand-teacher-${group.slug}`}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                          >
-                            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                            {isExpanded ? 'Collapse' : 'Expand'}
-                          </button>
                           <Link href={`/professors/${group.slug}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline" data-testid={`link-teacher-profile-${group.slug}`}>
                             Profile <ArrowRight className="h-3 w-3" />
                           </Link>
@@ -166,6 +155,18 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                           {latest
                             ? <>Most recent: <span className="text-foreground">{latest.course}</span> · {latest.semester}</>
                             : 'No course history available.'}
+                          {' '}
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProfessor(isExpanded ? null : group.slug)}
+                            aria-expanded={isExpanded}
+                            aria-controls={coursesId}
+                            data-testid={`button-expand-teacher-${group.slug}`}
+                            className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-primary hover:underline"
+                          >
+                            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                            {isExpanded ? 'Collapse' : 'Expand'}
+                          </button>
                         </p>
                       </div>
                       <div className="justify-self-end">
@@ -206,16 +207,16 @@ function OverviewInner({ ds }: { ds: Dataset }) {
         </div>
         <div className="bg-card border rounded-xl">
           <div className="p-5 pb-3 flex items-baseline justify-between">
-            <h2 className="font-display text-2xl">Most offered courses</h2>
+            <h2 className="font-display text-2xl">Most reviewed courses</h2>
             <Link href="/courses" className="text-sm text-primary inline-flex items-center gap-1 hover:gap-2 transition-all">All courses <ArrowRight className="h-4 w-4" /></Link>
           </div>
           <ul>
-            {busiest.map((c) => (
+            {mostReviewed.map((c) => (
               <li key={c.slug}>
                 <Link href={`/courses/${c.slug}`} className="flex items-center gap-3 px-5 py-2.5 border-t hover:bg-secondary/60 transition-colors" data-testid={`link-course-${c.slug}`}>
                   <span className="flex-1 min-w-0"><span className="block truncate font-medium">{c.label}</span>
-                    <span className="num block text-xs text-muted-foreground">{c.records.length} offerings · {new Set(c.records.map((r) => r.professor)).size} instructors</span>
-                    <span className="num block text-xs text-muted-foreground" data-testid={`text-course-reviews-${c.slug}`}>{fmtInt(c.totalResponded)} student reviews</span></span>
+                    <span className="num block text-xs text-muted-foreground" data-testid={`text-course-reviews-${c.slug}`}>{fmtInt(c.totalResponded)} student reviews</span>
+                    <span className="num block text-xs text-muted-foreground">{c.records.length} offerings · {new Set(c.records.map((r) => r.professor)).size} instructors</span></span>
                   <Score v={c.metrics[5].avg} size="sm" />
                 </Link>
               </li>
