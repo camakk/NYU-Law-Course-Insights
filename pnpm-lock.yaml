@@ -221,6 +221,9 @@ importers:
       esbuild-plugin-pino:
         specifier: ^2.3.3
         version: 2.3.3(esbuild@0.28.2)(pino-pretty@13.2.0)(pino@9.14.0)(thread-stream@3.1.0)
+      pg:
+        specifier: ^8.23.1
+        version: 8.23.1
       pg-mem:
         specifier: ^3.0.14
         version: 3.0.14

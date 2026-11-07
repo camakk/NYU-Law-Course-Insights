@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { once } from "node:events";
 import test from "node:test";
 import express from "express";
 import { newDb } from "pg-mem";
 import { drizzle } from "drizzle-orm/pg-proxy";
+import { drizzle as drizzlePostgres } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import { buildProfessorNameAliases } from "@workspace/professor-identity";
 import { getExamCompletionLabel } from "../../../course-insights/src/lib/exam-completion-label.ts";
 
@@ -12,6 +15,9 @@ process.env.DATABASE_URL ??= "postgres://test:test@localhost:5432/test";
 process.env.SESSION_SECRET ??= "test-only-exam-feedback-secret";
 
 const { createExamFeedbackRouter } = await import("./exam-feedback.ts");
+const { examFeedbackTable } = await import("@workspace/db");
+const postgresTestUrl = process.env.EXAM_FEEDBACK_TEST_DATABASE_URL;
+const { Pool } = pg;
 const dataset = JSON.parse(
   await readFile(
     new URL(
@@ -244,6 +250,179 @@ test("completion is required and finished states survive API create and fresh li
     new Set([randyAliasPair.professor, canonicalProfessor]),
   );
 });
+
+test(
+  "legacy attendance and completion values round-trip through PostgreSQL",
+  { skip: !postgresTestUrl },
+  async (t) => {
+    assert.equal(examFeedbackTable.examTaken.notNull, false);
+    assert.equal(examFeedbackTable.examCompleted.notNull, false);
+
+    const schemaName = `exam_feedback_test_${process.pid}_${randomUUID().replaceAll("-", "")}`;
+    const adminPool = new Pool({ connectionString: postgresTestUrl });
+    const databasePool = new Pool({
+      connectionString: postgresTestUrl,
+      options: `-c search_path=${schemaName}`,
+    });
+
+    t.after(async () => {
+      await databasePool.end();
+      try {
+        await adminPool.query(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
+      } finally {
+        await adminPool.end();
+      }
+    });
+
+    await adminPool.query(`CREATE SCHEMA "${schemaName}"`);
+    await databasePool.query(`
+      CREATE TABLE exam_feedback (
+        id SERIAL PRIMARY KEY,
+        professor VARCHAR(200) NOT NULL,
+        course VARCHAR(300) NOT NULL,
+        difficulty INTEGER,
+        comment TEXT,
+        exam_taken BOOLEAN,
+        exam_completed BOOLEAN,
+        grade VARCHAR(30),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        CONSTRAINT exam_feedback_difficulty_range
+          CHECK (difficulty IS NULL OR difficulty BETWEEN 1 AND 5),
+        CONSTRAINT exam_feedback_content_required
+          CHECK (difficulty IS NOT NULL OR
+            (comment IS NOT NULL AND length(trim(comment)) >= 10))
+      );
+      CREATE TABLE exam_feedback_reports (
+        id SERIAL PRIMARY KEY,
+        feedback_id INTEGER NOT NULL REFERENCES exam_feedback(id) ON DELETE CASCADE,
+        reporter_fingerprint VARCHAR(64) NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        CONSTRAINT exam_feedback_reports_once_per_reporter
+          UNIQUE (feedback_id, reporter_fingerprint)
+      );
+    `);
+
+    const feedbackColumns = await databasePool.query(`
+      SELECT column_name, data_type, is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'exam_feedback'
+        AND column_name IN ('exam_taken', 'exam_completed')
+      ORDER BY column_name
+    `);
+    assert.deepEqual(feedbackColumns.rows, [
+      {
+        column_name: "exam_completed",
+        data_type: "boolean",
+        is_nullable: "YES",
+      },
+      { column_name: "exam_taken", data_type: "boolean", is_nullable: "YES" },
+    ]);
+
+    const legacyRows = [
+      {
+        comment: "Legacy took exam",
+        examTaken: true,
+        examCompleted: null,
+        createdAt: "2020-01-01T00:00:00Z",
+      },
+      {
+        comment: "Legacy did not take exam",
+        examTaken: false,
+        examCompleted: null,
+        createdAt: "2020-01-02T00:00:00Z",
+      },
+      {
+        comment: "Legacy exam history unknown",
+        examTaken: null,
+        examCompleted: null,
+        createdAt: "2020-01-03T00:00:00Z",
+      },
+    ];
+    for (const row of legacyRows) {
+      await databasePool.query(
+        `INSERT INTO exam_feedback
+          (professor, course, difficulty, comment, exam_taken, exam_completed, created_at)
+         VALUES ($1, $2, 4, $3, $4, $5, $6)`,
+        [
+          firstPair.professor,
+          firstPair.course,
+          row.comment,
+          row.examTaken,
+          row.examCompleted,
+          row.createdAt,
+        ],
+      );
+    }
+
+    const database = drizzlePostgres(databasePool);
+    const app = express();
+    app.use(express.json());
+    app.use(createExamFeedbackRouter(database, pairings));
+    const server = app.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const address = server.address();
+    assert.ok(address && typeof address !== "string");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    t.after(async () => {
+      await new Promise((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    });
+
+    for (const [examCompleted, examTaken, comment] of [
+      [true, false, "New completed exam"],
+      [false, true, "New incomplete exam"],
+    ]) {
+      const response = await fetch(`${baseUrl}/exam-feedback`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          professor: firstPair.professor,
+          course: firstPair.course,
+          difficulty: 4,
+          comment,
+          examCompleted,
+          examTaken,
+          grade: null,
+        }),
+      });
+      assert.equal(response.status, 201);
+    }
+
+    const response = await fetch(
+      `${baseUrl}/exam-feedback?professor=${encodeURIComponent(firstPair.professor)}&course=${encodeURIComponent(firstPair.course)}`,
+    );
+    assert.equal(response.status, 200);
+    const { comments } = await response.json();
+    const byComment = new Map(
+      comments.map((comment) => [comment.comment, comment]),
+    );
+
+    for (const row of legacyRows) {
+      const saved = byComment.get(row.comment);
+      assert.ok(saved, `should return ${row.comment}`);
+      assert.equal(saved.examTaken, row.examTaken);
+      assert.equal(saved.examCompleted, row.examCompleted);
+    }
+
+    assert.equal(byComment.get("Legacy exam history unknown").examTaken, null);
+    assert.equal(
+      byComment.get("Legacy exam history unknown").examCompleted,
+      null,
+    );
+    assert.deepEqual(
+      [
+        byComment.get("New completed exam").examTaken,
+        byComment.get("New completed exam").examCompleted,
+        byComment.get("New incomplete exam").examTaken,
+        byComment.get("New incomplete exam").examCompleted,
+      ],
+      [false, true, true, false],
+    );
+  },
+);
 
 test("anonymous feedback accepts the configured limit and rejects the next submission", async (t) => {
   const memory = newDb();
