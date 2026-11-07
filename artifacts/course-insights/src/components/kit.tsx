@@ -16,7 +16,6 @@ const NAV = [
   { href: '/', label: 'Overview' },
   { href: '/professors', label: 'Professors' },
   { href: '/courses', label: 'Courses' },
-  { href: '/methodology', label: 'Methodology' },
   { href: '/after-exam', label: 'After the exam' },
 ];
 
