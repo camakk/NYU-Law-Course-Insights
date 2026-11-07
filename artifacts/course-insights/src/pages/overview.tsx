@@ -111,7 +111,7 @@ function ShowMoreButton({ onClick, testId }: { onClick: () => void; testId: stri
     <button
       type="button"
       onClick={onClick}
-      className="block w-full px-5 py-2 text-center text-sm font-medium text-primary transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+      className="block w-full cursor-pointer px-5 py-2 text-center text-sm font-medium text-primary transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
       data-testid={testId}
     >
       Show More
