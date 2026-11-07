@@ -263,7 +263,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               aria-expanded={filtersOpen}
               aria-controls="professor-filter-controls"
               onClick={() => setFiltersOpen((open) => !open)}
-              className="inline-flex items-center gap-2 py-1 text-sm font-semibold"
+              className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-semibold transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               data-testid="button-toggle-professor-filters"
             >
               Filters
