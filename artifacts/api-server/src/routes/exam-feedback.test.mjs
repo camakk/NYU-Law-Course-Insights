@@ -245,6 +245,90 @@ test("completion is required and finished states survive API create and fresh li
   );
 });
 
+test("anonymous feedback accepts the configured limit and rejects the next submission", async (t) => {
+  const memory = newDb();
+  memory.public.none(`
+    CREATE TABLE exam_feedback (
+      id SERIAL PRIMARY KEY,
+      professor VARCHAR(200) NOT NULL,
+      course VARCHAR(300) NOT NULL,
+      difficulty INTEGER,
+      comment TEXT,
+      exam_taken BOOLEAN,
+      exam_completed BOOLEAN,
+      grade VARCHAR(30),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE TABLE exam_feedback_reports (
+      id SERIAL PRIMARY KEY,
+      feedback_id INTEGER NOT NULL REFERENCES exam_feedback(id) ON DELETE CASCADE,
+      reporter_fingerprint VARCHAR(64) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (feedback_id, reporter_fingerprint)
+    );
+  `);
+  const database = drizzle(async (query, params) => {
+    const result = memory.public.query(interpolateParams(query, params, memory));
+    return {
+      rows: result.rows.map((row) =>
+        result.fields.map((field) => row[field.name]),
+      ),
+    };
+  });
+  const rateLimitState = new Map();
+  const app = express();
+  app.set("trust proxy", true);
+  app.use(express.json());
+  app.use(createExamFeedbackRouter(database, pairings, undefined, rateLimitState));
+  const server = app.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  });
+
+  const submission = {
+    professor: firstPair.professor,
+    course: firstPair.course,
+    difficulty: 4,
+    comment: "The exam covered the course material.",
+    examCompleted: true,
+    grade: null,
+  };
+  const submit = () =>
+    fetch(`${baseUrl}/exam-feedback`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "203.0.113.42",
+      },
+      body: JSON.stringify(submission),
+    });
+
+  for (let index = 0; index < 20; index += 1) {
+    const response = await submit();
+    assert.equal(response.status, 201, `submission ${index + 1} should succeed`);
+  }
+
+  const overLimit = await submit();
+  assert.equal(overLimit.status, 429);
+  assert.deepEqual(await overLimit.json(), {
+    error: "Too many submissions. Please try again in a few minutes.",
+  });
+
+  assert.equal(rateLimitState.size, 1);
+  assert.equal([...rateLimitState.values()][0].length, 20);
+  assert.equal(
+    memory.public.one("SELECT COUNT(*) AS count FROM exam_feedback").count,
+    20,
+  );
+});
+
 test("reports count distinct visitors once and hide a comment after three reports", async (t) => {
   const memory = newDb();
   memory.public.none(`

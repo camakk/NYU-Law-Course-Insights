@@ -107,21 +107,24 @@ function hasSameOrigin(req: Request): boolean {
   }
 }
 
-function isRateLimited(hash: string): boolean {
+function isRateLimited(
+  hash: string,
+  submissions: Map<string, number[]> = submissionsByFingerprint,
+): boolean {
   const now = Date.now();
-  const active = (submissionsByFingerprint.get(hash) ?? []).filter(
+  const active = (submissions.get(hash) ?? []).filter(
     (timestamp) => now - timestamp < RATE_WINDOW_MS,
   );
   if (active.length >= MAX_SUBMISSIONS_PER_WINDOW) {
-    submissionsByFingerprint.set(hash, active);
+    submissions.set(hash, active);
     return true;
   }
   active.push(now);
-  submissionsByFingerprint.set(hash, active);
-  if (submissionsByFingerprint.size > 5_000) {
-    for (const [key, timestamps] of submissionsByFingerprint) {
+  submissions.set(hash, active);
+  if (submissions.size > 5_000) {
+    for (const [key, timestamps] of submissions) {
       if (!timestamps.some((timestamp) => now - timestamp < RATE_WINDOW_MS)) {
-        submissionsByFingerprint.delete(key);
+        submissions.delete(key);
       }
     }
   }
@@ -132,6 +135,7 @@ export function createExamFeedbackRouter(
   database: typeof db = db,
   pairings: Set<string> = validPairings,
   professorNames: ProfessorNameAliases = validProfessorNames,
+  submissions: Map<string, number[]> = submissionsByFingerprint,
 ): IRouter {
   const router: IRouter = Router();
 
@@ -298,7 +302,7 @@ export function createExamFeedbackRouter(
     }
 
     const hash = fingerprint(req);
-    if (isRateLimited(hash)) {
+    if (isRateLimited(hash, submissions)) {
       res
         .status(429)
         .json({
