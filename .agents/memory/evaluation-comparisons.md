@@ -15,6 +15,12 @@ For directory minimums, interpret “courses taught” as distinct course titles
 
 **How to apply:** Keep these labels distinct in future filters and apply minimums to the selected semester's records.
 
+For recent-history columns, show up to three distinct partner items and use the latest semester for each professor–course pairing.
+
+**Why:** Repeated sections of the same professor–course pairing should not occupy multiple slots or overstate the range of recent teaching.
+
+**How to apply:** Collapse repeated course titles for a professor and repeated professors for a course, then order by latest semester.
+
 Anonymous post-exam feedback is attached to a professor–course pair across terms, and uses an optional 1–5 difficulty rating independent of the written comment.
 
 **Why:** This is the audience's chosen grouping; the source has no course codes, and a course pair may recur in many semesters.

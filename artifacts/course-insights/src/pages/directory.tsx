@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowUpRight } from 'lucide-react';
-import { aggregate, fmtInt, useDataset, type Dataset, type Group } from '@/lib/data';
+import { aggregate, bySemesterDesc, fmtInt, friendlyName, useDataset, type Dataset, type Group } from '@/lib/data';
 import { Empty, LoadMore, LowSample, NativeSelect, PageError, PageLoading, Score, SearchBox, useTitle } from '@/components/kit';
 
 type Kind = 'professors' | 'courses';
@@ -87,7 +87,19 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         const m = aggregate(recs, metricIdx);
         const teach = kind === 'courses' ? aggregate(recs, 5) : null;
         const partners = new Set(recs.map((r) => (kind === 'professors' ? r.course : r.professor))).size;
-        return { g, m, teach, offerings: recs.length, partners, latest: recs[0]?.semester ?? '' };
+        const recentByPartner = new Map<string, { label: string; semester: string }>();
+        for (const record of recs) {
+          const partnerKey = kind === 'professors' ? record.course : record.professor;
+          const label = kind === 'professors' ? record.course : friendlyName(record.professor);
+          const existing = recentByPartner.get(partnerKey);
+          if (!existing || bySemesterDesc(record.semester, existing.semester) < 0) {
+            recentByPartner.set(partnerKey, { label, semester: record.semester || 'Semester unavailable' });
+          }
+        }
+        const recent = [...recentByPartner.values()]
+          .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.label.localeCompare(b.label))
+          .slice(0, 3);
+        return { g, m, teach, offerings: recs.length, partners, latest: recs[0]?.semester ?? '', recent };
       })
       .filter((r) =>
         r.partners >= Number(minPartners) &&
@@ -167,8 +179,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       ) : (
         <>
           <div className="bg-card border rounded-xl overflow-hidden">
-            <div className="hidden md:grid grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40">
+            <div className="hidden md:grid md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem] gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40">
               <span>#</span><span>{isProf ? 'Professor' : 'Course'}</span>
+              <span className="hidden lg:block">{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
               <span className="text-right">{isProf ? 'Teaching' : 'Course'}</span>
               <span className="text-right">{isProf ? 'Courses' : 'Teaching'}</span>
               <span className="text-right">Offerings</span><span className="text-right">Responses</span><span />
@@ -178,7 +191,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 key={r.g.slug}
                 href={`/${kind}/${r.g.slug}`}
                 data-testid={`row-${kind}-${r.g.slug}`}
-                className="group grid grid-cols-[2rem_1fr_auto] md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] gap-3 items-center px-4 py-3 border-b last:border-0 hover:bg-secondary/60 transition-colors"
+                className="group grid grid-cols-[2rem_1fr_auto] md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem] gap-3 items-center px-4 py-3 border-b last:border-0 hover:bg-secondary/60 transition-colors"
               >
                 <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
                 <span className="min-w-0">
@@ -188,6 +201,24 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     <span className="md:hidden num">· {fmtInt(r.m.responses)} resp.</span>
                     <LowSample responses={r.m.responses} />
                   </span>
+                  <span className="mt-1 block min-w-0 text-xs leading-5 text-muted-foreground lg:hidden">
+                    <span className="block text-[10px] font-medium uppercase tracking-wide">
+                      {isProf ? 'Recent courses' : 'Recent professors'}
+                    </span>
+                    {r.recent.map((item) => (
+                      <span key={`${item.label}-${item.semester}`} className="block truncate">
+                        {item.label} <span className="whitespace-nowrap">· {item.semester}</span>
+                      </span>
+                    ))}
+                  </span>
+                </span>
+                <span className="hidden min-w-0 text-xs leading-5 text-muted-foreground lg:block">
+                  {r.recent.map((item) => (
+                    <span key={`${item.label}-${item.semester}`} className="block truncate">
+                      <span className="font-medium text-foreground/80">{item.label}</span>
+                      <span className="whitespace-nowrap"> · {item.semester}</span>
+                    </span>
+                  ))}
                 </span>
                 <span className="md:text-right"><Score v={r.m.avg} /></span>
                 <span className="hidden md:block text-right num text-sm">{isProf ? r.partners : r.teach ? <Score v={r.teach.avg} size="sm" /> : null}</span>
