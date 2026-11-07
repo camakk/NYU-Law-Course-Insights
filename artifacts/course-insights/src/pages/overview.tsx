@@ -3,6 +3,7 @@ import { Link } from 'wouter';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { aggregate, bySemesterDesc, fmtInt, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { PageError, PageLoading, RatingBar, Score, SearchBox, Stat, useTitle } from '@/components/kit';
+import { OverviewCourseRow } from '@/components/overview-course-row';
 import { norm } from './directory';
 
 const MIN_RESP = 100;
@@ -50,12 +51,14 @@ function recentCourseOfferings(records: EvalRecord[]): RecentCourseOffering[] {
 function ReviewedCoursesPanel({
   title,
   courses,
+  dataset,
   testIdPrefix,
   hasMore,
   onShowMore,
 }: {
   title: string;
   courses: Group[];
+  dataset: Dataset;
   testIdPrefix: string;
   hasMore: boolean;
   onShowMore: () => void;
@@ -66,46 +69,9 @@ function ReviewedCoursesPanel({
         <h2 className="font-display text-2xl">{title}</h2>
       </div>
       <ul>
-        {courses.map((course, index) => {
-          const courseLabels = course.courseLabels ?? [];
-          const nonLlmLabels = courseLabels.filter((label) => label !== 'LLM');
-          return (
-            <li key={course.slug}>
-              <Link
-                href={`/courses/${course.slug}`}
-                className="flex items-center gap-3 px-5 py-2.5 border-t hover:bg-secondary/60 transition-colors"
-                data-testid={`link-course-${testIdPrefix}${course.slug}`}
-              >
-                <span className="num w-5 shrink-0 text-right text-xs text-muted-foreground">{index + 1}</span>
-                <span className="flex-1 min-w-0">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span className="min-w-0 truncate font-medium">{course.label}</span>
-                    {courseLabels.includes('LLM') && (
-                      <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">LLM</span>
-                    )}
-                  </span>
-                  {nonLlmLabels.length > 0 ? (
-                  <span className="mt-1 flex flex-wrap gap-1">
-                    {nonLlmLabels.map((label) => (
-                      <span key={label} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
-                    ))}
-                  </span>
-                ) : null}
-                  <span
-                    className="num block text-xs text-muted-foreground"
-                    data-testid={`text-${testIdPrefix}course-reviews-${course.slug}`}
-                  >
-                    {fmtInt(course.totalResponded)} student reviews
-                  </span>
-                  <span className="num block text-xs text-muted-foreground">
-                    {course.records.length} offerings · {new Set(course.records.map((record) => record.professor)).size} instructors
-                  </span>
-                </span>
-                <Score v={course.metrics[5].avg} size="sm" />
-              </Link>
-            </li>
-          );
-        })}
+        {courses.map((course, index) => (
+          <OverviewCourseRow key={course.slug} course={course} dataset={dataset} rank={index + 1} testIdPrefix={testIdPrefix} />
+        ))}
       </ul>
       {hasMore && (
         <div className="border-t">
@@ -346,6 +312,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
         <ReviewedCoursesPanel
           title="Most reviewed upperclassman courses"
           courses={visibleUpperclassmanCourses}
+          dataset={ds}
           testIdPrefix="upperclassman-"
           hasMore={upperclassmanVisibleCount < mostReviewedUpperclassman.length}
           onShowMore={() => setUpperclassmanVisibleCount((count) => count + 10)}
