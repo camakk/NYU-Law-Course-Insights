@@ -98,7 +98,7 @@ function ReviewedCoursesPanel({
         ))}
       </ul>
       {hasMore && (
-        <div className="flex justify-end border-t px-5 py-3">
+        <div className="flex justify-center border-t px-5 py-3">
           <ShowMoreButton onClick={onShowMore} testId={`button-show-more-${testIdPrefix}courses`} />
         </div>
       )}
@@ -111,7 +111,7 @@ function ShowMoreButton({ onClick, testId }: { onClick: () => void; testId: stri
     <button
       type="button"
       onClick={onClick}
-      className="text-sm font-medium text-primary transition duration-150 hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      className="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       data-testid={testId}
     >
       Show More
@@ -325,7 +325,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
             })}
           </ol>
           {teacherVisibleCount < top.length && (
-            <div className="mt-3 flex justify-end border-t pt-3">
+            <div className="mt-3 flex justify-center border-t pt-3">
               <ShowMoreButton
                 onClick={() => setTeacherVisibleCount((count) => count + 10)}
                 testId="button-show-more-teachers"
