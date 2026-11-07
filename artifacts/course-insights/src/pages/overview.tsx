@@ -149,6 +149,14 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     .filter((course) => course.courseCategories?.includes('Course') && !course.records.some((record) => record.is1LCourse))
     .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
     .slice(0, 10), [ds]);
+  const categoryCounts = useMemo(() => ({
+    seminars: ds.courses.filter((course) =>
+      course.courseCategories?.some((category) => category === 'Seminar' || category === 'Colloquium'),
+    ).length,
+    clinics: ds.courses.filter((course) =>
+      course.courseCategories?.some((category) => category === 'Clinic' || category === 'Externship'),
+    ).length,
+  }), [ds]);
   const usable = ds.records.filter((r) => !r.inaccessible && (r.responded ?? 0) > 0).length;
 
   return (
@@ -166,8 +174,8 @@ function OverviewInner({ ds }: { ds: Dataset }) {
             value={fmtInt(ds.professors.length)}
             sub={`${fmtInt(recentProfessorCount)} taught in the last three years`}
           />
-          <Stat label="Course titles" value={fmtInt(ds.courses.length)} />
-          <Stat label="Semesters" value={ds.semesters.length} />
+          <Stat label="Seminars" value={fmtInt(categoryCounts.seminars)} />
+          <Stat label="Clinics" value={fmtInt(categoryCounts.clinics)} />
         </div>
       </section>
 
