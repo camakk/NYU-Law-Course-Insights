@@ -82,7 +82,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
       recentCourses: recentCourseOfferings(g.records),
     }))
     .sort((a, b) => b.value - a.value || a.group.label.localeCompare(b.group.label))
-    .slice(0, 30), [ds]);
+    .slice(0, 10), [ds]);
   const mostReviewed = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course'))
     .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
@@ -175,7 +175,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                       <div className="justify-self-end text-right">
                         <RatingBar rating={value} label={`${group.label} overall teaching rating`} testId={`rating-teacher-${group.slug}`} />
                         <p className="mt-0.5 w-60 text-right text-xs text-muted-foreground" data-testid={`text-professor-reviews-${group.slug}`}>
-                          <span className="num text-foreground">{fmtInt(group.totalResponded)}</span> total reviews
+                          <span className="num text-foreground">{fmtInt(group.totalResponded)}</span> student reviews all-time
                         </p>
                       </div>
                     </div>
