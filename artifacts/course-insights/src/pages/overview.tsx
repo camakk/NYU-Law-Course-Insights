@@ -1,15 +1,40 @@
 import { useMemo, useState } from 'react';
-import { Link, useLocation } from 'wouter';
-import { ArrowRight } from 'lucide-react';
-import { fmtInt, useDataset, type Dataset } from '@/lib/data';
-import { PageError, PageLoading, RankBars, Score, SearchBox, Stat, useTitle } from '@/components/kit';
+import { Link } from 'wouter';
+import { ArrowRight, ChevronDown } from 'lucide-react';
+import { aggregate, bySemesterDesc, fmtInt, useDataset, type Dataset, type EvalRecord } from '@/lib/data';
+import { PageError, PageLoading, Score, SearchBox, Stat, useTitle } from '@/components/kit';
 import { norm } from './directory';
 
 const MIN_RESP = 100;
 
+interface RecentCourseOffering {
+  course: string;
+  semester: string;
+  rating: number | null;
+}
+
+function recentCourseOfferings(records: EvalRecord[]): RecentCourseOffering[] {
+  const byOffering = new Map<string, EvalRecord[]>();
+  for (const record of records) {
+    const key = `${record.course}\u0000${record.semester}`;
+    const offeringRecords = byOffering.get(key) ?? [];
+    offeringRecords.push(record);
+    byOffering.set(key, offeringRecords);
+  }
+
+  return [...byOffering.values()]
+    .map((offeringRecords) => ({
+      course: offeringRecords[0].course,
+      semester: offeringRecords[0].semester || 'Semester unavailable',
+      rating: aggregate(offeringRecords, 5).avg,
+    }))
+    .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.course.localeCompare(b.course))
+    .slice(0, 5);
+}
+
 function OverviewInner({ ds }: { ds: Dataset }) {
   const [q, setQ] = useState('');
-  const [, navigate] = useLocation();
+  const [expandedProfessor, setExpandedProfessor] = useState<string | null>(null);
   const hits = useMemo(() => {
     const t = norm(q).split(' ').filter(Boolean);
     if (!t.length) return null;
@@ -18,9 +43,15 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     const c = ds.courses.filter((g) => f(g.label));
     return { p, c };
   }, [q, ds]);
-  const top = useMemo(() => ds.professors.filter((g) => g.metrics[5].avg != null && g.metrics[5].responses >= MIN_RESP)
-    .sort((a, b) => b.metrics[5].avg! - a.metrics[5].avg!).slice(0, 12)
-    .map((g) => ({ name: g.label, value: g.metrics[5].avg!, responses: g.metrics[5].responses, offerings: g.metrics[5].offerings, href: `/professors/${g.slug}` })), [ds]);
+  const top = useMemo(() => ds.professors
+    .filter((g) => g.metrics[5].avg != null && g.metrics[5].responses >= MIN_RESP)
+    .map((g) => ({
+      group: g,
+      value: g.metrics[5].avg!,
+      recentCourses: recentCourseOfferings(g.records),
+    }))
+    .sort((a, b) => b.value - a.value || a.group.label.localeCompare(b.group.label))
+    .slice(0, 12), [ds]);
   const busiest = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course'))
     .sort((a, b) => b.records.length - a.records.length)
@@ -75,7 +106,67 @@ function OverviewInner({ ds }: { ds: Dataset }) {
             <Link href="/professors" className="text-sm text-primary inline-flex items-center gap-1 hover:gap-2 transition-all">Full ranking <ArrowRight className="h-4 w-4" /></Link>
           </div>
           <p className="text-xs text-muted-foreground mb-4">Response-weighted "Overall this professor was effective," all courses, at least {MIN_RESP} offering-level responses.</p>
-          <RankBars data={top} metricLabel="Overall this professor was effective" onSelect={(d) => d.href && navigate(d.href)} />
+          <ol className="divide-y" data-testid="list-most-effective-teachers">
+            {top.map(({ group, value, recentCourses }, index) => {
+              const isExpanded = expandedProfessor === group.slug;
+              const latest = recentCourses[0];
+              const coursesId = `recent-courses-${group.slug}`;
+              return (
+                <li key={group.slug} className="py-3 first:border-t-0" data-testid={`teacher-row-${group.slug}`}>
+                  <div className="flex items-start gap-3">
+                    <span className="num text-xs text-muted-foreground pt-1.5 w-5 shrink-0 text-right">{index + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedProfessor(isExpanded ? null : group.slug)}
+                          aria-expanded={isExpanded}
+                          aria-controls={coursesId}
+                          aria-label={`${isExpanded ? 'Hide' : 'Show'} five most recent courses for ${group.label}`}
+                          data-testid={`button-expand-teacher-${group.slug}`}
+                          className="inline-flex min-w-0 items-center gap-1.5 text-left font-medium hover:text-primary transition-colors"
+                        >
+                          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                          <span className="truncate">{group.label}</span>
+                        </button>
+                        <Link href={`/professors/${group.slug}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline" data-testid={`link-teacher-profile-${group.slug}`}>
+                          Profile <ArrowRight className="h-3 w-3" />
+                        </Link>
+                        <Score v={value} size="sm" />
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground" data-testid={`text-latest-course-${group.slug}`}>
+                        {latest
+                          ? <>Most recent: <span className="text-foreground">{latest.course}</span> · {latest.semester}</>
+                          : 'No course history available.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div id={coursesId} hidden={!isExpanded} className="ml-8 mt-3 rounded-lg bg-secondary/40 px-3 py-2.5">
+                    <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Five most recent course offerings
+                    </h3>
+                    {recentCourses.length ? (
+                      <ul className="divide-y divide-border/70" data-testid={`list-recent-courses-${group.slug}`}>
+                        {recentCourses.map((offering) => (
+                          <li key={`${offering.course}-${offering.semester}`} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 first:pt-1">
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm">{offering.course}</span>
+                              <span className="block text-xs text-muted-foreground">{offering.semester}</span>
+                            </span>
+                            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              Overall rating <Score v={offering.rating} size="sm" />
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No recent course offerings available.</p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
         </div>
         <div className="bg-card border rounded-xl">
           <div className="p-5 pb-3 flex items-baseline justify-between">
