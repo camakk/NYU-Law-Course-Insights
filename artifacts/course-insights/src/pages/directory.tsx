@@ -21,33 +21,6 @@ function matches(g: Group, terms: string[], kind: Kind, records = g.records) {
   return terms.every((t) => hay.includes(t) || other.includes(t));
 }
 
-function MinimumFilter({ label, value, onChange, id }: {
-  label: string; value: string; onChange: (value: string) => void;
-  id: string;
-}) {
-  return (
-    <label htmlFor={id} className="flex flex-col gap-1.5 text-xs text-muted-foreground">
-      {label}
-      <input
-        id={id}
-        data-testid={id}
-        type="number"
-        min={0}
-        value={value}
-        placeholder="No minimum"
-        onChange={(event) => {
-          const raw = event.target.value;
-          if (raw === '') { onChange(''); return; }
-          const n = Number(raw);
-          if (!Number.isFinite(n)) return;
-          onChange(String(Math.max(0, Math.floor(n))));
-        }}
-        className="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-      />
-    </label>
-  );
-}
-
 function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatValue, minLabel, maxLabel }: {
   label: string;
   value: string;
@@ -131,18 +104,16 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [sem, setSem] = useState('all');
   const [sort, setSort] = useState<SortKey>('rating');
   const [limit, setLimit] = useState(100);
-  const [minPartners, setMinPartners] = useState('');
   const [minOfferings, setMinOfferings] = useState('1');
-  const [minResponses, setMinResponses] = useState(kind === 'professors' ? '50' : '');
+  const [minResponses, setMinResponses] = useState('50');
   const [minScore, setMinScore] = useState('');
   const [maxScore, setMaxScore] = useState('');
   const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>([...COURSE_CATEGORIES]);
   const metricIdx = kind === 'professors' ? 5 : 8;
   const groupsForKind = kind === 'professors' ? ds.professors : ds.courses;
   const maxOfferings = Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
-  const maxReviews = Math.max(100, ...groupsForKind.map((group) => group.metrics[metricIdx].responses + 100));
+  const maxReviews = kind === 'courses' ? 500 : Math.max(100, ...groupsForKind.map((group) => group.metrics[metricIdx].responses + 100));
   const hasFilters = q !== '' || sem !== 'all' ||
-    (kind === 'courses' && minPartners !== '') ||
     (minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||
     (minScore !== '' && Number(minScore) > 0) ||
@@ -155,7 +126,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const clearFilters = () => {
     setQ('');
     setSem('all');
-    setMinPartners('');
     setMinOfferings('1');
     setMinResponses('');
     setMinScore('');
@@ -205,7 +175,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         return { g, m, teach, offerings: recs.length, partners, latest: recs[0]?.semester ?? '', recent };
       })
       .filter((r) =>
-        r.partners >= Number(minPartners) &&
         r.offerings >= Number(minOfferings) &&
         r.m.responses >= Number(minResponses) &&
         (Number(minScore) === 0 || (r.m.avg !== null && r.m.avg >= Number(minScore))) &&
@@ -223,7 +192,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       }
     });
     return out;
-  }, [ds, kind, q, sem, sort, metricIdx, minPartners, minOfferings, minResponses, minScore, maxScore, includedCategories]);
+  }, [ds, kind, q, sem, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories]);
 
   const isProf = kind === 'professors';
   const total = isProf ? ds.professors.length : ds.courses.length;
@@ -259,15 +228,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
 
       <fieldset className="mb-6 rounded-xl border bg-card px-4 pb-4">
         <legend className="px-2 text-sm font-semibold">Filter</legend>
-        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isProf ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4 mt-1`}>
-          {!isProf && (
-            <MinimumFilter
-              label="Minimum professors"
-              value={minPartners}
-              onChange={updateMinimum(setMinPartners)}
-              id="filter-min-professors"
-            />
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
           <RangeFilter
             label={isProf ? 'Minimum times taught' : 'Minimum class offerings'}
             value={minOfferings}
