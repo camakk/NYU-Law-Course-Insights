@@ -30,15 +30,16 @@ paths:
     get:
       operationId: listExamFeedback
       tags: [exam-feedback]
-      summary: List feedback for one professor and course
+      summary: List recent feedback or feedback for one professor and course
+      description: Omit both professor and course to list recent public comments; provide both to filter to a pairing.
       parameters:
         - name: professor
           in: query
-          required: true
+          required: false
           schema: { type: string, minLength: 1, maxLength: 200 }
         - name: course
           in: query
-          required: true
+          required: false
           schema: { type: string, minLength: 1, maxLength: 300 }
         - name: limit
           in: query
@@ -52,7 +53,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExamFeedbackSummary"
         "400":
-          description: Invalid professor or course
+          description: Invalid query or only one of professor and course was provided
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }

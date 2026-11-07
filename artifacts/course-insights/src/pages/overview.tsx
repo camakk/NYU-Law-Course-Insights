@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { aggregate, bySemesterDesc, fmtInt, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
+import { ratingBarColor } from '@/lib/rating-color';
 import { PageError, PageLoading, Score, SearchBox, Stat, useTitle } from '@/components/kit';
 import { norm } from './directory';
 
@@ -40,7 +41,7 @@ function RatingBar({ rating, label, testId }: { rating: number | null; label: st
         aria-valuetext={`${rating.toFixed(2)} out of 5`}
         className="h-2 flex-1 overflow-hidden rounded-full bg-muted-foreground/25"
       >
-        <span className="block h-full rounded-full bg-primary" style={{ width }} />
+        <span className="block h-full rounded-full" style={{ width, backgroundColor: ratingBarColor(rating) }} />
         </span>
         <span className="num w-16 text-right text-xs font-medium tabular-nums">{rating.toFixed(2)} / 5</span>
       </div>
