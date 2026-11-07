@@ -6,6 +6,15 @@ import { PageError, PageLoading, Score, SearchBox, Stat, useTitle } from '@/comp
 import { norm } from './directory';
 
 const MIN_RESP = 100;
+const RECENT_TEACHING_SEMESTERS = new Set([
+  'Fall 2023',
+  'Spring 2024',
+  'Fall 2024',
+  'Spring 2025',
+  'Fall 2025',
+  'Spring 2026',
+  'Fall 2026',
+]);
 
 interface RecentCourseOffering {
   course: string;
@@ -126,6 +135,9 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     }))
     .sort((a, b) => b.value - a.value || a.group.label.localeCompare(b.group.label))
     .slice(0, 10), [ds]);
+  const recentProfessorCount = useMemo(() => ds.professors
+    .filter((professor) => professor.records.some((record) => RECENT_TEACHING_SEMESTERS.has(record.semester)))
+    .length, [ds]);
   const mostReviewedUpperclassman = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course') && !course.records.some((record) => record.is1LCourse))
     .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
@@ -142,7 +154,11 @@ function OverviewInner({ ds }: { ds: Dataset }) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Stat label="Unique Course Offerings" value={fmtInt(ds.records.length)} sub={`${fmtInt(usable)} with responses`} />
-          <Stat label="NYU Law Professors Reviewed" value={fmtInt(ds.professors.length)} />
+          <Stat
+            label="NYU Law Professors Reviewed"
+            value={fmtInt(ds.professors.length)}
+            sub={`${fmtInt(recentProfessorCount)} taught in the last three years`}
+          />
           <Stat label="Course titles" value={fmtInt(ds.courses.length)} />
           <Stat label="Semesters" value={ds.semesters.length} />
         </div>
