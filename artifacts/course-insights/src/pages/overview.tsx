@@ -35,9 +35,6 @@ function RatingBar({ rating, label, testId }: { rating: number | null; label: st
         </span>
         <span className="num w-16 text-right text-xs font-medium tabular-nums">{rating.toFixed(2)} / 5</span>
       </div>
-      <div className="mt-0.5 flex w-[calc(100%-4.5rem)] justify-end text-[9px] leading-none text-muted-foreground" aria-hidden="true">
-        <span>5.00</span>
-      </div>
     </div>
   );
 }
@@ -174,12 +171,12 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                             {isExpanded ? 'Collapse' : 'Expand'}
                           </button>
                         </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground" data-testid={`text-professor-reviews-${group.slug}`}>
-                          Total student reviews: <span className="num text-foreground">{fmtInt(group.totalResponded)}</span>
-                        </p>
                       </div>
-                      <div className="justify-self-end">
+                      <div className="justify-self-end text-right">
                         <RatingBar rating={value} label={`${group.label} overall teaching rating`} testId={`rating-teacher-${group.slug}`} />
+                        <p className="mt-0.5 w-60 text-right text-xs text-muted-foreground" data-testid={`text-professor-reviews-${group.slug}`}>
+                          <span className="num text-foreground">{fmtInt(group.totalResponded)}</span> total reviews
+                        </p>
                       </div>
                     </div>
                   </div>
