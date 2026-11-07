@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { aggregate, bySemesterDesc, fmtInt, useDataset, type Dataset, type EvalRecord } from '@/lib/data';
+import { aggregate, bySemesterDesc, fmtInt, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { PageError, PageLoading, Score, SearchBox, Stat, useTitle } from '@/components/kit';
 import { norm } from './directory';
 
@@ -63,6 +63,56 @@ function recentCourseOfferings(records: EvalRecord[]): RecentCourseOffering[] {
     .slice(0, 5);
 }
 
+function ReviewedCoursesPanel({
+  title,
+  courses,
+  testIdPrefix,
+  showAllLink = false,
+}: {
+  title: string;
+  courses: Group[];
+  testIdPrefix: string;
+  showAllLink?: boolean;
+}) {
+  return (
+    <div className="bg-card border rounded-xl">
+      <div className="p-5 pb-3 flex items-baseline justify-between gap-4">
+        <h2 className="font-display text-2xl">{title}</h2>
+        {showAllLink && (
+          <Link href="/courses" className="shrink-0 text-sm text-primary inline-flex items-center gap-1 hover:gap-2 transition-all">
+            All courses <ArrowRight className="h-4 w-4" />
+          </Link>
+        )}
+      </div>
+      <ul>
+        {courses.map((course) => (
+          <li key={course.slug}>
+            <Link
+              href={`/courses/${course.slug}`}
+              className="flex items-center gap-3 px-5 py-2.5 border-t hover:bg-secondary/60 transition-colors"
+              data-testid={`link-course-${testIdPrefix}${course.slug}`}
+            >
+              <span className="flex-1 min-w-0">
+                <span className="block truncate font-medium">{course.label}</span>
+                <span
+                  className="num block text-xs text-muted-foreground"
+                  data-testid={`text-${testIdPrefix}course-reviews-${course.slug}`}
+                >
+                  {fmtInt(course.totalResponded)} student reviews
+                </span>
+                <span className="num block text-xs text-muted-foreground">
+                  {course.records.length} offerings · {new Set(course.records.map((record) => record.professor)).size} instructors
+                </span>
+              </span>
+              <Score v={course.metrics[5].avg} size="sm" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function OverviewInner({ ds }: { ds: Dataset }) {
   const [q, setQ] = useState('');
   const [expandedProfessor, setExpandedProfessor] = useState<string | null>(null);
@@ -85,6 +135,14 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     .slice(0, 10), [ds]);
   const mostReviewed = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course'))
+    .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
+    .slice(0, 30), [ds]);
+  const mostReviewedUpperclassman = useMemo(() => ds.courses
+    .filter((course) => course.courseCategories?.includes('Course') && !course.records.some((record) => record.is1LCourse))
+    .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
+    .slice(0, 30), [ds]);
+  const mostReviewed1L = useMemo(() => ds.courses
+    .filter((course) => course.courseCategories?.includes('Course') && course.records.some((record) => record.is1LCourse))
     .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
     .slice(0, 30), [ds]);
   const usable = ds.records.filter((r) => !r.inaccessible && (r.responded ?? 0) > 0).length;
@@ -211,24 +269,20 @@ function OverviewInner({ ds }: { ds: Dataset }) {
             })}
           </ol>
         </div>
-        <div className="bg-card border rounded-xl">
-          <div className="p-5 pb-3 flex items-baseline justify-between">
-            <h2 className="font-display text-2xl">Most reviewed courses</h2>
-            <Link href="/courses" className="text-sm text-primary inline-flex items-center gap-1 hover:gap-2 transition-all">All courses <ArrowRight className="h-4 w-4" /></Link>
-          </div>
-          <ul>
-            {mostReviewed.map((c) => (
-              <li key={c.slug}>
-                <Link href={`/courses/${c.slug}`} className="flex items-center gap-3 px-5 py-2.5 border-t hover:bg-secondary/60 transition-colors" data-testid={`link-course-${c.slug}`}>
-                  <span className="flex-1 min-w-0"><span className="block truncate font-medium">{c.label}</span>
-                    <span className="num block text-xs text-muted-foreground" data-testid={`text-course-reviews-${c.slug}`}>{fmtInt(c.totalResponded)} student reviews</span>
-                    <span className="num block text-xs text-muted-foreground">{c.records.length} offerings · {new Set(c.records.map((r) => r.professor)).size} instructors</span></span>
-                  <Score v={c.metrics[5].avg} size="sm" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ReviewedCoursesPanel title="Most reviewed courses" courses={mostReviewed} testIdPrefix="" showAllLink />
+      </section>
+
+      <section className="mt-6 grid lg:grid-cols-[1.3fr_1fr] gap-6">
+        <ReviewedCoursesPanel
+          title="Most reviewed upperclassman courses"
+          courses={mostReviewedUpperclassman}
+          testIdPrefix="upperclassman-"
+        />
+        <ReviewedCoursesPanel
+          title="Most reviewed 1L courses"
+          courses={mostReviewed1L}
+          testIdPrefix="1l-"
+        />
       </section>
     </div>
   );
