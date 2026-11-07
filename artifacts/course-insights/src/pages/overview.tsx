@@ -79,11 +79,11 @@ function OverviewInner({ ds }: { ds: Dataset }) {
       recentCourses: recentCourseOfferings(g.records),
     }))
     .sort((a, b) => b.value - a.value || a.group.label.localeCompare(b.group.label))
-    .slice(0, 12), [ds]);
+    .slice(0, 30), [ds]);
   const busiest = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course'))
     .sort((a, b) => b.records.length - a.records.length)
-    .slice(0, 10), [ds]);
+    .slice(0, 30), [ds]);
   const usable = ds.records.filter((r) => !r.inaccessible && (r.responded ?? 0) > 0).length;
 
   return (
@@ -214,7 +214,8 @@ function OverviewInner({ ds }: { ds: Dataset }) {
               <li key={c.slug}>
                 <Link href={`/courses/${c.slug}`} className="flex items-center gap-3 px-5 py-2.5 border-t hover:bg-secondary/60 transition-colors" data-testid={`link-course-${c.slug}`}>
                   <span className="flex-1 min-w-0"><span className="block truncate font-medium">{c.label}</span>
-                    <span className="num text-xs text-muted-foreground">{c.records.length} offerings · {new Set(c.records.map((r) => r.professor)).size} instructors</span></span>
+                    <span className="num block text-xs text-muted-foreground">{c.records.length} offerings · {new Set(c.records.map((r) => r.professor)).size} instructors</span>
+                    <span className="num block text-xs text-muted-foreground" data-testid={`text-course-reviews-${c.slug}`}>{fmtInt(c.totalResponded)} student reviews</span></span>
                   <Score v={c.metrics[5].avg} size="sm" />
                 </Link>
               </li>
