@@ -51,10 +51,14 @@ function ReviewedCoursesPanel({
   title,
   courses,
   testIdPrefix,
+  hasMore,
+  onShowMore,
 }: {
   title: string;
   courses: Group[];
   testIdPrefix: string;
+  hasMore: boolean;
+  onShowMore: () => void;
 }) {
   return (
     <div className="bg-card border rounded-xl">
@@ -93,13 +97,33 @@ function ReviewedCoursesPanel({
           </li>
         ))}
       </ul>
+      {hasMore && (
+        <div className="flex justify-end border-t px-5 py-3">
+          <ShowMoreButton onClick={onShowMore} testId={`button-show-more-${testIdPrefix}courses`} />
+        </div>
+      )}
     </div>
+  );
+}
+
+function ShowMoreButton({ onClick, testId }: { onClick: () => void; testId: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-sm font-medium text-primary transition duration-150 hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      data-testid={testId}
+    >
+      Show More
+    </button>
   );
 }
 
 function OverviewInner({ ds }: { ds: Dataset }) {
   const [q, setQ] = useState('');
   const [expandedProfessor, setExpandedProfessor] = useState<string | null>(null);
+  const [teacherVisibleCount, setTeacherVisibleCount] = useState(10);
+  const [upperclassmanVisibleCount, setUpperclassmanVisibleCount] = useState(10);
   const hits = useMemo(() => {
     const t = norm(q).split(' ').filter(Boolean);
     if (!t.length) return null;
@@ -115,8 +139,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
       value: g.metrics[5].avg!,
       recentCourses: recentCourseOfferings(g.records),
     }))
-    .sort((a, b) => b.value - a.value || a.group.label.localeCompare(b.group.label))
-    .slice(0, 10), [ds]);
+    .sort((a, b) => b.value - a.value || a.group.label.localeCompare(b.group.label)), [ds]);
   const recentProfessorCount = useMemo(() => ds.professors
     .filter((professor) => professor.records.some((record) => RECENT_TEACHING_SEMESTERS.has(record.semester)))
     .length, [ds]);
@@ -130,8 +153,9 @@ function OverviewInner({ ds }: { ds: Dataset }) {
   ).length, [ds]);
   const mostReviewedUpperclassman = useMemo(() => ds.courses
     .filter((course) => course.courseCategories?.includes('Course') && !course.records.some((record) => record.is1LCourse))
-    .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label))
-    .slice(0, 10), [ds]);
+    .sort((a, b) => b.totalResponded - a.totalResponded || b.records.length - a.records.length || a.label.localeCompare(b.label)), [ds]);
+  const visibleTeachers = top.slice(0, teacherVisibleCount);
+  const visibleUpperclassmanCourses = mostReviewedUpperclassman.slice(0, upperclassmanVisibleCount);
   const categoryOfferings = useMemo(() => ({
     seminars: ds.records.filter((record) =>
       record.courseCategories.includes('Seminar') || record.courseCategories.includes('Colloquium'),
@@ -228,7 +252,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
           </div>
           <p className="text-xs text-muted-foreground mb-4">Response-weighted "Overall this professor was effective," all courses, at least {MIN_RESP} offering-level responses.</p>
           <ol className="divide-y" data-testid="list-most-effective-teachers">
-            {top.map(({ group, value, recentCourses }, index) => {
+            {visibleTeachers.map(({ group, value, recentCourses }, index) => {
               const isExpanded = expandedProfessor === group.slug;
               const latest = recentCourses[0];
               const coursesId = `recent-courses-${group.slug}`;
@@ -300,11 +324,21 @@ function OverviewInner({ ds }: { ds: Dataset }) {
               );
             })}
           </ol>
+          {teacherVisibleCount < top.length && (
+            <div className="mt-3 flex justify-end border-t pt-3">
+              <ShowMoreButton
+                onClick={() => setTeacherVisibleCount((count) => count + 10)}
+                testId="button-show-more-teachers"
+              />
+            </div>
+          )}
         </div>
         <ReviewedCoursesPanel
           title="Most reviewed upperclassman courses"
-          courses={mostReviewedUpperclassman}
+          courses={visibleUpperclassmanCourses}
           testIdPrefix="upperclassman-"
+          hasMore={upperclassmanVisibleCount < mostReviewedUpperclassman.length}
+          onShowMore={() => setUpperclassmanVisibleCount((count) => count + 10)}
         />
       </section>
     </div>
