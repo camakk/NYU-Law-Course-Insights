@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { fmt, fmtInt, LOW_SAMPLE, scoreTone } from '@/lib/data';
+import { ratingBarColor, ratingBarFillPercent } from '@/lib/rating-color';
 
 export function useTitle(t: string) {
   useEffect(() => {
@@ -76,6 +77,42 @@ export function Score({ v, size = 'md', testId }: { v: number | null; size?: 'sm
     >
       {fmt(v)}
     </span>
+  );
+}
+
+export function RatingBar({
+  rating,
+  label,
+  testId,
+  compact = false,
+}: {
+  rating: number | null;
+  label: string;
+  testId?: string;
+  compact?: boolean;
+}) {
+  const widthClass = compact ? 'w-32 max-w-full sm:w-36 xl:w-48' : 'w-60';
+  if (rating == null) {
+    return <div className={cn(widthClass, 'text-right num text-xs text-muted-foreground')} data-testid={testId}>N/A / 5</div>;
+  }
+  const width = `${ratingBarFillPercent(rating)}%`;
+  return (
+    <div className={cn('flex flex-col items-end', widthClass)} data-testid={testId}>
+      <div className="flex w-full items-center gap-2">
+        <span
+          role="meter"
+          aria-label={label}
+          aria-valuemin={0}
+          aria-valuemax={5}
+          aria-valuenow={rating}
+          aria-valuetext={`${rating.toFixed(2)} out of 5`}
+          className="h-2 flex-1 overflow-hidden rounded-full bg-muted-foreground/25"
+        >
+          <span className="block h-full rounded-full" style={{ width, backgroundColor: ratingBarColor(rating) }} />
+        </span>
+        <span className="num w-16 text-right text-xs font-medium tabular-nums">{rating.toFixed(2)} / 5</span>
+      </div>
+    </div>
   );
 }
 

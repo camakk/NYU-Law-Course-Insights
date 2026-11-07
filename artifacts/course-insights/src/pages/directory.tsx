@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
-import { Empty, LoadMore, LowSample, NativeSelect, PageError, PageLoading, Score, SearchBox, useTitle } from '@/components/kit';
+import { Empty, LoadMore, LowSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { Slider } from '@/components/ui/slider';
 
 type Kind = 'professors' | 'courses';
@@ -135,6 +135,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [minScore, setMinScore] = useState('');
   const [maxScore, setMaxScore] = useState('');
   const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>([...COURSE_CATEGORIES]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const metricIdx = kind === 'professors' ? 5 : 8;
   const groupsForKind = kind === 'professors' ? ds.professors : ds.courses;
   const maxOfferings = kind === 'professors'
@@ -254,70 +255,99 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </NativeSelect>
       </div>
 
-      <fieldset className="mb-6 rounded-xl border bg-card px-4 pb-4">
-        <legend className="px-2 text-sm font-semibold">Filter</legend>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
-          <RangeFilter
-            label={isProf ? 'Minimum times taught' : 'Minimum class offerings'}
-            value={minOfferings}
-            onChange={updateMinimum(setMinOfferings)}
-            min={1}
-            max={maxOfferings}
-            id="filter-min-offerings"
-            formatValue={(value) => `${fmtInt(value)}+`}
-            maxLabel={isProf ? '30+' : undefined}
-          />
-          <RangeFilter
-            label="Minimum reviews"
-            value={minResponses}
-            onChange={updateMinimum(setMinResponses)}
-            min={0}
-            max={maxReviews}
-            id="filter-min-responses"
-            formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
-            minLabel="No minimum"
-            maxLabel={`${fmtInt(maxReviews)}+`}
-            snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
-          />
-          <RangeBandFilter
-            label={isProf ? 'Teaching score' : 'Average Course Rating'}
-            minValue={minScore === '' ? 0 : Number(minScore)}
-            maxValue={maxScore === '' ? 5 : Number(maxScore)}
-            onChange={([minimum, maximum]) => {
-              setMinScore(minimum === 0 ? '' : minimum.toFixed(1));
-              setMaxScore(maximum === 5 ? '' : maximum.toFixed(1));
-              setLimit(100);
-            }}
-            id={isProf ? 'filter-score-range' : 'filter-course-rating-range'}
-          />
-        </div>
-        <div className="mt-4 border-t pt-4">
-          <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
-          <div role="group" aria-labelledby="course-category-filter-label" className="mt-2 flex flex-wrap gap-2">
-            {COURSE_CATEGORIES.map((category) => (
-              <label key={category} className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs transition hover:border-primary/60">
-                <input
-                  type="checkbox"
-                  checked={includedCategories.includes(category)}
-                  onChange={() => toggleCategory(category)}
-                  data-testid={`filter-category-${category.toLowerCase()}`}
-                  className="accent-primary"
-                />
-                {category}
-              </label>
-            ))}
+      <fieldset className={`mb-6 rounded-xl border bg-card px-4 ${isProf && !filtersOpen ? 'pb-1' : 'pb-4'}`}>
+        <legend className="px-2">
+          {isProf ? (
+            <button
+              type="button"
+              aria-expanded={filtersOpen}
+              aria-controls="professor-filter-controls"
+              onClick={() => setFiltersOpen((open) => !open)}
+              className="inline-flex items-center gap-2 py-1 text-sm font-semibold"
+              data-testid="button-toggle-professor-filters"
+            >
+              Filters
+              <ChevronDown className={`h-4 w-4 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+          ) : (
+            <span className="text-sm font-semibold">Filter</span>
+          )}
+        </legend>
+        <div
+          id={isProf ? 'professor-filter-controls' : 'course-filter-controls'}
+          hidden={isProf && !filtersOpen}
+          className="pt-1"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
+            <RangeFilter
+              label={isProf ? 'Minimum times taught' : 'Minimum class offerings'}
+              value={minOfferings}
+              onChange={updateMinimum(setMinOfferings)}
+              min={1}
+              max={maxOfferings}
+              id="filter-min-offerings"
+              formatValue={(value) => `${fmtInt(value)}+`}
+              maxLabel={isProf ? '30+' : undefined}
+            />
+            <RangeFilter
+              label="Minimum reviews"
+              value={minResponses}
+              onChange={updateMinimum(setMinResponses)}
+              min={0}
+              max={maxReviews}
+              id="filter-min-responses"
+              formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
+              minLabel="No minimum"
+              maxLabel={`${fmtInt(maxReviews)}+`}
+              snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
+            />
+            <RangeBandFilter
+              label={isProf ? 'Teaching score' : 'Average Course Rating'}
+              minValue={minScore === '' ? 0 : Number(minScore)}
+              maxValue={maxScore === '' ? 5 : Number(maxScore)}
+              onChange={([minimum, maximum]) => {
+                setMinScore(minimum === 0 ? '' : minimum.toFixed(1));
+                setMaxScore(maximum === 5 ? '' : maximum.toFixed(1));
+                setLimit(100);
+              }}
+              id={isProf ? 'filter-score-range' : 'filter-course-rating-range'}
+            />
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Uncheck a category to exclude those courses from the results. Categories are inferred from course titles; titles without a clear indicator are labeled Course.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-          <p className="text-xs text-muted-foreground max-w-3xl">
-            {isProf ? 'Courses taught counts distinct course titles; times taught counts individual sections, including repeats.' : 'Professors counts distinct instructors; offerings counts individual sections of each course.'}
-            {' '}Minimums include the selected value and apply within the selected semester. Review totals count student responses from offerings contributing to the displayed score.
-            {isProf && ' The Professors page defaults to a minimum of 50 reviews, so professors with fewer than 50 are hidden unless you change or clear the filter.'}
-          </p>
-          {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
+          <div className="mt-4 border-t pt-4">
+            <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
+            <div role="group" aria-labelledby="course-category-filter-label" className="mt-2 flex flex-wrap gap-2">
+              {COURSE_CATEGORIES.map((category) => (
+                <label key={category} className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs transition hover:border-primary/60">
+                  <input
+                    type="checkbox"
+                    checked={includedCategories.includes(category)}
+                    onChange={() => toggleCategory(category)}
+                    data-testid={`filter-category-${category.toLowerCase()}`}
+                    className="accent-primary"
+                  />
+                  {category}
+                </label>
+              ))}
+            </div>
+            {!isProf && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Uncheck a category to exclude those courses from the results. Categories are inferred from course titles; titles without a clear indicator are labeled Course.
+              </p>
+            )}
+          </div>
+          {!isProf && (
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+              <p className="text-xs text-muted-foreground max-w-3xl">
+                Professors counts distinct instructors; offerings counts individual sections of each course. Minimums include the selected value and apply within the selected semester. Review totals count student responses from offerings contributing to the displayed score.
+              </p>
+              {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
+            </div>
+          )}
+          {isProf && hasFilters && (
+            <div className="flex justify-end mt-3">
+              <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
+            </div>
+          )}
         </div>
       </fieldset>
 
@@ -326,9 +356,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       ) : (
         <>
           <div className="bg-card border rounded-xl overflow-hidden">
-            <div className="hidden md:grid md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem] gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40">
+            <div className={`${isProf
+              ? 'hidden xl:grid xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
+              : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem]'
+            } gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40`}>
               <span>#</span><span>{isProf ? 'Professor' : 'Course'}</span>
-              <span className="hidden lg:block">{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
+              <span className={isProf ? 'hidden xl:block' : 'hidden lg:block'}>{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
               <span className="text-right">{isProf ? 'Teaching' : 'Course'}</span>
               <span className="text-right">{isProf ? 'Courses' : 'Teaching'}</span>
               <span className="text-right">{isProf ? 'Times Taught' : 'Offerings'}</span><span className="text-right">Reviews</span><span />
@@ -338,7 +371,10 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 key={r.g.slug}
                 href={`/${kind}/${r.g.slug}`}
                 data-testid={`row-${kind}-${r.g.slug}`}
-                className="group grid grid-cols-[2rem_1fr_auto] md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem] gap-3 items-center px-4 py-3 border-b last:border-0 hover:bg-secondary/60 transition-colors"
+                className={`group grid grid-cols-[2rem_1fr_auto] ${isProf
+                  ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
+                  : 'md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem]'
+                } gap-3 items-center px-4 py-3 border-b last:border-0 hover:bg-secondary/60 transition-colors`}
               >
                 <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
                 <span className="min-w-0">
@@ -351,11 +387,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     {!isProf && r.g.courseLabels?.map((label) => (
                       <span key={`label-${label}`} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
                     ))}
-                    {isProf && <span className="md:hidden num">· {r.offerings} times taught</span>}
-                    <span className="md:hidden num">· {fmtInt(r.m.responses)} reviews</span>
+                    {isProf && <span className="xl:hidden num">· {r.offerings} times taught</span>}
+                    <span className={isProf ? 'xl:hidden num' : 'md:hidden num'}>· {fmtInt(r.m.responses)} reviews</span>
                     <LowSample responses={r.m.responses} />
                   </span>
-                  <span className="mt-1 block min-w-0 text-xs leading-5 text-muted-foreground lg:hidden">
+                  <span className={`mt-1 block min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:hidden' : 'lg:hidden'}`}>
                     <span className="block text-[10px] font-medium uppercase tracking-wide">
                       {isProf ? 'Recent courses' : 'Recent professors'}
                     </span>
@@ -366,7 +402,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     ))}
                   </span>
                 </span>
-                <span className="hidden min-w-0 text-xs leading-5 text-muted-foreground lg:block">
+                <span className={`hidden min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:block' : 'lg:block'}`}>
                   {r.recent.map((item) => (
                     <span key={`${item.label}-${item.semester}`} className="block truncate">
                       <span className="font-medium text-foreground/80">{item.label}</span>
@@ -374,11 +410,15 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     </span>
                   ))}
                 </span>
-                <span className="md:text-right"><Score v={r.m.avg} /></span>
-                <span className="hidden md:block text-right num text-sm">{isProf ? r.partners : r.teach ? <Score v={r.teach.avg} size="sm" /> : null}</span>
-                <span className="hidden md:block text-right num text-sm">{r.offerings}</span>
-                <span className="hidden md:block text-right num text-sm">{fmtInt(r.m.responses)}</span>
-                <ArrowUpRight className="hidden md:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition" />
+                <span className={isProf ? 'xl:justify-self-end' : 'md:text-right'}>
+                  {isProf
+                    ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />
+                    : <Score v={r.m.avg} />}
+                </span>
+                <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{isProf ? r.partners : r.teach ? <Score v={r.teach.avg} size="sm" /> : null}</span>
+                <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{r.offerings}</span>
+                <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{fmtInt(r.m.responses)}</span>
+                <ArrowUpRight className={isProf ? 'hidden xl:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition' : 'hidden md:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition'} />
               </Link>
             ))}
           </div>

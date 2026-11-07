@@ -17,3 +17,8 @@ export function ratingBarColor(rating: number): string {
   if (rating < 4.8) return blend(YELLOW, GREEN, (rating - 4) / 0.8);
   return '#22c55e';
 }
+
+export function ratingBarFillPercent(rating: number): number {
+  if (!Number.isFinite(rating)) return 10;
+  return Math.min(100, Math.max(10, ((rating - 3) / 2) * 100));
+}

@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { aggregate, bySemesterDesc, fmtInt, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
-import { ratingBarColor } from '@/lib/rating-color';
-import { PageError, PageLoading, Score, SearchBox, Stat, useTitle } from '@/components/kit';
+import { PageError, PageLoading, RatingBar, Score, SearchBox, Stat, useTitle } from '@/components/kit';
 import { norm } from './directory';
 
 const MIN_RESP = 100;
@@ -22,31 +21,6 @@ interface RecentCourseOffering {
   semester: string;
   rating: number | null;
   reviews: number;
-}
-
-function RatingBar({ rating, label, testId }: { rating: number | null; label: string; testId?: string }) {
-  if (rating == null) {
-    return <div className="w-60 text-right num text-xs text-muted-foreground" data-testid={testId}>N/A / 5</div>;
-  }
-  const width = `${Math.max(0, Math.min(100, (rating / 5) * 100))}%`;
-  return (
-    <div className="flex w-60 flex-col items-end" data-testid={testId}>
-      <div className="flex w-full items-center gap-2">
-        <span
-        role="meter"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={5}
-        aria-valuenow={rating}
-        aria-valuetext={`${rating.toFixed(2)} out of 5`}
-        className="h-2 flex-1 overflow-hidden rounded-full bg-muted-foreground/25"
-      >
-        <span className="block h-full rounded-full" style={{ width, backgroundColor: ratingBarColor(rating) }} />
-        </span>
-        <span className="num w-16 text-right text-xs font-medium tabular-nums">{rating.toFixed(2)} / 5</span>
-      </div>
-    </div>
-  );
 }
 
 function recentCourseOfferings(records: EvalRecord[]): RecentCourseOffering[] {
@@ -211,19 +185,33 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                 <div className="px-4 py-2.5 border-b text-[11px] uppercase tracking-wider text-muted-foreground flex justify-between"><span>{label}</span><span className="num">{list.length}</span></div>
                 {list.length === 0 ? <p className="p-4 text-sm text-muted-foreground">No matches.</p> : (
                   <ul className="max-h-80 overflow-y-auto">
-                    {list.map((g) => (
-                      <li key={g.slug}>
-                        <Link href={`/${kind}/${g.slug}`} className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-secondary/60 text-sm" data-testid={`link-result-${kind}-${g.slug}`}>
-                          <span className="flex min-w-0 items-center gap-2">
-                            <span className="truncate">{g.label}</span>
-                            {kind === 'courses' && g.courseLabels?.map((label) => (
-                              <span key={label} className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold">{label}</span>
-                            ))}
-                          </span>
-                          <Score v={g.metrics[kind === 'professors' ? 5 : 8].avg} size="sm" />
-                        </Link>
-                      </li>
-                    ))}
+                    {list.map((g) => {
+                      const mostRecentOffering = kind === 'professors'
+                        ? recentCourseOfferings(g.records)[0]
+                        : undefined;
+                      return (
+                        <li key={g.slug}>
+                          <Link href={`/${kind}/${g.slug}`} className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-secondary/60 text-sm" data-testid={`link-result-${kind}-${g.slug}`}>
+                            <span className="flex min-w-0 items-center gap-2">
+                              <span className={kind === 'professors' ? 'max-w-[45%] shrink-0 truncate' : 'truncate'}>{g.label}</span>
+                              {mostRecentOffering && (
+                                <span
+                                  className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+                                  data-testid={`text-search-professor-recent-${g.slug}`}
+                                  title={`${mostRecentOffering.course} · ${mostRecentOffering.semester}`}
+                                >
+                                  {mostRecentOffering.course} · {mostRecentOffering.semester}
+                                </span>
+                              )}
+                              {kind === 'courses' && g.courseLabels?.map((label) => (
+                                <span key={label} className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold">{label}</span>
+                              ))}
+                            </span>
+                            <Score v={g.metrics[kind === 'professors' ? 5 : 8].avg} size="sm" />
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
