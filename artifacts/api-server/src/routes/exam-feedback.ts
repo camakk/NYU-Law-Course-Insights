@@ -7,6 +7,7 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   isNotNull,
   notInArray,
   sql,
@@ -21,6 +22,10 @@ import {
   ReportExamFeedbackResponse,
 } from "@workspace/api-zod";
 import { db, examFeedbackReportsTable, examFeedbackTable } from "@workspace/db";
+import {
+  buildProfessorNameAliases,
+  type ProfessorNameAliases,
+} from "@workspace/professor-identity";
 
 const MAX_COMMENTS = 25;
 const REPORTS_TO_HIDE = 3;
@@ -28,7 +33,10 @@ const RATE_WINDOW_MS = 10 * 60 * 1000;
 const MAX_SUBMISSIONS_PER_WINDOW = 20;
 const submissionsByFingerprint = new Map<string, number[]>();
 
-function loadValidPairings(): Set<string> {
+function loadProfessorIdentity(): {
+  validPairings: Set<string>;
+  professorNames: ProfessorNameAliases;
+} {
   const candidates = [
     path.resolve(
       process.cwd(),
@@ -53,14 +61,28 @@ function loadValidPairings(): Set<string> {
   if (!Array.isArray(dataset.records)) {
     throw new Error("The evaluation source file is missing its records.");
   }
-  return new Set(
-    dataset.records
-      .filter((record) => record.professor && record.course)
-      .map((record) => `${record.professor}\u0000${record.course}`),
+  const records = dataset.records.filter(
+    (record): record is { professor: string; course: string } =>
+      Boolean(record.professor && record.course),
   );
+  const professorNames = buildProfessorNameAliases(
+    records.map((record) => record.professor),
+  );
+  const validPairings = new Set(
+    records.map((record) => {
+      const professor =
+        professorNames.canonicalByName.get(record.professor) ??
+        record.professor;
+      return `${professor}\u0000${record.course}`;
+    }),
+  );
+  return { validPairings, professorNames };
 }
 
-const validPairings = loadValidPairings();
+const {
+  validPairings,
+  professorNames: validProfessorNames,
+} = loadProfessorIdentity();
 
 function fingerprint(req: Request): string {
   const secret = process.env.SESSION_SECRET;
@@ -109,11 +131,24 @@ function isRateLimited(hash: string): boolean {
 export function createExamFeedbackRouter(
   database: typeof db = db,
   pairings: Set<string> = validPairings,
+  professorNames: ProfessorNameAliases = validProfessorNames,
 ): IRouter {
   const router: IRouter = Router();
 
+  function canonicalProfessorName(professor: string): string {
+    const trimmed = professor.trim();
+    return professorNames.canonicalByName.get(trimmed) ?? trimmed;
+  }
+
   function validPair(professor: string, course: string): boolean {
-    return pairings.has(`${professor.trim()}\u0000${course.trim()}`);
+    const trimmedProfessor = professor.trim();
+    const trimmedCourse = course.trim();
+    return (
+      pairings.has(
+        `${canonicalProfessorName(trimmedProfessor)}\u0000${trimmedCourse}`,
+      ) ||
+      pairings.has(`${trimmedProfessor}\u0000${trimmedCourse}`)
+    );
   }
 
   router.get("/exam-feedback", async (req, res): Promise<void> => {
@@ -123,7 +158,7 @@ export function createExamFeedbackRouter(
       return;
     }
 
-    const professor = params.data.professor.trim();
+    const professor = canonicalProfessorName(params.data.professor);
     const course = params.data.course.trim();
     if (!validPair(professor, course)) {
       res
@@ -132,8 +167,12 @@ export function createExamFeedbackRouter(
       return;
     }
 
+    const professorAliases = new Set([
+      professor,
+      ...(professorNames.aliasesByCanonical.get(professor) ?? []),
+    ]);
     const where = and(
-      eq(examFeedbackTable.professor, professor),
+      inArray(examFeedbackTable.professor, [...professorAliases]),
       eq(examFeedbackTable.course, course),
     );
     const hiddenIds = database
@@ -224,7 +263,7 @@ export function createExamFeedbackRouter(
       res.status(400).json({ error: "Feedback could not be submitted." });
       return;
     }
-    const professor = body.professor.trim();
+    const professor = canonicalProfessorName(body.professor);
     const course = body.course.trim();
     const comment = body.comment?.trim() || null;
     const grade = body.grade?.trim() || null;

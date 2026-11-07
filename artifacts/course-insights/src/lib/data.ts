@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { buildProfessorNameAliases } from '@workspace/professor-identity';
 
 export interface EvalRecord {
   id: number;
@@ -152,11 +153,24 @@ function buildGroups(records: EvalRecord[], key: 'professor' | 'course') {
 }
 
 export function buildDataset(raw: RawData): Dataset {
+  const professorNames = buildProfessorNameAliases(
+    (raw.records ?? []).map((record) => record.professor),
+  );
   const records = (raw.records ?? [])
     .filter((r) => r && r.course && r.professor)
-    .map((record) => ({ ...record, courseCategories: classifyCourse(record.course) }));
+    .map((record) => ({
+      ...record,
+      professor: professorNames.canonicalByName.get(record.professor) ?? record.professor,
+      courseCategories: classifyCourse(record.course),
+    }));
   const professors = buildGroups(records, 'professor');
   const courses = buildGroups(records, 'course');
+  const professorSlugByCanonicalName = new Map(professors.map((group) => [group.name, group.slug]));
+  const profSlugByName = new Map<string, string>();
+  for (const [name, canonical] of professorNames.canonicalByName) {
+    const slug = professorSlugByCanonicalName.get(canonical);
+    if (slug) profSlugByName.set(name, slug);
+  }
   return {
     questions: raw.questions ?? [],
     sourceNotes: raw.sourceNotes ?? [],
@@ -165,7 +179,7 @@ export function buildDataset(raw: RawData): Dataset {
     courses,
     profBySlug: new Map(professors.map((g) => [g.slug, g])),
     courseBySlug: new Map(courses.map((g) => [g.slug, g])),
-    profSlugByName: new Map(professors.map((g) => [g.name, g.slug])),
+    profSlugByName,
     courseSlugByName: new Map(courses.map((g) => [g.name, g.slug])),
     semesters: [...new Set(records.map((r) => r.semester).filter(Boolean))].sort(bySemesterDesc),
   };

@@ -5,6 +5,7 @@ import test from "node:test";
 import express from "express";
 import { newDb } from "pg-mem";
 import { drizzle } from "drizzle-orm/pg-proxy";
+import { buildProfessorNameAliases } from "@workspace/professor-identity";
 import { getExamCompletionLabel } from "../../../course-insights/src/lib/exam-completion-label.ts";
 
 process.env.DATABASE_URL ??= "postgres://test:test@localhost:5432/test";
@@ -20,6 +21,9 @@ const dataset = JSON.parse(
     "utf8",
   ),
 );
+const professorNames = buildProfessorNameAliases(
+  dataset.records.map((record) => record.professor).filter(Boolean),
+);
 const firstPair = dataset.records.find(
   (record) => record.professor && record.course,
 );
@@ -27,7 +31,30 @@ assert.ok(
   firstPair,
   "the evaluation dataset must include a valid professor/course pair",
 );
-const pairings = new Set([`${firstPair.professor}\u0000${firstPair.course}`]);
+const pairings = new Set(
+  dataset.records
+    .filter((record) => record.professor && record.course)
+    .map((record) => {
+      const professor =
+        professorNames.canonicalByName.get(record.professor) ??
+        record.professor;
+      return `${professor}\u0000${record.course}`;
+    }),
+);
+const randyAliasPair = dataset.records.find(
+  (record) =>
+    record.professor === "Hertz, Randy" &&
+    record.course &&
+    !dataset.records.some(
+      (other) =>
+        other.professor === "Hertz, Randy A" && other.course === record.course,
+    ),
+);
+assert.ok(randyAliasPair, "Randy Hertz should have a course unique to the alias");
+assert.equal(
+  professorNames.canonicalByName.get(randyAliasPair.professor),
+  "Hertz, Randy A",
+);
 
 test("legacy feedback keeps attendance labels and does not guess missing history", () => {
   assert.equal(
@@ -107,7 +134,8 @@ test("completion is required and finished states survive API create and fresh li
     VALUES
       (${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'Legacy took record', true, null, '2020-01-01T00:00:00Z'),
       (${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'Legacy did not take record', false, null, '2020-01-02T00:00:00Z'),
-      (${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'Legacy unknown record', null, null, '2020-01-03T00:00:00Z');
+      (${quoteSql(firstPair.professor)}, ${quoteSql(firstPair.course)}, 'Legacy unknown record', null, null, '2020-01-03T00:00:00Z'),
+      (${quoteSql(randyAliasPair.professor)}, ${quoteSql(randyAliasPair.course)}, 'Legacy professor alias record', true, null, '2020-01-04T00:00:00Z');
   `);
 
   const database = drizzle(async (query, params) => {
@@ -182,6 +210,39 @@ test("completion is required and finished states survive API create and fresh li
   );
   assert.equal(legacyComments.length, 3);
   assert.ok(legacyComments.every((comment) => comment.examCompleted === null));
+
+  const canonicalProfessor =
+    professorNames.canonicalByName.get(randyAliasPair.professor);
+  const aliasListUrl = `${baseUrl}/exam-feedback?professor=${encodeURIComponent(canonicalProfessor)}&course=${encodeURIComponent(randyAliasPair.course)}`;
+  const legacyAliasList = await fetch(aliasListUrl);
+  assert.equal(legacyAliasList.status, 200);
+  const legacyAliasSummary = await legacyAliasList.json();
+  assert.equal(legacyAliasSummary.comments.length, 1);
+  assert.equal(
+    legacyAliasSummary.comments[0].comment,
+    "Legacy professor alias record",
+  );
+
+  const groupedPost = await fetch(`${baseUrl}/exam-feedback`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      professor: canonicalProfessor,
+      course: randyAliasPair.course,
+      difficulty: 3,
+      comment: "A comment saved under the grouped professor name.",
+      examCompleted: true,
+      grade: null,
+    }),
+  });
+  assert.equal(groupedPost.status, 201);
+  const groupedAliasList = await fetch(aliasListUrl);
+  assert.equal(groupedAliasList.status, 200);
+  const groupedAliasSummary = await groupedAliasList.json();
+  assert.deepEqual(
+    new Set(groupedAliasSummary.comments.map((comment) => comment.professor)),
+    new Set([randyAliasPair.professor, canonicalProfessor]),
+  );
 });
 
 test("reports count distinct visitors once and hide a comment after three reports", async (t) => {

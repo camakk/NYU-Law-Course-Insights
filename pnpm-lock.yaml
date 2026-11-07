@@ -181,6 +181,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/professor-identity':
+        specifier: workspace:*
+        version: link:../../lib/professor-identity
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -232,6 +235,10 @@ importers:
         version: 4.23.15
 
   artifacts/course-insights:
+    dependencies:
+      '@workspace/professor-identity':
+        specifier: workspace:*
+        version: link:../../lib/professor-identity
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
@@ -648,6 +655,8 @@ importers:
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11
+
+  lib/professor-identity: {}
 
   scripts:
     devDependencies:
