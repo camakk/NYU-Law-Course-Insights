@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { PageError, PageLoading, useTitle } from '@/components/kit';
 import { useDataset } from '@/lib/data';
+import { getExamCompletionLabel } from '@/lib/exam-completion-label';
 
 const INITIAL_COMMENT_LIMIT = 25;
 
@@ -242,11 +243,7 @@ function CommentCard({
       </header>
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
         <span className="rounded-full bg-secondary px-3 py-1.5 font-medium" data-testid={`feedback-exam-completed-${feedback.id}`}>
-          {feedback.examCompleted != null
-            ? feedback.examCompleted ? 'Finished exam' : 'Did not finish exam'
-            : feedback.examTaken != null
-              ? feedback.examTaken ? 'Took exam' : 'Did not take exam'
-              : 'Exam completion not recorded'}
+          {getExamCompletionLabel(feedback)}
         </span>
         {feedback.grade && (
           <span className="rounded-full bg-secondary px-3 py-1.5 font-medium" data-testid={`feedback-grade-${feedback.id}`}>
