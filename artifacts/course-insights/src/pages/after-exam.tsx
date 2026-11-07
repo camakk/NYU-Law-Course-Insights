@@ -1,6 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Flag, LoaderCircle, MessageSquareText, Star } from 'lucide-react';
+import { AlertTriangle, Flag, LoaderCircle, MessageSquareText, Search, Star } from 'lucide-react';
 import {
   getListExamFeedbackQueryKey,
   useCreateExamFeedback,
@@ -24,6 +24,10 @@ const difficultyLabels: Record<number, string> = {
   5: 'Very hard',
 };
 
+function normalizeSearch(value: string) {
+  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 function FeedbackComposer({
   professor,
   course,
@@ -36,27 +40,36 @@ function FeedbackComposer({
   const queryClient = useQueryClient();
   const [difficulty, setDifficulty] = useState<number | null>(null);
   const [comment, setComment] = useState('');
+  const [examTaken, setExamTaken] = useState<boolean | null>(null);
+  const [grade, setGrade] = useState('');
   const mutation = useCreateExamFeedback({
     mutation: {
       onSuccess: async () => {
         setDifficulty(null);
         setComment('');
+        setExamTaken(null);
+        setGrade('');
         await queryClient.invalidateQueries({ queryKey: summaryQueryKey });
       },
     },
   });
   const cleanComment = comment.trim();
-  const valid = difficulty != null || cleanComment.length >= 10;
+  const cleanGrade = grade.trim();
+  const valid = examTaken != null &&
+    (difficulty != null || cleanComment.length >= 10) &&
+    (!cleanGrade || cleanComment.length >= 10);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!valid || mutation.isPending) return;
+    if (!valid || examTaken == null || mutation.isPending) return;
     mutation.mutate({
       data: {
         professor,
         course,
         difficulty,
         comment: cleanComment || null,
+        examTaken,
+        grade: cleanGrade || null,
         website: '',
       },
     });
@@ -67,8 +80,37 @@ function FeedbackComposer({
       <div>
         <div className="text-[11px] uppercase tracking-[0.2em] text-primary font-semibold">Your experience</div>
         <h2 className="font-display text-2xl mt-1">How difficult was the exam?</h2>
-        <p className="text-sm text-muted-foreground mt-1">Choose a difficulty from 1 to 5. You can also submit a comment on its own.</p>
+        <p className="text-sm text-muted-foreground mt-1">Tell us whether you took the exam. Then choose a difficulty, leave a comment, or both.</p>
       </div>
+
+      <fieldset>
+        <legend className="text-sm font-medium mb-2">
+          Did you take this exam? <span className="text-muted-foreground font-normal">(required)</span>
+        </legend>
+        <div className="flex flex-wrap gap-3">
+          {[
+            { value: true, label: 'Yes, I took it' },
+            { value: false, label: 'No, I did not' },
+          ].map((option) => (
+            <label
+              key={String(option.value)}
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${examTaken === option.value ? 'border-primary bg-primary/5' : 'bg-background hover:border-primary/60'}`}
+            >
+              <input
+                type="radio"
+                name="exam-taken"
+                value={String(option.value)}
+                required={option.value}
+                checked={examTaken === option.value}
+                onChange={() => setExamTaken(option.value)}
+                data-testid={`radio-exam-taken-${option.value}`}
+                className="accent-primary"
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset>
         <legend className="text-sm font-medium mb-2">Exam difficulty <span className="text-muted-foreground font-normal">(optional)</span></legend>
@@ -111,6 +153,25 @@ function FeedbackComposer({
         <span className="flex justify-between gap-3 text-xs text-muted-foreground">
           <span id="comment-guidance">A comment by itself must be at least 10 characters. Don’t include names, email addresses, or private exam questions.</span>
           <span className="shrink-0 num">{comment.length}/1,200</span>
+        </span>
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm font-medium">
+          Your grade <span className="text-muted-foreground font-normal">(optional)</span>
+        </span>
+        <input
+          type="text"
+          value={grade}
+          onChange={(event) => setGrade(event.target.value.slice(0, 30))}
+          maxLength={30}
+          placeholder="e.g., A−, B+, or Pass"
+          aria-describedby="grade-guidance"
+          data-testid="input-feedback-grade"
+          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+        />
+        <span id="grade-guidance" className="block text-xs text-muted-foreground">
+          Your grade is public with your anonymous comment. Add a comment of at least 10 characters to include it.
         </span>
       </label>
 
@@ -179,6 +240,16 @@ function CommentCard({
           </span>
         )}
       </header>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        <span className="rounded-full bg-secondary px-3 py-1.5 font-medium" data-testid={`feedback-exam-taken-${feedback.id}`}>
+          {feedback.examTaken == null ? 'Exam participation not recorded' : feedback.examTaken ? 'Took exam' : 'Did not take exam'}
+        </span>
+        {feedback.grade && (
+          <span className="rounded-full bg-secondary px-3 py-1.5 font-medium" data-testid={`feedback-grade-${feedback.id}`}>
+            Grade: {feedback.grade}
+          </span>
+        )}
+      </div>
       {feedback.comment && <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed">{feedback.comment}</p>}
       <footer className="mt-4 flex items-center justify-end border-t pt-3">
         <button
@@ -201,6 +272,8 @@ export default function AfterExamPage() {
   useTitle('After the exam');
   const { data: dataset, isLoading, error, refetch } = useDataset();
   const [selectedProfessor, setSelectedProfessor] = useState('');
+  const [professorSearch, setProfessorSearch] = useState('');
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [commentLimit, setCommentLimit] = useState(INITIAL_COMMENT_LIMIT);
   const [reportedIds, setReportedIds] = useState<Set<number>>(() => new Set());
@@ -210,6 +283,18 @@ export default function AfterExamPage() {
     const group = dataset?.profBySlug.get(dataset.profSlugByName.get(selectedProfessor) ?? '');
     return [...new Set(group?.records.map((record) => record.course) ?? [])].sort((a, b) => a.localeCompare(b));
   }, [dataset, selectedProfessor]);
+  const professorSuggestions = useMemo(() => {
+    const query = normalizeSearch(professorSearch);
+    if (!query) return [];
+    return (dataset?.professors ?? [])
+      .filter((professor) => normalizeSearch(`${professor.label} ${professor.name}`).includes(query))
+      .sort((a, b) => {
+        const aStarts = normalizeSearch(a.label).startsWith(query) ? 0 : 1;
+        const bStarts = normalizeSearch(b.label).startsWith(query) ? 0 : 1;
+        return aStarts - bStarts || a.label.localeCompare(b.label);
+      })
+      .slice(0, 8);
+  }, [dataset, professorSearch]);
 
   const params = selectedProfessor && selectedCourse
     ? { professor: selectedProfessor, course: selectedCourse, limit: commentLimit }
@@ -219,6 +304,34 @@ export default function AfterExamPage() {
     { query: { enabled: Boolean(params), staleTime: 60_000 } },
   );
   const reportMutation = useReportExamFeedback();
+
+  function chooseProfessor(professor: { name: string; label: string }) {
+    setSelectedProfessor(professor.name);
+    setProfessorSearch(professor.label);
+    setSelectedCourse('');
+    setCommentLimit(INITIAL_COMMENT_LIMIT);
+    setActiveSuggestionIndex(0);
+    setReportedIds(new Set());
+    setReportMessage('');
+  }
+
+  function handleProfessorSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (!professorSuggestions.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSuggestionIndex((index) => Math.min(index + 1, professorSuggestions.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSuggestionIndex((index) => Math.max(index - 1, 0));
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      chooseProfessor(professorSuggestions[activeSuggestionIndex] ?? professorSuggestions[0]);
+    } else if (event.key === 'Escape') {
+      setProfessorSearch('');
+      setSelectedProfessor('');
+      setSelectedCourse('');
+    }
+  }
 
   if (isLoading) return <PageLoading />;
   if (error || !dataset) return <PageError error={error} onRetry={() => refetch()} />;
@@ -249,11 +362,11 @@ export default function AfterExamPage() {
       <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">After the exam</div>
       <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">Share how the exam felt</h1>
       <p className="text-muted-foreground mt-3 max-w-3xl leading-relaxed">
-        Leave an anonymous difficulty rating, a comment, or both for a professor and course. Feedback is grouped across semesters for that specific professor–course pairing.
+        Leave an anonymous difficulty rating, a comment, or both for a professor and course. New posts include whether you took the exam; comments can include an optional grade.
       </p>
       <div className="mt-5 flex items-start gap-3 rounded-lg border border-accent/50 bg-accent/30 p-4 text-sm leading-relaxed">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent-foreground" />
-        <p>Posts are public immediately. Keep comments respectful and based on your own experience; don’t include personal details or private exam questions. Comments with three separate reports are hidden automatically.</p>
+        <p>Posts are public immediately. Your exam participation and any grade you include will appear with your anonymous post. Keep comments respectful and based on your own experience; don’t include personal details or private exam questions. Comments with three separate reports are hidden automatically.</p>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
         No account or display name is attached to a post. The app does not store raw IP addresses; it uses a one-way network fingerprint for short-term spam limits and to prevent repeat reports.
@@ -262,25 +375,70 @@ export default function AfterExamPage() {
       <section className="mt-8 rounded-xl border bg-card p-5 md:p-6">
         <h2 className="font-display text-2xl">Choose who and what to rate</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <label className="block space-y-2 text-sm font-medium">
-            <span>Professor</span>
-            <select
-              value={selectedProfessor}
-              onChange={(event) => {
-                setSelectedProfessor(event.target.value);
-                setSelectedCourse('');
-                setCommentLimit(INITIAL_COMMENT_LIMIT);
-                setReportMessage('');
-              }}
-              className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm font-normal outline-none focus:border-primary focus:ring-2 focus:ring-ring/20"
-              data-testid="select-feedback-professor"
-            >
-              <option value="">Choose a professor</option>
-              {dataset.professors.map((professor) => (
-                <option key={professor.slug} value={professor.name}>{professor.label}</option>
-              ))}
-            </select>
-          </label>
+          <div className="space-y-2 text-sm font-medium">
+            <label htmlFor="feedback-professor-search">Professor</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                id="feedback-professor-search"
+                type="search"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={!selectedProfessor && Boolean(professorSearch.trim())}
+                aria-controls="feedback-professor-suggestions"
+                aria-activedescendant={!selectedProfessor && professorSuggestions.length ? `feedback-professor-option-${activeSuggestionIndex}` : undefined}
+                aria-label="Search professors"
+                value={selectedProfessor
+                  ? dataset.professors.find((professor) => professor.name === selectedProfessor)?.label ?? selectedProfessor
+                  : professorSearch}
+                onChange={(event) => {
+                  setProfessorSearch(event.target.value);
+                  setSelectedProfessor('');
+                  setSelectedCourse('');
+                  setActiveSuggestionIndex(0);
+                  setCommentLimit(INITIAL_COMMENT_LIMIT);
+                  setReportedIds(new Set());
+                  setReportMessage('');
+                }}
+                onKeyDown={handleProfessorSearchKeyDown}
+                placeholder="Search professors by name"
+                autoComplete="off"
+                className="h-11 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-sm font-normal outline-none focus:border-primary focus:ring-2 focus:ring-ring/20"
+                data-testid="input-feedback-professor"
+              />
+              {!selectedProfessor && professorSearch.trim() && professorSuggestions.length > 0 && (
+                <ul
+                  id="feedback-professor-suggestions"
+                  role="listbox"
+                  aria-label="Matching professors"
+                  className="absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border bg-card p-1 shadow-lg"
+                >
+                  {professorSuggestions.map((professor, index) => (
+                    <li key={professor.slug}>
+                      <button
+                        id={`feedback-professor-option-${index}`}
+                        type="button"
+                        role="option"
+                        aria-selected={index === activeSuggestionIndex}
+                        tabIndex={-1}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onMouseEnter={() => setActiveSuggestionIndex(index)}
+                        onClick={() => chooseProfessor(professor)}
+                        className={`w-full rounded-md px-3 py-2 text-left text-sm font-normal ${index === activeSuggestionIndex ? 'bg-secondary text-foreground' : 'hover:bg-secondary/70'}`}
+                      >
+                        {professor.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!selectedProfessor && professorSearch.trim() && professorSuggestions.length === 0 && (
+                <p role="status" className="absolute inset-x-0 top-full z-20 mt-1 rounded-lg border bg-card p-3 text-sm font-normal text-muted-foreground shadow-lg">
+                  No matching professors found.
+                </p>
+              )}
+            </div>
+          </div>
           <label className="block space-y-2 text-sm font-medium">
             <span>Course</span>
             <select

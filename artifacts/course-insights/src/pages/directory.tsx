@@ -58,7 +58,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [limit, setLimit] = useState(100);
   const [minPartners, setMinPartners] = useState('');
   const [minOfferings, setMinOfferings] = useState('');
-  const [minResponses, setMinResponses] = useState('');
+  const [minResponses, setMinResponses] = useState(kind === 'professors' ? '50' : '');
   const [minScore, setMinScore] = useState('');
   const metricIdx = kind === 'professors' ? 5 : 8;
   const hasFilters = q !== '' || sem !== 'all' || [minPartners, minOfferings, minResponses, minScore].some((v) => v !== '');
@@ -156,6 +156,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <p className="text-xs text-muted-foreground max-w-3xl">
             {isProf ? 'Courses taught counts distinct course titles; offerings counts individual sections, including repeats.' : 'Professors counts distinct instructors; offerings counts individual sections of each course.'}
             {' '}Minimums include the selected value and apply within the selected semester. Rating responses count only offerings contributing to the displayed score.
+            {isProf && ' The Professors page defaults to a minimum of 50 rating responses, so professors with fewer than 50 are hidden unless you change or clear the filter.'}
           </p>
           {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
         </div>

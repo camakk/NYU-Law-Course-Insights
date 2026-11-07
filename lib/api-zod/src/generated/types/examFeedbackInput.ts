@@ -28,6 +28,12 @@ export interface ExamFeedbackInput {
      * @nullable
      */
   comment: string | null;
+  examTaken: boolean;
+  /**
+     * @maxLength 30
+     * @nullable
+     */
+  grade: string | null;
   /** @maxLength 300 */
   website?: string;
 }

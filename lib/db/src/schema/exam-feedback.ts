@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  boolean,
   integer,
   pgTable,
   serial,
@@ -18,6 +19,8 @@ export const examFeedbackTable = pgTable(
     course: varchar("course", { length: 300 }).notNull(),
     difficulty: integer("difficulty"),
     comment: text("comment"),
+    examTaken: boolean("exam_taken"),
+    grade: varchar("grade", { length: 30 }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

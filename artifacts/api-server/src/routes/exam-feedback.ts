@@ -194,9 +194,16 @@ router.post("/exam-feedback", async (req, res): Promise<void> => {
   const professor = body.professor.trim();
   const course = body.course.trim();
   const comment = body.comment?.trim() || null;
+  const grade = body.grade?.trim() || null;
   if (!professor || !course || (body.difficulty == null && (!comment || comment.length < 10))) {
     res.status(400).json({
       error: "Add a difficulty score or a comment of at least 10 characters.",
+    });
+    return;
+  }
+  if (grade && (!comment || comment.length < 10)) {
+    res.status(400).json({
+      error: "A grade can only be shared with a comment of at least 10 characters.",
     });
     return;
   }
@@ -224,6 +231,8 @@ router.post("/exam-feedback", async (req, res): Promise<void> => {
       course,
       difficulty: body.difficulty,
       comment,
+      examTaken: body.examTaken,
+      grade,
     })
     .returning({ id: examFeedbackTable.id });
   res.status(201).json(CreateExamFeedbackResponse.parse(created));

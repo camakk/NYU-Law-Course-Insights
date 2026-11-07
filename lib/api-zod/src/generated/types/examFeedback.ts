@@ -14,5 +14,9 @@ export interface ExamFeedback {
   difficulty: number | null;
   /** @nullable */
   comment: string | null;
+  /** @nullable */
+  examTaken: boolean | null;
+  /** @nullable */
+  grade: string | null;
   createdAt: Date;
 }
