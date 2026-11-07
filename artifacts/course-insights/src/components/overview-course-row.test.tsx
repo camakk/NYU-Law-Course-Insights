@@ -43,7 +43,7 @@ describe('Overview course expansion', () => {
     ]);
     expect(within(entries[0]).getByRole('meter').getAttribute('aria-valuenow')).toBe('4.8');
     expect(within(entries[0]).getByText('2 reviews · 1 rated offering')).toBeTruthy();
-    expect(within(entries[0]).getByText('low sample')).toBeTruthy();
+    expect(within(entries[0]).getByText('Small Sample')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }));
     expect(panel.hidden).toBe(true);
     expect(window.location.pathname).toBe('/');

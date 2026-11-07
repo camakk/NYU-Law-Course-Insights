@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
 import { ChevronLeft } from 'lucide-react';
-import { aggregate, fmt, fmtInt, rankBy, shortQ, useDataset, type Dataset, type Group } from '@/lib/data';
-import { Empty, LowSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RankBars, Score, Stat, useTitle } from '@/components/kit';
+import { aggregate, fmt, fmtInt, rankBy, shortQ, SMALL_SAMPLE, useDataset, type Dataset, type Group } from '@/lib/data';
+import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RankBars, Score, Stat, useTitle } from '@/components/kit';
 import { cn } from '@/lib/utils';
 
 function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
@@ -58,7 +58,7 @@ function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
       <section className="grid lg:grid-cols-[1.1fr_1fr] gap-6 mb-10">
         <div className="bg-card border rounded-xl p-4">
           <h2 className="font-display text-xl">Instructor comparison</h2>
-          <p className="text-xs text-muted-foreground mb-3">{qs[metric]} · amber bars are low sample · click to open profile</p>
+          <p className="text-xs text-muted-foreground mb-3">{qs[metric]} · amber bars indicate Small Sample (fewer than {SMALL_SAMPLE} reviews) · click to open profile</p>
           {chart.length ? <RankBars data={chart} metricLabel={qs[metric] ?? ''} onSelect={(d) => d.href && navigate(d.href)} /> : <Empty title="No rated offerings" hint="Try All semesters or another metric." />}
         </div>
         <div className="bg-card border rounded-xl overflow-hidden">
@@ -70,7 +70,7 @@ function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
                   <span className={cn('num w-7 text-center font-semibold', r.rank === 1 ? 'text-primary text-lg' : 'text-muted-foreground')}>{r.rank ?? '–'}</span>
                   <span className="flex-1 min-w-0">
                     <span className="block font-medium truncate group-hover:text-primary">{r.group.label}</span>
-                    <span className="num text-xs text-muted-foreground flex flex-wrap gap-2 items-center">{fmtInt(r.metric.responses)} resp. · {r.recs.length} off. · course {fmt(r.course.avg)} <LowSample responses={r.metric.responses} /></span>
+                    <span className="num text-xs text-muted-foreground flex flex-wrap gap-2 items-center">{fmtInt(r.metric.responses)} resp. · {r.recs.length} off. · course {fmt(r.course.avg)} <SmallSample responses={r.metric.responses} /></span>
                   </span>
                   <Score v={r.metric.avg} />
                 </Link>

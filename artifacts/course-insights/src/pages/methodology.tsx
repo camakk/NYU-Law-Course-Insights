@@ -1,4 +1,4 @@
-import { fmtInt, LOW_SAMPLE, useDataset } from '@/lib/data';
+import { fmtInt, SMALL_SAMPLE, useDataset } from '@/lib/data';
 import { PageError, PageLoading, useTitle } from '@/components/kit';
 
 export default function MethodologyPage() {
@@ -31,7 +31,7 @@ export default function MethodologyPage() {
           <h2 className="font-display text-2xl mb-2">Caveats</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>Evaluations are subjective student feedback and reflect who chose to respond.</li>
-            <li>Averages under {LOW_SAMPLE} offering-level responses are flagged as low sample.</li>
+            <li>Averages based on fewer than {SMALL_SAMPLE} offering-level student reviews are flagged as Small Sample.</li>
             <li>Courses are identified by exact title; renamed courses appear separately. No course codes or departments are provided.</li>
             <li>Professors are identified by the exact source string. "Last, First" names are displayed as "First Last". Multiple offerings in the same term are kept as separate sections.</li>
           </ul>

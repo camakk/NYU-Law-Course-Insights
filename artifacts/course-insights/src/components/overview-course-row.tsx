@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ChevronDown } from 'lucide-react';
 import { fmtInt, PROF_OVERALL, rankBy, type Dataset, type EvalRecord, type Group } from '@/lib/data';
-import { LowSample, RatingBar, Score } from '@/components/kit';
+import { SmallSample, RatingBar, Score } from '@/components/kit';
 
 export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
   course: Group;
@@ -95,7 +95,7 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
                   </Link>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="num">{fmtInt(metric.responses)} reviews · {metric.offerings} rated {metric.offerings === 1 ? 'offering' : 'offerings'}</span>
-                    <LowSample responses={metric.responses} />
+                    <SmallSample responses={metric.responses} />
                   </div>
                 </div>
                 <div className="ml-auto">

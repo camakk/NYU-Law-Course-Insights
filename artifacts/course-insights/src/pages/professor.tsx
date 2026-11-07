@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft } from 'lucide-react';
 import { aggregate, bySemesterDesc, fmt, fmtInt, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
-import { Empty, LowSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Score, Stat, useTitle } from '@/components/kit';
+import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Score, Stat, useTitle } from '@/components/kit';
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
@@ -60,7 +60,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-6">
         <Stat label="Offerings" value={recs.length} sub={sem === 'all' ? 'all semesters' : sem} />
         <Stat label="Distinct courses" value={distinctCourseCount} />
-        <Stat label="Responses (offering totals)" value={fmtInt(totalResp)} sub={<LowSample responses={overall[5].responses} />} />
+        <Stat label="Responses (offering totals)" value={fmtInt(totalResp)} sub={<SmallSample responses={overall[5].responses} />} />
         <Stat label="Course effective" value={fmt(overall[8].avg)} sub="/ 5, response-weighted" />
       </div>
 

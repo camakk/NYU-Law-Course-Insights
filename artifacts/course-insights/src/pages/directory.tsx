@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
-import { Empty, LoadMore, LowSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
+import { Empty, LoadMore, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { Slider } from '@/components/ui/slider';
 
 type Kind = 'professors' | 'courses';
@@ -391,7 +391,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     ))}
                     {isProf && <span className="xl:hidden num">· {r.offerings} times taught</span>}
                     <span className={isProf ? 'xl:hidden num' : 'md:hidden num'}>· {fmtInt(r.m.responses)} reviews</span>
-                    <LowSample responses={r.m.responses} />
+                    <SmallSample responses={r.m.responses} />
                   </span>
                   <span className={`mt-1 block min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:hidden' : 'lg:hidden'}`}>
                     <span className="block text-[10px] font-medium uppercase tracking-wide">

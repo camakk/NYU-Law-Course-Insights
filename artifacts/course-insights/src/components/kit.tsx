@@ -4,7 +4,7 @@ import { AlertTriangle, RotateCcw, Search, X } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { fmt, fmtInt, LOW_SAMPLE, scoreTone } from '@/lib/data';
+import { fmt, fmtInt, SMALL_SAMPLE, scoreTone } from '@/lib/data';
 import { ratingBarColor, ratingBarFillPercent } from '@/lib/rating-color';
 
 export function useTitle(t: string) {
@@ -116,11 +116,11 @@ export function RatingBar({
   );
 }
 
-export function LowSample({ responses }: { responses: number }) {
-  if (responses >= LOW_SAMPLE || responses === 0) return null;
+export function SmallSample({ responses }: { responses: number }) {
+  if (responses >= SMALL_SAMPLE || responses === 0) return null;
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-accent-foreground bg-accent px-1.5 py-0.5 rounded" title={`Fewer than ${LOW_SAMPLE} offering-level responses`}>
-      <AlertTriangle className="h-3 w-3" /> low sample
+    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-accent-foreground bg-accent px-1.5 py-0.5 rounded" title={`Fewer than ${SMALL_SAMPLE} student reviews`}>
+      <AlertTriangle className="h-3 w-3" /> Small Sample
     </span>
   );
 }
@@ -269,7 +269,7 @@ export function RankBars({ data, onSelect, metricLabel }: { data: BarDatum[]; on
                   <div className="text-muted-foreground mb-1">{metricLabel}</div>
                   <div className="num text-base font-semibold text-primary">{d.value.toFixed(2)} / 5</div>
                   <div className="num text-muted-foreground">{fmtInt(d.responses)} responses · {d.offerings} offering{d.offerings === 1 ? '' : 's'}</div>
-                  {d.responses < LOW_SAMPLE && <div className="mt-1 text-accent-foreground">Low sample, interpret cautiously</div>}
+                  {d.responses < SMALL_SAMPLE && <div className="mt-1 text-accent-foreground">Small Sample, interpret cautiously</div>}
                 </div>
               );
             }}
@@ -283,7 +283,7 @@ export function RankBars({ data, onSelect, metricLabel }: { data: BarDatum[]; on
             label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--foreground))', formatter: (v: number) => v.toFixed(2) }}
           >
             {data.map((d, i) => (
-              <Cell key={i} fill={d.responses < LOW_SAMPLE ? 'hsl(38 88% 58%)' : 'hsl(var(--chart-1))'} />
+              <Cell key={i} fill={d.responses < SMALL_SAMPLE ? 'hsl(38 88% 58%)' : 'hsl(var(--chart-1))'} />
             ))}
           </Bar>
         </BarChart>
