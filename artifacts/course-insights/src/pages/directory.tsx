@@ -364,7 +364,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             } gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40`}>
               <span>#</span><span>{isProf ? 'Professor' : 'Course'}</span>
               <span className={isProf ? 'hidden xl:block' : 'hidden lg:block'}>{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
-              <span className="text-right">{isProf ? 'Teaching' : 'Course'}</span>
+              <span className={isProf ? 'text-center' : 'text-right'}>{isProf ? 'Teaching' : 'Course'}</span>
               <span className="text-right">{isProf ? 'Courses' : 'Teaching'}</span>
               <span className="text-right">{isProf ? 'Times Taught' : 'Offerings'}</span><span className="text-right">Reviews</span><span />
             </div>
