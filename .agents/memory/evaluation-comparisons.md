@@ -21,6 +21,12 @@ For recent-history columns, show up to three distinct partner items and use the 
 
 **How to apply:** Collapse repeated course titles for a professor and repeated professors for a course, then order by latest semester.
 
+Infer course categories from title keywords using this precedence: Externship, Clinic, Colloquium, Seminar, then Course.
+
+**Why:** Titles such as “Clinic Seminar” or “Externship Seminar” identify a specific program type, not just a seminar.
+
+**How to apply:** Use the same classifier for each course record and its directory entry; titles with no indicator remain Course.
+
 Anonymous post-exam feedback is attached to a professor–course pair across terms, and uses an optional 1–5 difficulty rating independent of the written comment.
 
 **Why:** This is the audience's chosen grouping; the source has no course codes, and a course pair may recur in many semesters.

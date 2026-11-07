@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowUpRight } from 'lucide-react';
-import { aggregate, bySemesterDesc, fmtInt, friendlyName, useDataset, type Dataset, type Group } from '@/lib/data';
+import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, LoadMore, LowSample, NativeSelect, PageError, PageLoading, Score, SearchBox, useTitle } from '@/components/kit';
 
 type Kind = 'professors' | 'courses';
@@ -11,13 +11,12 @@ export function norm(s: string) {
   return s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-function matches(g: Group, terms: string[], kind: Kind, ds: Dataset) {
+function matches(g: Group, terms: string[], kind: Kind, records = g.records) {
   if (!terms.length) return true;
   const hay = norm(g.label + ' ' + g.name);
   if (terms.every((t) => hay.includes(t))) return true;
   // also match across the other dimension (prof by course taught, course by teacher)
-  const other = norm(g.records.map((r) => (kind === 'professors' ? r.course : r.professor)).join(' '));
-  void ds;
+  const other = norm(records.map((r) => (kind === 'professors' ? r.course : r.professor)).join(' '));
   return terms.every((t) => hay.includes(t) || other.includes(t));
 }
 
@@ -60,8 +59,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [minOfferings, setMinOfferings] = useState('');
   const [minResponses, setMinResponses] = useState(kind === 'professors' ? '50' : '');
   const [minScore, setMinScore] = useState('');
+  const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>([...COURSE_CATEGORIES]);
   const metricIdx = kind === 'professors' ? 5 : 8;
-  const hasFilters = q !== '' || sem !== 'all' || [minPartners, minOfferings, minResponses, minScore].some((v) => v !== '');
+  const hasFilters = q !== '' || sem !== 'all' || [minPartners, minOfferings, minResponses, minScore].some((v) => v !== '') || includedCategories.length !== COURSE_CATEGORIES.length;
   const updateMinimum = (setValue: (value: string) => void) => (value: string) => {
     setValue(value);
     setLimit(100);
@@ -73,6 +73,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setMinOfferings('');
     setMinResponses('');
     setMinScore('');
+    setIncludedCategories([...COURSE_CATEGORIES]);
+    setLimit(100);
+  };
+  const toggleCategory = (category: CourseCategory) => {
+    setIncludedCategories((current) =>
+      current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
+    );
     setLimit(100);
   };
 
@@ -80,10 +87,19 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     const terms = norm(q).split(' ').filter(Boolean);
     const groups = kind === 'professors' ? ds.professors : ds.courses;
     const out = groups
-      .filter((g) => (sem === 'all' ? true : g.semesters.includes(sem)))
-      .filter((g) => matches(g, terms, kind, ds))
       .map((g) => {
-        const recs = sem === 'all' ? g.records : g.records.filter((r) => r.semester === sem);
+        const categoryRecords = kind === 'professors'
+          ? g.records.filter((record) => includedCategories.includes(record.courseCategory))
+          : g.courseCategory && includedCategories.includes(g.courseCategory) ? g.records : [];
+        return { g, categoryRecords };
+      })
+      .filter(({ g, categoryRecords }) =>
+        categoryRecords.length > 0 &&
+        (sem === 'all' || categoryRecords.some((record) => record.semester === sem)) &&
+        matches(g, terms, kind, categoryRecords)
+      )
+      .map(({ g, categoryRecords }) => {
+        const recs = sem === 'all' ? categoryRecords : categoryRecords.filter((r) => r.semester === sem);
         const m = aggregate(recs, metricIdx);
         const teach = kind === 'courses' ? aggregate(recs, 5) : null;
         const partners = new Set(recs.map((r) => (kind === 'professors' ? r.course : r.professor))).size;
@@ -114,12 +130,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         case 'rating-asc': return byAvg(a.m.avg, b.m.avg, -1) || b.m.responses - a.m.responses;
         case 'responses': return b.m.responses - a.m.responses;
         case 'offerings': return b.offerings - a.offerings;
-        case 'recent': return a.g.semesters[0] === b.g.semesters[0] ? a.g.label.localeCompare(b.g.label) : ds.semesters.indexOf(a.g.semesters[0]) - ds.semesters.indexOf(b.g.semesters[0]);
+        case 'recent': return a.latest === b.latest ? a.g.label.localeCompare(b.g.label) : bySemesterDesc(a.latest, b.latest);
         default: return a.g.label.localeCompare(b.g.label);
       }
     });
     return out;
-  }, [ds, kind, q, sem, sort, metricIdx, minPartners, minOfferings, minResponses, minScore]);
+  }, [ds, kind, q, sem, sort, metricIdx, minPartners, minOfferings, minResponses, minScore, includedCategories]);
 
   const isProf = kind === 'professors';
   const total = isProf ? ds.professors.length : ds.courses.length;
@@ -146,7 +162,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <NativeSelect label="Sort" value={sort} onChange={(v) => setSort(v as SortKey)} testId="select-sort">
           <option value="rating">Highest rated</option>
           <option value="rating-asc">Lowest rated</option>
-          <option value="responses">Most responses</option>
+          <option value="responses">Most reviews</option>
           <option value="offerings">Most offerings</option>
           <option value="recent">Most recently taught</option>
           <option value="name">Name A–Z</option>
@@ -161,14 +177,34 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             value={minPartners} onChange={updateMinimum(setMinPartners)} id={`filter-min-${isProf ? 'courses' : 'professors'}`}
           />
           <MinimumFilter label="Minimum class offerings" value={minOfferings} onChange={updateMinimum(setMinOfferings)} id="filter-min-offerings" />
-          <MinimumFilter label="Minimum rating responses" value={minResponses} onChange={updateMinimum(setMinResponses)} id="filter-min-responses" />
+          <MinimumFilter label="Minimum reviews" value={minResponses} onChange={updateMinimum(setMinResponses)} id="filter-min-responses" />
           <MinimumFilter label={`Minimum ${isProf ? 'teaching' : 'course'} score (0–5)`} value={minScore} onChange={updateMinimum(setMinScore)} max={5} step={0.1} id="filter-min-score" />
+        </div>
+        <div className="mt-4 border-t pt-4">
+          <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
+          <div role="group" aria-labelledby="course-category-filter-label" className="mt-2 flex flex-wrap gap-2">
+            {COURSE_CATEGORIES.map((category) => (
+              <label key={category} className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs transition hover:border-primary/60">
+                <input
+                  type="checkbox"
+                  checked={includedCategories.includes(category)}
+                  onChange={() => toggleCategory(category)}
+                  data-testid={`filter-category-${category.toLowerCase()}`}
+                  className="accent-primary"
+                />
+                {category}
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Uncheck a category to exclude those courses from the results. Categories are inferred from course titles; titles without a clear indicator are labeled Course.
+          </p>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
           <p className="text-xs text-muted-foreground max-w-3xl">
             {isProf ? 'Courses taught counts distinct course titles; offerings counts individual sections, including repeats.' : 'Professors counts distinct instructors; offerings counts individual sections of each course.'}
-            {' '}Minimums include the selected value and apply within the selected semester. Rating responses count only offerings contributing to the displayed score.
-            {isProf && ' The Professors page defaults to a minimum of 50 rating responses, so professors with fewer than 50 are hidden unless you change or clear the filter.'}
+            {' '}Minimums include the selected value and apply within the selected semester. Review totals count student responses from offerings contributing to the displayed score.
+            {isProf && ' The Professors page defaults to a minimum of 50 reviews, so professors with fewer than 50 are hidden unless you change or clear the filter.'}
           </p>
           {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
         </div>
@@ -184,7 +220,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               <span className="hidden lg:block">{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
               <span className="text-right">{isProf ? 'Teaching' : 'Course'}</span>
               <span className="text-right">{isProf ? 'Courses' : 'Teaching'}</span>
-              <span className="text-right">Offerings</span><span className="text-right">Responses</span><span />
+              <span className="text-right">Offerings</span><span className="text-right">Reviews</span><span />
             </div>
             {rows.slice(0, limit).map((r, i) => (
               <Link
@@ -198,7 +234,10 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   <span className="block font-medium truncate group-hover:text-primary transition-colors">{r.g.label}</span>
                   <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>Latest {r.latest}</span>
-                    <span className="md:hidden num">· {fmtInt(r.m.responses)} resp.</span>
+                    {!isProf && r.g.courseCategory && (
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{r.g.courseCategory}</span>
+                    )}
+                    <span className="md:hidden num">· {fmtInt(r.m.responses)} reviews</span>
                     <LowSample responses={r.m.responses} />
                   </span>
                   <span className="mt-1 block min-w-0 text-xs leading-5 text-muted-foreground lg:hidden">
