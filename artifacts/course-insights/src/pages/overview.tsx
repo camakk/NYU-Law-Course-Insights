@@ -13,6 +13,29 @@ interface RecentCourseOffering {
   rating: number | null;
 }
 
+function RatingBar({ rating, label, testId }: { rating: number | null; label: string; testId?: string }) {
+  if (rating == null) {
+    return <span className="num text-xs text-muted-foreground" data-testid={testId}>N/A / 5</span>;
+  }
+  const width = `${Math.max(0, Math.min(100, (rating / 5) * 100))}%`;
+  return (
+    <span className="inline-flex shrink-0 items-center gap-2" data-testid={testId}>
+      <span
+        role="meter"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={5}
+        aria-valuenow={rating}
+        aria-valuetext={`${rating.toFixed(2)} out of 5`}
+        className="h-2 w-20 overflow-hidden rounded-full bg-secondary sm:w-24"
+      >
+        <span className="block h-full rounded-full bg-primary" style={{ width }} />
+      </span>
+      <span className="num text-xs font-medium tabular-nums">{rating.toFixed(2)} / 5</span>
+    </span>
+  );
+}
+
 function recentCourseOfferings(records: EvalRecord[]): RecentCourseOffering[] {
   const byOffering = new Map<string, EvalRecord[]>();
   for (const record of records) {
@@ -116,23 +139,23 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                   <div className="flex items-start gap-3">
                     <span className="num text-xs text-muted-foreground pt-1.5 w-5 shrink-0 text-right">{index + 1}</span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                        <span className="min-w-0 truncate text-sm font-semibold">{group.label}</span>
+                        <RatingBar rating={value} label={`${group.label} overall teaching rating`} testId={`rating-teacher-${group.slug}`} />
                         <button
                           type="button"
                           onClick={() => setExpandedProfessor(isExpanded ? null : group.slug)}
                           aria-expanded={isExpanded}
                           aria-controls={coursesId}
-                          aria-label={`${isExpanded ? 'Hide' : 'Show'} five most recent courses for ${group.label}`}
                           data-testid={`button-expand-teacher-${group.slug}`}
-                          className="inline-flex min-w-0 items-center gap-1.5 text-left font-medium hover:text-primary transition-colors"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                         >
-                          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                          <span className="truncate">{group.label}</span>
+                          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                          {isExpanded ? 'Collapse' : 'Expand'}
                         </button>
                         <Link href={`/professors/${group.slug}`} className="text-xs text-primary inline-flex items-center gap-1 hover:underline" data-testid={`link-teacher-profile-${group.slug}`}>
                           Profile <ArrowRight className="h-3 w-3" />
                         </Link>
-                        <Score v={value} size="sm" />
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground" data-testid={`text-latest-course-${group.slug}`}>
                         {latest
@@ -153,9 +176,11 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                               <span className="block text-sm">{offering.course}</span>
                               <span className="block text-xs text-muted-foreground">{offering.semester}</span>
                             </span>
-                            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              Overall rating <Score v={offering.rating} size="sm" />
-                            </span>
+                            <RatingBar
+                              rating={offering.rating}
+                              label={`${offering.course}, ${offering.semester} overall teaching rating`}
+                              testId={`rating-offering-${group.slug}-${offering.semester}`}
+                            />
                           </li>
                         ))}
                       </ul>
