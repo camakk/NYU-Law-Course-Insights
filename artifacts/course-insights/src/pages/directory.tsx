@@ -345,6 +345,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     {!isProf && r.g.courseCategories?.map((category) => (
                       <span key={category} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{category}</span>
                     ))}
+                    {!isProf && r.g.courseLabels?.map((label) => (
+                      <span key={`label-${label}`} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
+                    ))}
                     {isProf && <span className="md:hidden num">· {r.offerings} times taught</span>}
                     <span className="md:hidden num">· {fmtInt(r.m.responses)} reviews</span>
                     <LowSample responses={r.m.responses} />

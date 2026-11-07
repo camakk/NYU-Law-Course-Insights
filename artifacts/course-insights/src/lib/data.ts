@@ -5,6 +5,7 @@ export interface EvalRecord {
   id: number;
   course: string;
   courseCategories: CourseCategory[];
+  courseLabels: CourseLabel[];
   is1LCourse: boolean;
   professor: string;
   semester: string;
@@ -16,7 +17,7 @@ export interface EvalRecord {
 
 export interface RawData {
   questions: string[];
-  records: Array<Omit<EvalRecord, 'courseCategories' | 'is1LCourse'>>;
+  records: Array<Omit<EvalRecord, 'courseCategories' | 'courseLabels' | 'is1LCourse'>>;
   sourceNotes: string[];
 }
 
@@ -31,6 +32,7 @@ export interface Group {
   name: string; // raw identity
   label: string; // display
   courseCategories: CourseCategory[] | null;
+  courseLabels: CourseLabel[] | null;
   records: EvalRecord[];
   metrics: Metric[]; // 10
   semesters: string[];
@@ -52,6 +54,7 @@ export interface Dataset {
 
 export const COURSE_CATEGORIES = ['Course', 'Seminar', 'Clinic', 'Colloquium', 'Externship'] as const;
 export type CourseCategory = typeof COURSE_CATEGORIES[number];
+export type CourseLabel = '1L' | 'LLM';
 
 const FIRST_YEAR_COURSE_NAMES = new Set([
   'Procedure',
@@ -62,13 +65,22 @@ const FIRST_YEAR_COURSE_NAMES = new Set([
   'Contracts',
 ]);
 
-export function is1LCourse(course: string): boolean {
-  const compactName = course
+export function classifyCourseLabels(course: string): CourseLabel[] {
+  const title = course
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
-  if (compactName.includes('forllm')) return false;
+    .replace(/[.'’]/g, '');
+  const labels: CourseLabel[] = [];
+  if (/\bfor\s+1ls\b/.test(title)) labels.push('1L');
+  if (/\bllms?\b/.test(title)) labels.push('LLM');
+  return labels;
+}
+
+export function is1LCourse(course: string): boolean {
+  const labels = classifyCourseLabels(course);
+  if (labels.includes('1L')) return true;
+  if (labels.includes('LLM')) return false;
   return FIRST_YEAR_COURSE_NAMES.has(course);
 }
 
@@ -164,6 +176,7 @@ function buildGroups(records: EvalRecord[], key: 'professor' | 'course') {
       name,
       label,
       courseCategories: key === 'course' ? recs[0]?.courseCategories ?? classifyCourse(name) : null,
+      courseLabels: key === 'course' ? recs[0]?.courseLabels ?? classifyCourseLabels(name) : null,
       records: recs,
       metrics,
       semesters,
@@ -183,6 +196,7 @@ export function buildDataset(raw: RawData): Dataset {
       ...record,
       professor: professorNames.canonicalByName.get(record.professor) ?? record.professor,
       courseCategories: classifyCourse(record.course),
+      courseLabels: classifyCourseLabels(record.course),
       is1LCourse: is1LCourse(record.course),
     }));
   const professors = buildGroups(records, 'professor');

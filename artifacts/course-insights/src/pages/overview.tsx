@@ -96,6 +96,13 @@ function ReviewedCoursesPanel({
             >
               <span className="flex-1 min-w-0">
                 <span className="block truncate font-medium">{course.label}</span>
+                {course.courseLabels?.length ? (
+                  <span className="mt-1 flex flex-wrap gap-1">
+                    {course.courseLabels.map((label) => (
+                      <span key={label} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
+                    ))}
+                  </span>
+                ) : null}
                 <span
                   className="num block text-xs text-muted-foreground"
                   data-testid={`text-${testIdPrefix}course-reviews-${course.slug}`}
@@ -153,7 +160,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
           <p className="text-muted-foreground mt-5 max-w-xl">Ten years of student evaluations, organized so you can see who taught a course, how students rated them, and the data behind each number.</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Unique Course Offerings" value={fmtInt(ds.records.length)} sub={`${fmtInt(usable)} with responses`} />
+          <Stat label="Unique Course Offerings" value={fmtInt(ds.records.length)} sub={`${fmtInt(usable)} with student reviews`} />
           <Stat
             label="NYU Law Professors Reviewed"
             value={fmtInt(ds.professors.length)}
@@ -176,7 +183,12 @@ function OverviewInner({ ds }: { ds: Dataset }) {
                     {list.map((g) => (
                       <li key={g.slug}>
                         <Link href={`/${kind}/${g.slug}`} className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-secondary/60 text-sm" data-testid={`link-result-${kind}-${g.slug}`}>
-                          <span className="truncate">{g.label}</span>
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="truncate">{g.label}</span>
+                            {kind === 'courses' && g.courseLabels?.map((label) => (
+                              <span key={label} className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold">{label}</span>
+                            ))}
+                          </span>
                           <Score v={g.metrics[kind === 'professors' ? 5 : 8].avg} size="sm" />
                         </Link>
                       </li>

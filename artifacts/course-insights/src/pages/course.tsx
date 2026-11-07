@@ -28,7 +28,12 @@ function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
     <div className="rise">
       <Link href="/courses" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4" data-testid="link-back"><ChevronLeft className="h-4 w-4" />All courses</Link>
       <div className="pb-6 border-b">
-        <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Course</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Course</div>
+            {g.courseLabels?.map((label) => (
+              <span key={label} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
+            ))}
+          </div>
         <h1 className="font-display text-4xl md:text-6xl font-semibold mt-2 max-w-4xl" data-testid="text-course-title">{g.label}</h1>
         <p className="text-sm text-muted-foreground mt-2">Offered {g.semesters[g.semesters.length - 1]} – {g.semesters[0]} · {g.semesters.length} semesters</p>
       </div>
