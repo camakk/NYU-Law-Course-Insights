@@ -141,46 +141,50 @@ describe('professor identity aliases', () => {
 });
 
 describe('professor activity status', () => {
-  it('marks professors active only when an offering falls in the specified recent semesters', () => {
+  it('marks professors active only when an offering falls from Fall 2023 through Spring 2026', () => {
+    const activeSemesters = [
+      'Fall 2023',
+      'Spring 2024',
+      'Fall 2024',
+      'Spring 2025',
+      'Fall 2025',
+      'Spring 2026',
+    ];
+    const inactiveSemesters = [
+      'Fall 2021',
+      'Spring 2022',
+      'Fall 2022',
+      'Spring 2023',
+      'Spring 2021',
+    ];
+    const makeRecord = (id: number, professor: string, semester: string, inaccessible = false) => ({
+      id,
+      course: `Course ${id}`,
+      professor,
+      semester,
+      enrolled: 20,
+      responded: inaccessible ? 0 : 10,
+      scores: inaccessible ? Array(10).fill(null) : Array(10).fill(4),
+      inaccessible,
+    });
     const dataset = buildDataset({
       questions: [],
       sourceNotes: [],
       records: [
-        {
-          id: 1,
-          course: 'Evidence',
-          professor: 'Doe, Active',
-          semester: 'Spring 2026',
-          enrolled: 20,
-          responded: 0,
-          scores: Array(10).fill(null),
-          inaccessible: true,
-        },
-        {
-          id: 2,
-          course: 'Contracts',
-          professor: 'Roe, Boundary',
-          semester: 'Fall 2021',
-          enrolled: 20,
-          responded: 10,
-          scores: Array(10).fill(4),
-          inaccessible: false,
-        },
-        {
-          id: 3,
-          course: 'Torts',
-          professor: 'Smith, Inactive',
-          semester: 'Spring 2021',
-          enrolled: 20,
-          responded: 10,
-          scores: Array(10).fill(4),
-          inaccessible: false,
-        },
+        ...activeSemesters.map((semester, index) =>
+          makeRecord(index + 1, `Active ${index}, Professor`, semester, index === 0),
+        ),
+        ...inactiveSemesters.map((semester, index) =>
+          makeRecord(activeSemesters.length + index + 1, `Inactive ${index}, Professor`, semester),
+        ),
       ],
     });
 
-    expect(dataset.professors.find((group) => group.label === 'Active Doe')?.professorStatus).toBe('Active');
-    expect(dataset.professors.find((group) => group.label === 'Boundary Roe')?.professorStatus).toBe('Active');
-    expect(dataset.professors.find((group) => group.label === 'Inactive Smith')?.professorStatus).toBe('Inactive');
+    for (let index = 0; index < activeSemesters.length; index++) {
+      expect(dataset.professors.find((group) => group.name === `Active ${index}, Professor`)?.professorStatus).toBe('Active');
+    }
+    for (let index = 0; index < inactiveSemesters.length; index++) {
+      expect(dataset.professors.find((group) => group.name === `Inactive ${index}, Professor`)?.professorStatus).toBe('Inactive');
+    }
   });
 });

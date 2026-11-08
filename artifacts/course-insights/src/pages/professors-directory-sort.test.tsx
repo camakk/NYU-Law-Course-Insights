@@ -76,6 +76,21 @@ beforeEach(() => {
 });
 
 describe('Professor table sorting', () => {
+  it('shows every matching professor without a Load More control', () => {
+    const allProfessorsDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: Array.from({ length: 125 }, (_, index) =>
+        makeRecord(index + 1, `Professor${index + 1}, Person${index + 1}`, 'Evidence', 4.5, 60),
+      ),
+    });
+
+    renderDirectoryWithData(allProfessorsDataset);
+
+    expect(screen.getAllByTestId(/^row-professors-/)).toHaveLength(125);
+    expect(screen.queryByTestId('button-load-more')).toBeNull();
+  });
+
   it('shows the requested professor-directory introduction', () => {
     renderDirectory();
     expect(screen.getByText("You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.")).toBeTruthy();

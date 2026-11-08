@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
-import { Empty, LoadMore, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
+import { Empty, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { Slider } from '@/components/ui/slider';
 import { CourseProfessorExpansion } from '@/components/course-professor-expansion';
 
@@ -13,7 +13,6 @@ type CourseDirectorySnapshot = {
   q: string;
   sem: string;
   sort: SortKey;
-  limit: number;
   minOfferings: string;
   minResponses: string;
   minScore: string;
@@ -21,7 +20,7 @@ type CourseDirectorySnapshot = {
   includedCategories: CourseCategory[];
   filtersOpen: boolean;
   lastHeaderSort: string | null;
-  expandedCourseSlugs: string[];
+  expandedCourseSlugs?: string[];
   scrollY: number;
 };
 
@@ -188,7 +187,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
   const [sem, setSem] = useState(() => returnSnapshot?.sem ?? 'all');
   const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'name'));
-  const [limit, setLimit] = useState(() => returnSnapshot?.limit ?? 100);
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
   const [minResponses, setMinResponses] = useState(() => returnSnapshot?.minResponses ?? '50');
   const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
@@ -217,7 +215,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     includedCategories.length !== COURSE_CATEGORIES.length;
   const updateMinimum = (setValue: (value: string) => void) => (value: string) => {
     setValue(value);
-    setLimit(100);
   };
   const clearFilters = () => {
     setQ('');
@@ -227,13 +224,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setMinScore('');
     setMaxScore('');
     setIncludedCategories([...COURSE_CATEGORIES]);
-    setLimit(100);
   };
   const toggleCategory = (category: CourseCategory) => {
     setIncludedCategories((current) =>
       current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
     );
-    setLimit(100);
   };
   const saveCourseDirectorySnapshot = () => {
     const currentState = window.history.state;
@@ -245,7 +240,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       q,
       sem,
       sort,
-      limit,
       minOfferings,
       minResponses,
       minScore,
@@ -413,8 +407,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       </div>
 
       <div className="flex flex-wrap items-end gap-3 mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur py-3 -mx-1 px-1">
-        <SearchBox value={q} onChange={(v) => { setQ(v); setLimit(100); }} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
-        <NativeSelect label="Semester" value={sem} onChange={(v) => { setSem(v); setLimit(100); }} testId="select-semester">
+        <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
+        <NativeSelect label="Semester" value={sem} onChange={setSem} testId="select-semester">
           <option value="all">All semesters</option>
           {ds.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
         </NativeSelect>
@@ -491,7 +485,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               onChange={([minimum, maximum]) => {
                 setMinScore(minimum === 0 ? '' : minimum.toFixed(1));
                 setMaxScore(maximum === 5 ? '' : maximum.toFixed(1));
-                setLimit(100);
               }}
               id={isProf ? 'filter-score-range' : 'filter-course-rating-range'}
             />
@@ -558,7 +551,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')
                 : sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')}</span><span />
             </div>
-            {rows.slice(0, limit).map((r, i) => {
+            {rows.map((r, i) => {
               const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
                 ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
                 : 'md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
@@ -644,7 +637,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   course={r.g}
                   dataset={ds}
                   includeMostRecent
-                  initialExpanded={returnSnapshot?.expandedCourseSlugs.includes(r.g.slug) ?? false}
+                  initialExpanded={returnSnapshot?.expandedCourseSlugs?.includes(r.g.slug) ?? false}
                 >
                   {({ button, panel }) => (
                     <div data-testid={`row-courses-${r.g.slug}`} className="border-b last:border-0">
@@ -656,7 +649,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               );
             })}
           </div>
-          <LoadMore shown={limit} total={rows.length} onMore={() => setLimit((l) => l + 100)} />
         </>
       )}
     </div>

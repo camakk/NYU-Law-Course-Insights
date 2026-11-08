@@ -60,6 +60,28 @@ beforeEach(() => {
 });
 
 describe('Courses table expansion', () => {
+  it('shows every matching course without a Load More control', () => {
+    const allCoursesDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: Array.from({ length: 125 }, (_, index) => {
+        const course = `Course ${String(index + 1).padStart(3, '0')}`;
+        return makeRecord(index + 1, 'Doe, Alice', 4.5, 60, course, 4.2);
+      }),
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: allCoursesDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+
+    render(<CoursesPage />);
+
+    expect(screen.getAllByTestId(/^row-courses-/)).toHaveLength(125);
+    expect(screen.queryByTestId('button-load-more')).toBeNull();
+  });
+
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
     render(<CoursesPage />);
 
