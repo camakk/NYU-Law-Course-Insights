@@ -9,7 +9,7 @@ export default function MethodologyPage() {
   const inacc = data.records.filter((r) => r.inaccessible).length;
   const zero = data.records.filter((r) => !r.inaccessible && !r.responded).length;
   return (
-    <article className="rise max-w-3xl">
+    <article className="rise max-w-4xl">
       <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Methodology</div>
       <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2 mb-6">How the numbers are made</h1>
       <div className="space-y-6 text-[15px] leading-relaxed">

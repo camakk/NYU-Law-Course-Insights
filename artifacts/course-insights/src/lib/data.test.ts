@@ -95,3 +95,48 @@ describe('professor identity aliases', () => {
     expect(dataset.profSlugByName.get('Cox, Adam M.')).toBe(dataset.professors[0].slug);
   });
 });
+
+describe('professor activity status', () => {
+  it('marks professors active only when an offering falls in the specified recent semesters', () => {
+    const dataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        {
+          id: 1,
+          course: 'Evidence',
+          professor: 'Doe, Active',
+          semester: 'Spring 2026',
+          enrolled: 20,
+          responded: 0,
+          scores: Array(10).fill(null),
+          inaccessible: true,
+        },
+        {
+          id: 2,
+          course: 'Contracts',
+          professor: 'Roe, Boundary',
+          semester: 'Fall 2021',
+          enrolled: 20,
+          responded: 10,
+          scores: Array(10).fill(4),
+          inaccessible: false,
+        },
+        {
+          id: 3,
+          course: 'Torts',
+          professor: 'Smith, Inactive',
+          semester: 'Spring 2021',
+          enrolled: 20,
+          responded: 10,
+          scores: Array(10).fill(4),
+          inaccessible: false,
+        },
+      ],
+    });
+
+    expect(dataset.professors.find((group) => group.label === 'Active Doe')?.professorStatus).toBe('Active');
+    expect(dataset.professors.find((group) => group.label === 'Boundary Roe')?.professorStatus).toBe('Active');
+    expect(dataset.professors.find((group) => group.label === 'Inactive Smith')?.professorStatus).toBe('Inactive');
+  });
+});

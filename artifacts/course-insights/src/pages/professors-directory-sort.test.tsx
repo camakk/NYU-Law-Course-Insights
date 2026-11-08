@@ -105,6 +105,26 @@ describe('Professor table sorting', () => {
     expect(row?.textContent).not.toContain('Spring 2024');
   });
 
+  it('shows an inline Inactive badge when the professor last taught before Fall 2021', () => {
+    const activityDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Old, Pat', 'Evidence', 4.4, 60, 'Spring 2021'),
+        makeRecord(2, 'Recent, Alex', 'Torts', 4.1, 60, 'Spring 2026'),
+      ],
+    });
+
+    renderDirectoryWithData(activityDataset);
+    const row = screen.getByTestId('row-professors-pat-old');
+    const badge = screen.getByTestId('badge-professor-inactive-pat-old');
+
+    expect(row.textContent).toContain('Last Taught Spring 2021');
+    expect(badge.textContent).toBe('Inactive');
+    expect(badge.previousElementSibling?.textContent).toBe('Last Taught Spring 2021');
+    expect(screen.queryByTestId('badge-professor-inactive-alex-recent')).toBeNull();
+  });
+
   it('toggles each sortable column and syncs the Sort selector', () => {
     const { container } = renderDirectory();
     const sort = screen.getByTestId('select-sort');
@@ -118,6 +138,9 @@ describe('Professor table sorting', () => {
     expect(selectedSort()).toBe('name-desc');
     expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);
 
+    expect(screen.getByText('Teaching').className).toContain('text-center');
+    expect(screen.getByTestId('button-sort-teaching').className).toContain('justify-center');
+    expect(screen.getByTestId('button-sort-teaching').querySelector('svg')?.classList.contains('absolute')).toBe(true);
     fireEvent.click(screen.getByTestId('button-sort-teaching'));
     expect(selectedSort()).toBe('rating');
     expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);

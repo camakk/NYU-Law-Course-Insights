@@ -25,7 +25,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-[100dvh] flex flex-col">
       <header className="bg-sidebar text-sidebar-foreground sticky top-0 z-40 border-b border-sidebar-border">
-        <div className="mx-auto max-w-7xl w-full px-4 md:px-6 lg:px-8 min-h-14 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 lg:gap-x-6 lg:py-0">
+        <div className="mx-auto max-w-[88rem] w-full px-4 md:px-6 min-h-14 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 lg:gap-x-6 lg:py-0">
           <Link href="/" className="flex items-baseline gap-2 shrink-0" data-testid="link-home">
             <span className="font-display text-xl font-semibold">Course Insights</span>
             <span className="hidden md:inline text-[11px] uppercase tracking-[0.2em] text-sidebar-primary">NYU Law</span>
@@ -51,9 +51,9 @@ export function Shell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 md:px-8 py-8 md:py-12">{children}</main>
+      <main className="flex-1 mx-auto w-full max-w-[88rem] px-4 md:px-6 py-8 md:py-12">{children}</main>
       <footer className="border-t mt-12">
-        <div className="mx-auto max-w-7xl px-4 md:px-8 py-6 text-xs text-muted-foreground flex flex-wrap justify-between gap-2">
+        <div className="mx-auto max-w-[88rem] px-4 md:px-6 py-6 text-xs text-muted-foreground flex flex-wrap justify-between gap-2">
           <span>Historical student evaluations, read-only. Ratings on a 1–5 scale.</span>
           <Link href="/methodology" className="underline underline-offset-4 hover:text-primary">How scores are calculated</Link>
         </div>

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, useDataset, type RawData } from '@/lib/data';
 import { CoursesPage } from './directory';
@@ -141,5 +141,64 @@ describe('Courses table expansion', () => {
     fireEvent.click(screen.getByTestId('button-sort-reviews'));
     expect(sortControl.value).toBe('responses-asc');
     expect(sortedCourseSlugs()).toEqual(['evidence', 'contracts']);
+  });
+
+  it('restores directory filters, sorting, and scroll position after browser Back', async () => {
+    const returnDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        { ...makeRecord(1, 'Doe, Alice', 4.9, 30, 'Evidence', 4.8), semester: 'Spring 2026' },
+        { ...makeRecord(2, 'Roe, Bob', 4.6, 25, 'Evidence', 4.2), semester: 'Spring 2026' },
+        makeRecord(3, 'Roe, Bob', 5, 60, 'Contracts', 4.6),
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: returnDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    window.history.pushState(null, '', '/courses');
+    const scrollYDescriptor = Object.getOwnPropertyDescriptor(window, 'scrollY');
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 640 });
+
+    try {
+      const { unmount } = render(<CoursesPage />);
+      fireEvent.change(screen.getByTestId('input-search-courses'), { target: { value: 'Evidence' } });
+      fireEvent.change(screen.getByTestId('select-semester'), { target: { value: 'Spring 2026' } });
+      fireEvent.change(screen.getByTestId('select-sort'), { target: { value: 'rating-asc' } });
+      fireEvent.click(screen.getByTestId('button-toggle-course-filters'));
+      fireEvent.click(screen.getByTestId('filter-category-seminar'));
+      fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
+      fireEvent.click(screen.getByRole('link', { name: 'Evidence' }));
+
+      expect(window.location.pathname).toBe('/courses/evidence');
+      unmount();
+
+      const returned = new Promise<void>((resolve) => {
+        window.addEventListener('popstate', () => resolve(), { once: true });
+      });
+      await act(async () => {
+        window.history.back();
+        await returned;
+      });
+      expect(window.location.pathname).toBe('/courses');
+
+      render(<CoursesPage />);
+      expect((screen.getByTestId('input-search-courses') as HTMLInputElement).value).toBe('Evidence');
+      expect((screen.getByTestId('select-semester') as HTMLSelectElement).value).toBe('Spring 2026');
+      expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('rating-asc');
+      expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(false);
+      expect(screen.getByTestId('button-toggle-course-filters').getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
+      expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
+      await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 640));
+    } finally {
+      scrollTo.mockRestore();
+      if (scrollYDescriptor) Object.defineProperty(window, 'scrollY', scrollYDescriptor);
+    }
   });
 });

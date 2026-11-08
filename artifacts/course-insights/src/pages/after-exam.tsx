@@ -368,7 +368,7 @@ export default function AfterExamPage() {
   }
 
   return (
-    <div className="rise max-w-5xl">
+    <div className="rise max-w-6xl">
       <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">After the exam</div>
       <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">Share how the exam felt</h1>
       <p className="text-muted-foreground mt-3 max-w-3xl leading-relaxed">

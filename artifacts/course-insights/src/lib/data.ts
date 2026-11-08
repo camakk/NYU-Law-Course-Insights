@@ -31,6 +31,7 @@ export interface Group {
   slug: string;
   name: string; // raw identity
   label: string; // display
+  professorStatus?: 'Active' | 'Inactive'; // present on professor groups
   courseCategories: CourseCategory[] | null;
   courseLabels: CourseLabel[] | null;
   records: EvalRecord[];
@@ -55,6 +56,19 @@ export interface Dataset {
 export const COURSE_CATEGORIES = ['Course', 'Seminar', 'Clinic', 'Colloquium', 'Externship'] as const;
 export type CourseCategory = typeof COURSE_CATEGORIES[number];
 export type CourseLabel = '1L' | 'LLM';
+
+const ACTIVE_PROFESSOR_SEMESTERS = new Set([
+  'Fall 2021',
+  'Spring 2022',
+  'Fall 2022',
+  'Spring 2023',
+  'Fall 2023',
+  'Spring 2024',
+  'Fall 2024',
+  'Spring 2025',
+  'Fall 2025',
+  'Spring 2026',
+]);
 
 const FIRST_YEAR_COURSE_NAMES = new Set([
   'Procedure',
@@ -175,6 +189,9 @@ function buildGroups(records: EvalRecord[], key: 'professor' | 'course') {
       slug,
       name,
       label,
+      professorStatus: key === 'professor'
+        ? (recs.some((record) => ACTIVE_PROFESSOR_SEMESTERS.has(record.semester)) ? 'Active' : 'Inactive')
+        : undefined,
       courseCategories: key === 'course' ? recs[0]?.courseCategories ?? classifyCourse(name) : null,
       courseLabels: key === 'course' ? recs[0]?.courseLabels ?? classifyCourseLabels(name) : null,
       records: recs,

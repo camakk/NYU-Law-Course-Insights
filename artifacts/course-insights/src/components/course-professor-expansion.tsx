@@ -67,13 +67,14 @@ function CourseTopProfessorsList({ course, professors, includeMostRecent = false
   );
 }
 
-export function CourseProfessorExpansion({ course, dataset, children, includeMostRecent = false }: {
+export function CourseProfessorExpansion({ course, dataset, children, includeMostRecent = false, initialExpanded = false }: {
   course: Group;
   dataset: Dataset;
   children: (parts: { button: ReactNode; panel: ReactNode }) => ReactNode;
   includeMostRecent?: boolean;
+  initialExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initialExpanded);
   const professors = useMemo(
     () => expanded ? getTopCourseProfessors(course, dataset) : [],
     [course, dataset, expanded],

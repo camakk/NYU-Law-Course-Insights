@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
@@ -8,6 +8,34 @@ import { CourseProfessorExpansion } from '@/components/course-professor-expansio
 
 type Kind = 'professors' | 'courses';
 type SortKey = 'rating' | 'rating-asc' | 'responses' | 'responses-asc' | 'courses' | 'courses-asc' | 'offerings' | 'offerings-asc' | 'name' | 'name-desc' | 'recent';
+type CourseDirectorySnapshot = {
+  version: 1;
+  q: string;
+  sem: string;
+  sort: SortKey;
+  limit: number;
+  minOfferings: string;
+  minResponses: string;
+  minScore: string;
+  maxScore: string;
+  includedCategories: CourseCategory[];
+  filtersOpen: boolean;
+  lastHeaderSort: string | null;
+  expandedCourseSlugs: string[];
+  scrollY: number;
+};
+
+const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
+
+function readCourseDirectorySnapshot(): CourseDirectorySnapshot | null {
+  if (typeof window === 'undefined') return null;
+  const historyState = window.history.state;
+  if (!historyState || typeof historyState !== 'object') return null;
+  const snapshot = (historyState as Record<string, unknown>)[COURSE_DIRECTORY_SNAPSHOT_KEY];
+  if (!snapshot || typeof snapshot !== 'object' || (snapshot as CourseDirectorySnapshot).version !== 1) return null;
+  return snapshot as CourseDirectorySnapshot;
+}
+
 type RecentEntry =
   | { kind: 'course'; label: string; semesters: string[] }
   | { kind: 'semester'; semester: string; professors: Array<{ label: string; slug?: string }> };
@@ -156,17 +184,25 @@ function RangeBandFilter({ label, minValue, maxValue, onChange, id }: {
 }
 
 function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
-  const [q, setQ] = useState('');
-  const [sem, setSem] = useState('all');
-  const [sort, setSort] = useState<SortKey>(kind === 'courses' ? 'responses' : 'name');
-  const [limit, setLimit] = useState(100);
-  const [minOfferings, setMinOfferings] = useState('1');
-  const [minResponses, setMinResponses] = useState('50');
-  const [minScore, setMinScore] = useState('');
-  const [maxScore, setMaxScore] = useState('');
-  const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>([...COURSE_CATEGORIES]);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const lastHeaderSort = useRef<string | null>(null);
+  const [returnSnapshot] = useState(() => kind === 'courses' ? readCourseDirectorySnapshot() : null);
+  const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
+  const [sem, setSem] = useState(() => returnSnapshot?.sem ?? 'all');
+  const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'name'));
+  const [limit, setLimit] = useState(() => returnSnapshot?.limit ?? 100);
+  const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
+  const [minResponses, setMinResponses] = useState(() => returnSnapshot?.minResponses ?? '50');
+  const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
+  const [maxScore, setMaxScore] = useState(() => returnSnapshot?.maxScore ?? '');
+  const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>(() =>
+    returnSnapshot ? [...returnSnapshot.includedCategories] : [...COURSE_CATEGORIES],
+  );
+  const [filtersOpen, setFiltersOpen] = useState(() => returnSnapshot?.filtersOpen ?? false);
+  const lastHeaderSort = useRef<string | null>(returnSnapshot?.lastHeaderSort ?? null);
+  useEffect(() => {
+    if (kind !== 'courses' || !returnSnapshot) return;
+    const frame = window.requestAnimationFrame(() => window.scrollTo(0, returnSnapshot.scrollY));
+    return () => window.cancelAnimationFrame(frame);
+  }, [kind, returnSnapshot]);
   const metricIdx = kind === 'professors' ? 5 : 8;
   const groupsForKind = kind === 'professors' ? ds.professors : ds.courses;
   const maxOfferings = kind === 'professors'
@@ -198,6 +234,36 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
     );
     setLimit(100);
+  };
+  const saveCourseDirectorySnapshot = () => {
+    const currentState = window.history.state;
+    const historyState = currentState && typeof currentState === 'object'
+      ? currentState as Record<string, unknown>
+      : {};
+    const snapshot: CourseDirectorySnapshot = {
+      version: 1,
+      q,
+      sem,
+      sort,
+      limit,
+      minOfferings,
+      minResponses,
+      minScore,
+      maxScore,
+      includedCategories: [...includedCategories],
+      filtersOpen,
+      lastHeaderSort: lastHeaderSort.current,
+      expandedCourseSlugs: Array.from(document.querySelectorAll<HTMLButtonElement>(
+        '[data-testid^="button-expand-course-"][aria-expanded="true"]',
+      ))
+        .map((button) => button.dataset.testid?.replace('button-expand-course-', ''))
+        .filter((slug): slug is string => Boolean(slug)),
+      scrollY: window.scrollY,
+    };
+    window.history.replaceState({
+      ...historyState,
+      [COURSE_DIRECTORY_SNAPSHOT_KEY]: snapshot,
+    }, '', window.location.href);
   };
 
   const rows = useMemo(() => {
@@ -314,10 +380,19 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         aria-label={`${label}, ${active ? `sorted ${direction}` : 'not sorted'}`}
         aria-pressed={active}
         data-testid={`button-sort-${header}`}
-        className={`inline-flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-sm py-0.5 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${alignment === 'left' ? 'justify-start' : alignment === 'center' ? 'justify-center' : 'justify-end text-right'}`}
+        className={`relative flex w-full min-w-0 cursor-pointer items-center rounded-sm py-0.5 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${alignment === 'left' ? 'justify-start' : alignment === 'center' ? 'justify-center' : 'justify-end text-right'}`}
       >
-        <span className="truncate">{label}</span>
-        <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : 'opacity-50'}`} aria-hidden="true" />
+        {alignment === 'center' ? (
+          <>
+            <span className="w-full truncate text-center">{label}</span>
+            <Icon className={`absolute right-0 h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : 'opacity-50'}`} aria-hidden="true" />
+          </>
+        ) : (
+          <>
+            <span className="truncate">{label}</span>
+            <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : 'opacity-50'}`} aria-hidden="true" />
+          </>
+        )}
       </button>
     );
   };
@@ -474,7 +549,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 : sortHeader('Course', 'course', 'name', 'name-desc', 'left', 'ascending')}
               <span className={isProf ? 'hidden xl:block' : 'hidden lg:block'}>{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
               <span className="text-center">{isProf
-                ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc')
+                ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc', 'center')
                 : sortHeader('Course Rating', 'rating', 'rating', 'rating-asc', 'center')}</span>
               <span className="text-right">{isProf
                 ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')
@@ -505,13 +580,21 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   <span className="min-w-0">
                     <span className="block font-medium truncate group-hover:text-primary transition-colors">
                       {isProf ? r.g.label : (
-                        <Link href={`/courses/${r.g.slug}`} className="hover:underline">
+                        <Link href={`/courses/${r.g.slug}`} className="hover:underline" onClick={saveCourseDirectorySnapshot}>
                           {r.g.label}
                         </Link>
                       )}
                     </span>
                     <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       <span>{isProf ? 'Last Taught' : 'Latest'} {r.latest}</span>
+                      {isProf && r.g.professorStatus === 'Inactive' && (
+                        <span
+                          className="inline-flex items-center rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive"
+                          data-testid={`badge-professor-inactive-${r.g.slug}`}
+                        >
+                          Inactive
+                        </span>
+                      )}
                       {!isProf && r.g.courseCategories?.map((category) => (
                         <span key={category} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{category}</span>
                       ))}
@@ -556,7 +639,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 );
               }
               return (
-                <CourseProfessorExpansion key={r.g.slug} course={r.g} dataset={ds} includeMostRecent>
+                <CourseProfessorExpansion
+                  key={r.g.slug}
+                  course={r.g}
+                  dataset={ds}
+                  includeMostRecent
+                  initialExpanded={returnSnapshot?.expandedCourseSlugs.includes(r.g.slug) ?? false}
+                >
                   {({ button, panel }) => (
                     <div data-testid={`row-courses-${r.g.slug}`} className="border-b last:border-0">
                       <div className={rowClass}>{renderCells(button)}</div>
