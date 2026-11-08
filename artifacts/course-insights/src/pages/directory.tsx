@@ -497,7 +497,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 );
               }
               return (
-                <CourseProfessorExpansion key={r.g.slug} course={r.g} dataset={ds}>
+                <CourseProfessorExpansion key={r.g.slug} course={r.g} dataset={ds} includeMostRecent>
                   {({ button, panel }) => (
                     <div data-testid={`row-courses-${r.g.slug}`} className="border-b last:border-0">
                       <div className={rowClass}>{renderCells(button)}</div>

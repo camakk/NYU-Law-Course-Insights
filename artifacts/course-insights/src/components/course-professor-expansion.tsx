@@ -22,10 +22,12 @@ export function getTopCourseProfessors(course: Group, dataset: Dataset) {
 
 type TopCourseProfessor = ReturnType<typeof getTopCourseProfessors>[number];
 
-function CourseTopProfessorsList({ course, professors }: {
+function CourseTopProfessorsList({ course, professors, includeMostRecent = false }: {
   course: Group;
   professors: TopCourseProfessor[];
+  includeMostRecent?: boolean;
 }) {
+  const mostRecentSemester = course.semesters[0] || 'Semester unavailable';
   return (
     <>
       <h3 className="text-xs font-semibold">Professors for this course</h3>
@@ -39,7 +41,10 @@ function CourseTopProfessorsList({ course, professors }: {
                   {group.label}
                 </Link>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="num">{fmtInt(metric.responses)} reviews · {metric.offerings} {metric.offerings === 1 ? 'time' : 'times'} taught</span>
+                  <span className="num">
+                    {fmtInt(metric.responses)} reviews · {metric.offerings} {metric.offerings === 1 ? 'time' : 'times'} taught
+                    {includeMostRecent && <> · Most recently: {mostRecentSemester}</>}
+                  </span>
                   <SmallSample responses={metric.responses} />
                 </div>
               </div>
@@ -56,10 +61,11 @@ function CourseTopProfessorsList({ course, professors }: {
   );
 }
 
-export function CourseProfessorExpansion({ course, dataset, children }: {
+export function CourseProfessorExpansion({ course, dataset, children, includeMostRecent = false }: {
   course: Group;
   dataset: Dataset;
   children: (parts: { button: ReactNode; panel: ReactNode }) => ReactNode;
+  includeMostRecent?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const professors = useMemo(
@@ -88,7 +94,7 @@ export function CourseProfessorExpansion({ course, dataset, children }: {
       className="ml-8 mt-3 rounded-lg bg-secondary/40 px-3 py-2.5"
       data-testid={`panel-top-professors-${course.slug}`}
     >
-      <CourseTopProfessorsList course={course} professors={professors} />
+      <CourseTopProfessorsList course={course} professors={professors} includeMostRecent={includeMostRecent} />
     </div>
   );
 

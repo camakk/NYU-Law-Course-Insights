@@ -33,8 +33,9 @@ const dataset = buildDataset({
   sourceNotes: [],
   records: [
     makeRecord(1, 'Doe, Alice', 4.9, 25),
-    makeRecord(2, 'Roe, Bob', 4.6, 25),
-    makeRecord(3, 'Small, Sam', 5, 19),
+    { ...makeRecord(2, 'Doe, Alice', 4.9, 25), semester: 'Spring 2026' },
+    makeRecord(3, 'Roe, Bob', 4.6, 25),
+    makeRecord(4, 'Small, Sam', 5, 19),
   ],
 });
 
@@ -74,6 +75,8 @@ describe('Courses table expansion', () => {
       'Bob Roe',
     ]);
     expect(within(panel).queryByText('Sam Small')).toBeNull();
+    expect(within(entries[0]).getByText('50 reviews · 2 times taught · Most recently: Spring 2026')).toBeTruthy();
+    expect(within(entries[1]).getByText('25 reviews · 1 time taught · Most recently: Spring 2026')).toBeTruthy();
     expect(window.location.pathname).toBe('/');
 
     fireEvent.click(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }));
