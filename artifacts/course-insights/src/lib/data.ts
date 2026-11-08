@@ -27,11 +27,17 @@ export interface Metric {
   offerings: number; // offerings contributing
 }
 
+export interface ProfessorProfileNote {
+  type: 'name-variation';
+  text: string;
+}
+
 export interface Group {
   slug: string;
   name: string; // raw identity
   label: string; // display
   professorStatus?: 'Active' | 'Inactive'; // present on professor groups
+  profileNotes?: ProfessorProfileNote[]; // present on professor groups when notes are needed
   courseCategories: CourseCategory[] | null;
   courseLabels: CourseLabel[] | null;
   records: EvalRecord[];
@@ -69,6 +75,13 @@ const ACTIVE_PROFESSOR_SEMESTERS = new Set([
   'Fall 2025',
   'Spring 2026',
 ]);
+
+const PROFESSOR_PROFILE_NOTES: Record<string, ProfessorProfileNote[]> = {
+  'Hemphill, Scott': [{
+    type: 'name-variation',
+    text: 'Some course reviews refer to Scott Hemphill as Christopher Hemphill.',
+  }],
+};
 
 const FIRST_YEAR_COURSE_NAMES = new Set([
   'Procedure',
@@ -192,6 +205,7 @@ function buildGroups(records: EvalRecord[], key: 'professor' | 'course') {
       professorStatus: key === 'professor'
         ? (recs.some((record) => ACTIVE_PROFESSOR_SEMESTERS.has(record.semester)) ? 'Active' : 'Inactive')
         : undefined,
+      profileNotes: key === 'professor' ? PROFESSOR_PROFILE_NOTES[name] ?? [] : undefined,
       courseCategories: key === 'course' ? recs[0]?.courseCategories ?? classifyCourse(name) : null,
       courseLabels: key === 'course' ? recs[0]?.courseLabels ?? classifyCourseLabels(name) : null,
       records: recs,

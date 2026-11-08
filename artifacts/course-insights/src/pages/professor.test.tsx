@@ -9,11 +9,16 @@ vi.mock('@/lib/data', async (importOriginal) => ({
   useDataset: vi.fn(),
 }));
 
-function makeRecord(id: number, course: string, semester: string): RawData['records'][number] {
+function makeRecord(
+  id: number,
+  course: string,
+  semester: string,
+  professor = 'Cox, Adam B.',
+): RawData['records'][number] {
   return {
     id,
     course,
-    professor: 'Cox, Adam B.',
+    professor,
     semester,
     enrolled: 100,
     responded: 20,
@@ -33,16 +38,15 @@ const dataset = buildDataset({
     makeRecord(5, 'Torts', 'Fall 2024'),
   ],
 });
-const professor = dataset.professors[0];
 
-function renderProfessorPage() {
+function renderProfessorPage(data = dataset, professorSlug = data.professors[0].slug) {
   vi.mocked(useDataset).mockReturnValue({
-    data: dataset,
+    data,
     isLoading: false,
     error: null,
     refetch: vi.fn(),
   } as unknown as ReturnType<typeof useDataset>);
-  window.history.replaceState(null, '', `/professors/${professor.slug}`);
+  window.history.replaceState(null, '', `/professors/${professorSlug}`);
   return render(
     <Router>
       <Route path="/professors/:id" component={ProfessorPage} />
@@ -85,5 +89,24 @@ describe('Professor detail summary', () => {
       'Torts (last taught Fall 2024)',
     ]);
     expect(screen.getByText('Distinct courses')).toBeTruthy();
+  });
+
+  it('shows a reusable name-variation note on Scott Hemphill’s profile', () => {
+    const hemphillDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Antitrust Law', 'Fall 2025', 'Hemphill, Scott'),
+        makeRecord(2, 'Survey of Intellectual Property (for 1Ls)', 'Spring 2019', 'Hemphill, Christopher'),
+      ],
+    });
+    const scott = hemphillDataset.professors.find((group) => group.label === 'Scott Hemphill')!;
+    renderProfessorPage(hemphillDataset, scott.slug);
+
+    expect(screen.getByTestId('text-professor-name').textContent).toBe('Scott Hemphill');
+    expect(screen.getByTestId('professor-note-scott-hemphill-name-variation-0').textContent)
+      .toContain('Some course reviews refer to Scott Hemphill as Christopher Hemphill.');
+    expect(screen.getByTestId('list-professor-offerings').textContent)
+      .toContain('Survey of Intellectual Property (for 1Ls)');
   });
 });

@@ -94,6 +94,50 @@ describe('professor identity aliases', () => {
 
     expect(dataset.profSlugByName.get('Cox, Adam M.')).toBe(dataset.professors[0].slug);
   });
+
+  it('groups Christopher Hemphill records under Scott Hemphill with a profile note', () => {
+    const dataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        {
+          id: 1,
+          course: 'Antitrust Law',
+          professor: 'Hemphill, Scott',
+          semester: 'Fall 2025',
+          enrolled: 50,
+          responded: 30,
+          scores: Array(10).fill(4.5),
+          inaccessible: false,
+        },
+        {
+          id: 2,
+          course: 'Survey of Intellectual Property (for 1Ls)',
+          professor: 'Hemphill, Christopher',
+          semester: 'Spring 2019',
+          enrolled: 40,
+          responded: 20,
+          scores: Array(10).fill(4.2),
+          inaccessible: false,
+        },
+      ],
+    });
+    const scott = dataset.professors.find((group) => group.label === 'Scott Hemphill');
+
+    expect(dataset.professors).toHaveLength(1);
+    expect(scott?.records.map((record) => record.professor)).toEqual([
+      'Hemphill, Scott',
+      'Hemphill, Scott',
+    ]);
+    expect(scott?.metrics[5].responses).toBe(50);
+    expect(dataset.profSlugByName.get('Hemphill, Christopher')).toBe(scott?.slug);
+    expect(dataset.courses.find((group) => group.name === 'Survey of Intellectual Property (for 1Ls)')?.records[0].professor)
+      .toBe('Hemphill, Scott');
+    expect(scott?.profileNotes).toEqual([{
+      type: 'name-variation',
+      text: 'Some course reviews refer to Scott Hemphill as Christopher Hemphill.',
+    }]);
+  });
 });
 
 describe('professor activity status', () => {

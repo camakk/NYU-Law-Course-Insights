@@ -14,6 +14,7 @@ interface ParsedName {
 const EXPLICIT_IDENTITY_OVERRIDES = [
   ["Cox, Adam", "Cox, Adam B."],
   ["Cox, Adam M.", "Cox, Adam B."],
+  ["Hemphill, Christopher", "Hemphill, Scott"],
 ] as const;
 
 function normalizeTokens(value: string): string[] {

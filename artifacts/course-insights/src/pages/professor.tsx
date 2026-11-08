@@ -67,6 +67,16 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
           <Score v={overall[5].avg} size="lg" testId="text-overall-score" />
         </div>
       </div>
+      {g.profileNotes?.map((note, index) => (
+        <aside
+          key={`${note.type}-${index}`}
+          className="mt-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3"
+          data-testid={`professor-note-${g.slug}-${note.type}-${index}`}
+        >
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-primary">Name variation</div>
+          <p className="mt-1 text-sm text-muted-foreground">{note.text}</p>
+        </aside>
+      ))}
 
       <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-3 my-6" data-testid="professor-summary-cards">
         <Stat label="Offerings" value={recs.length} sub={sem === 'all' ? 'all semesters' : sem} />
