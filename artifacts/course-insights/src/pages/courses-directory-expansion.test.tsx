@@ -69,6 +69,10 @@ describe('Courses table expansion', () => {
     expect(screen.queryByText('Teaching')).toBeNull();
     const row = screen.getByTestId('row-courses-evidence');
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
+    const spring2026 = within(row).getByTestId('recent-semester-evidence-compact-0');
+    expect(spring2026.textContent).toBe('Spring 2026 • Alice Doe');
+    expect(spring2026.querySelector('strong')?.textContent).toBe('Spring 2026');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('Fall 2025 • Alice Doe, Sam Small');
     const recentProfessorLinks = within(row).getAllByRole('link', { name: 'Alice Doe' });
     expect(recentProfessorLinks.length).toBeGreaterThan(0);
     expect(recentProfessorLinks.every((link) => link.getAttribute('href') === '/professors/alice-doe')).toBe(true);

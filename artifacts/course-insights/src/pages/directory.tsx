@@ -8,6 +8,35 @@ import { CourseProfessorExpansion } from '@/components/course-professor-expansio
 
 type Kind = 'professors' | 'courses';
 type SortKey = 'rating' | 'rating-asc' | 'responses' | 'responses-asc' | 'courses' | 'courses-asc' | 'offerings' | 'offerings-asc' | 'name' | 'name-desc' | 'recent';
+type RecentEntry =
+  | { kind: 'course'; label: string; semesters: string[] }
+  | { kind: 'semester'; semester: string; professors: Array<{ label: string; slug?: string }> };
+
+function RecentEntryContent({ item, compact }: { item: RecentEntry; compact: boolean }) {
+  if (item.kind === 'course') {
+    return (
+      <>
+        <span className={compact ? '' : 'font-medium text-foreground/80'}>{item.label}</span>
+        <span className={compact ? '' : 'whitespace-nowrap'}> · {item.semesters.join(', ')}</span>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <strong className="font-semibold text-foreground">{item.semester}</strong>
+      <span aria-hidden="true"> • </span>
+      {item.professors.map((professor, index) => (
+        <span key={professor.slug ?? professor.label}>
+          {index > 0 ? ', ' : ''}
+          {professor.slug
+            ? <Link href={`/professors/${professor.slug}`} className="font-medium text-foreground/80 hover:text-primary hover:underline">{professor.label}</Link>
+            : professor.label}
+        </span>
+      ))}
+    </>
+  );
+}
 
 export function norm(s: string) {
   return s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -191,32 +220,42 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         const m = aggregate(recs, metricIdx);
         const teach = kind === 'courses' ? aggregate(recs, 5) : null;
         const partners = new Set(recs.map((r) => (kind === 'professors' ? r.course : r.professor))).size;
-        const recentByPartner = new Map<string, { label: string; semesters: string[]; professorSlug?: string }>();
-        for (const record of recs) {
-          const partnerKey = kind === 'professors' ? record.course : record.professor;
-          const label = kind === 'professors' ? record.course : friendlyName(record.professor);
-          const existing = recentByPartner.get(partnerKey);
-          const semester = record.semester || 'Semester unavailable';
-          if (!existing) {
-            recentByPartner.set(partnerKey, {
-              label,
-              semesters: [semester],
-              professorSlug: kind === 'courses' ? ds.profSlugByName.get(record.professor) : undefined,
-            });
-          } else if (kind === 'professors') {
-            recentByPartner.set(partnerKey, {
-              ...existing,
-              semesters: [...new Set([...existing.semesters, semester])]
-                .sort(bySemesterDesc)
-                .slice(0, 3),
-            });
-          } else if (bySemesterDesc(semester, existing.semesters[0]) < 0) {
-            recentByPartner.set(partnerKey, { ...existing, semesters: [semester] });
+        let recent: RecentEntry[];
+        if (kind === 'professors') {
+          const semestersByCourse = new Map<string, Set<string>>();
+          for (const record of recs) {
+            const semesters = semestersByCourse.get(record.course) ?? new Set<string>();
+            semesters.add(record.semester || 'Semester unavailable');
+            semestersByCourse.set(record.course, semesters);
           }
+          recent = [...semestersByCourse.entries()]
+            .map(([label, semesters]) => ({
+              kind: 'course' as const,
+              label,
+              semesters: [...semesters].sort(bySemesterDesc).slice(0, 3),
+            }))
+            .sort((a, b) => bySemesterDesc(a.semesters[0] ?? '', b.semesters[0] ?? '') || a.label.localeCompare(b.label))
+            .slice(0, 3);
+        } else {
+          const professorsBySemester = new Map<string, Map<string, { label: string; slug?: string }>>();
+          for (const record of recs) {
+            const semester = record.semester || 'Semester unavailable';
+            const professors = professorsBySemester.get(semester) ?? new Map<string, { label: string; slug?: string }>();
+            professors.set(record.professor, {
+              label: friendlyName(record.professor),
+              slug: ds.profSlugByName.get(record.professor),
+            });
+            professorsBySemester.set(semester, professors);
+          }
+          recent = [...professorsBySemester.entries()]
+            .map(([semester, professors]) => ({
+              kind: 'semester' as const,
+              semester,
+              professors: [...professors.values()].sort((a, b) => a.label.localeCompare(b.label)),
+            }))
+            .sort((a, b) => bySemesterDesc(a.semester, b.semester))
+            .slice(0, 3);
         }
-        const recent = [...recentByPartner.values()]
-          .sort((a, b) => bySemesterDesc(a.semesters[0] ?? '', b.semesters[0] ?? '') || a.label.localeCompare(b.label))
-          .slice(0, 3);
         return { g, m, teach, offerings: recs.length, partners, latest: recs[0]?.semester ?? '', recent };
       })
       .filter((r) =>
@@ -449,6 +488,17 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
                 : 'md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
               } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
+              const renderRecentEntries = (compact: boolean) => r.recent.map((item, index) => (
+                <span
+                  key={item.kind === 'course'
+                    ? `${item.label}-${item.semesters.join('-')}`
+                    : `${item.semester}-${item.professors.map((professor) => professor.slug ?? professor.label).join('-')}`}
+                  className="block break-words"
+                  data-testid={item.kind === 'semester' ? `recent-semester-${r.g.slug}-${compact ? 'compact' : 'wide'}-${index}` : undefined}
+                >
+                  <RecentEntryContent item={item} compact={compact} />
+                </span>
+              ));
               const renderCells = (expandButton: ReactNode = null) => (
                 <>
                   <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
@@ -477,25 +527,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       <span className="block text-[10px] font-medium uppercase tracking-wide">
                         {isProf ? 'Recent courses' : 'Recent professors'}
                       </span>
-                      {r.recent.map((item) => (
-                        <span key={`${item.label}-${item.semesters.join('-')}`} className={`block ${isProf ? 'break-words' : 'truncate'}`}>
-                          {!isProf && item.professorSlug
-                            ? <Link href={`/professors/${item.professorSlug}`} className="font-medium text-foreground/80 hover:text-primary hover:underline">{item.label}</Link>
-                            : item.label}
-                          <span className={isProf ? '' : 'whitespace-nowrap'}> · {item.semesters.join(', ')}</span>
-                        </span>
-                      ))}
+                      {renderRecentEntries(true)}
                     </span>
                   </span>
                   <span className={`hidden min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:block' : 'lg:block'}`}>
-                    {r.recent.map((item) => (
-                      <span key={`${item.label}-${item.semesters.join('-')}`} className={`block ${isProf ? 'break-words' : 'truncate'}`}>
-                        {!isProf && item.professorSlug
-                          ? <Link href={`/professors/${item.professorSlug}`} className="font-medium text-foreground/80 hover:text-primary hover:underline">{item.label}</Link>
-                          : <span className="font-medium text-foreground/80">{item.label}</span>}
-                        <span className={isProf ? '' : 'whitespace-nowrap'}> · {item.semesters.join(', ')}</span>
-                      </span>
-                    ))}
+                    {renderRecentEntries(false)}
                   </span>
                   <span className={isProf ? 'xl:justify-self-end' : 'md:justify-self-end'}>
                     {isProf
