@@ -132,6 +132,7 @@ describe('Professor table sorting', () => {
 
     renderDirectoryWithData(activityDataset);
     const activeOnlyToggle = screen.getByTestId('toggle-active-professors');
+    expect(screen.getByText('Active professors only')).toBeTruthy();
     expect(activeOnlyToggle.getAttribute('aria-checked')).toBe('true');
     expect(screen.queryByTestId('row-professors-pat-old')).toBeNull();
 

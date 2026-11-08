@@ -421,7 +421,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               data-testid="toggle-active-professors"
             />
             <label htmlFor="toggle-active-professors" className="cursor-pointer select-none text-sm">
-              Active only
+              Active professors only
             </label>
           </div>
         )}
