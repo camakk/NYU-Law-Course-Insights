@@ -3,6 +3,7 @@ import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
+import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { CourseProfessorExpansion } from '@/components/course-professor-expansion';
 
@@ -194,6 +195,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>(() =>
     returnSnapshot ? [...returnSnapshot.includedCategories] : [...COURSE_CATEGORIES],
   );
+  const [activeOnly, setActiveOnly] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(() => returnSnapshot?.filtersOpen ?? false);
   const lastHeaderSort = useRef<string | null>(returnSnapshot?.lastHeaderSort ?? null);
   useEffect(() => {
@@ -224,6 +226,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setMinScore('');
     setMaxScore('');
     setIncludedCategories([...COURSE_CATEGORIES]);
+    setActiveOnly(true);
   };
   const toggleCategory = (category: CourseCategory) => {
     setIncludedCategories((current) =>
@@ -272,6 +275,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       })
       .filter(({ g, categoryRecords }) =>
         categoryRecords.length > 0 &&
+        (kind !== 'professors' || !activeOnly || g.professorStatus !== 'Inactive') &&
         (sem === 'all' || categoryRecords.some((record) => record.semester === sem)) &&
         matches(g, terms, kind, categoryRecords)
       )
@@ -341,7 +345,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       }
     });
     return out;
-  }, [ds, kind, q, sem, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories]);
+  }, [ds, kind, q, sem, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories, activeOnly]);
 
   const isProf = kind === 'professors';
   const total = isProf ? ds.professors.length : ds.courses.length;
@@ -408,6 +412,19 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
 
       <div className="flex flex-wrap items-end gap-3 mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur py-3 -mx-1 px-1">
         <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
+        {isProf && (
+          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+            <Switch
+              id="toggle-active-professors"
+              checked={activeOnly}
+              onCheckedChange={setActiveOnly}
+              data-testid="toggle-active-professors"
+            />
+            <label htmlFor="toggle-active-professors" className="cursor-pointer select-none text-sm">
+              Active only
+            </label>
+          </div>
+        )}
         <NativeSelect label="Semester" value={sem} onChange={setSem} testId="select-semester">
           <option value="all">All semesters</option>
           {ds.semesters.map((s) => <option key={s} value={s}>{s}</option>)}

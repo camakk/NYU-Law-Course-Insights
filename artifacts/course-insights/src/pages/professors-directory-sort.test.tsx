@@ -120,7 +120,7 @@ describe('Professor table sorting', () => {
     expect(row?.textContent).not.toContain('Spring 2024');
   });
 
-  it('shows an inline Inactive badge when the professor last taught before Fall 2021', () => {
+  it('hides inactive professors by default and includes them when Active only is off', () => {
     const activityDataset = buildDataset({
       questions: [],
       sourceNotes: [],
@@ -131,6 +131,11 @@ describe('Professor table sorting', () => {
     });
 
     renderDirectoryWithData(activityDataset);
+    const activeOnlyToggle = screen.getByTestId('toggle-active-professors');
+    expect(activeOnlyToggle.getAttribute('aria-checked')).toBe('true');
+    expect(screen.queryByTestId('row-professors-pat-old')).toBeNull();
+
+    fireEvent.click(activeOnlyToggle);
     const row = screen.getByTestId('row-professors-pat-old');
     const badge = screen.getByTestId('badge-professor-inactive-pat-old');
 
@@ -138,6 +143,7 @@ describe('Professor table sorting', () => {
     expect(badge.textContent).toBe('Inactive');
     expect(badge.previousElementSibling?.textContent).toBe('Last Taught Spring 2021');
     expect(screen.queryByTestId('badge-professor-inactive-alex-recent')).toBeNull();
+    expect(screen.getByTestId('row-professors-alex-recent')).toBeTruthy();
   });
 
   it('toggles each sortable column and syncs the Sort selector', () => {
