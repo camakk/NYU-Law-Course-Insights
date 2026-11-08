@@ -128,7 +128,12 @@ export function friendlyName(raw: string): string {
   const t = raw.trim();
   const parts = t.split(',');
   if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
-    return `${parts[1].trim()} ${parts[0].trim()}`;
+    const [firstName, ...givenNameSuffix] = parts[1].trim().split(/\s+/);
+    const formattedGivenName = [
+      firstName,
+      ...givenNameSuffix.map((token) => (/^\p{L}$/u.test(token) ? `${token}.` : token)),
+    ].join(' ');
+    return `${formattedGivenName} ${parts[0].trim()}`;
   }
   return t;
 }

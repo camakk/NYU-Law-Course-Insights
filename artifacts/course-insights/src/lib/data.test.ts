@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDataset, classifyCourseLabels, is1LCourse } from './data';
+import { buildDataset, classifyCourseLabels, friendlyName, is1LCourse } from './data';
 
 describe('course audience labels', () => {
   it('adds a 1L label to titles that say for 1Ls', () => {
@@ -49,6 +49,32 @@ describe('course audience labels', () => {
 });
 
 describe('professor identity aliases', () => {
+  it('adds periods after middle initials in display names without changing source names', () => {
+    expect(friendlyName('Pildes, Richard H')).toBe('Richard H. Pildes');
+    expect(friendlyName('Brooks, Richard R. W.')).toBe('Richard R. W. Brooks');
+    expect(friendlyName('Walker, Alex Ferrara')).toBe('Alex Ferrara Walker');
+
+    const sourceProfessor = 'Pildes, Richard H';
+    const dataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [{
+        id: 1,
+        course: 'Constitutional Law',
+        professor: sourceProfessor,
+        semester: 'Fall 2025',
+        enrolled: 10,
+        responded: 5,
+        scores: Array(10).fill(4),
+        inaccessible: false,
+      }],
+    });
+
+    expect(dataset.professors[0].label).toBe('Richard H. Pildes');
+    expect(dataset.professors[0].name).toBe(sourceProfessor);
+    expect(dataset.records[0].professor).toBe(sourceProfessor);
+  });
+
   it('groups confirmed Adam Cox name variants under Adam B. Cox', () => {
     const dataset = buildDataset({
       questions: [],
