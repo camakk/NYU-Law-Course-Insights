@@ -441,10 +441,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             </Tooltip>
           </div>
         )}
-        <NativeSelect label="Semester" value={sem} onChange={setSem} testId="select-semester">
-          <option value="all">All semesters</option>
-          {ds.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
-        </NativeSelect>
+        {!isProf && (
+          <NativeSelect label="Semester" value={sem} onChange={setSem} testId="select-semester">
+            <option value="all">All semesters</option>
+            {ds.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
+          </NativeSelect>
+        )}
         <NativeSelect label="Sort" value={sort} onChange={(v) => {
           lastHeaderSort.current = null;
           setSort(v as SortKey);
