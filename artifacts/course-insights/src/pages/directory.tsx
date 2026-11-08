@@ -1,12 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowUpRight, ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, LoadMore, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { Slider } from '@/components/ui/slider';
 
 type Kind = 'professors' | 'courses';
-type SortKey = 'rating' | 'rating-asc' | 'responses' | 'offerings' | 'name' | 'recent';
+type SortKey = 'rating' | 'rating-asc' | 'responses' | 'responses-asc' | 'courses' | 'courses-asc' | 'offerings' | 'offerings-asc' | 'name' | 'name-desc' | 'recent';
 
 export function norm(s: string) {
   return s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -136,6 +136,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [maxScore, setMaxScore] = useState('');
   const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>([...COURSE_CATEGORIES]);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const lastHeaderSort = useRef<string | null>(null);
   const metricIdx = kind === 'professors' ? 5 : 8;
   const groupsForKind = kind === 'professors' ? ds.professors : ds.courses;
   const maxOfferings = kind === 'professors'
@@ -215,8 +216,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         case 'rating': return byAvg(a.m.avg, b.m.avg, 1) || b.m.responses - a.m.responses;
         case 'rating-asc': return byAvg(a.m.avg, b.m.avg, -1) || b.m.responses - a.m.responses;
         case 'responses': return b.m.responses - a.m.responses;
+        case 'responses-asc': return a.m.responses - b.m.responses;
+        case 'courses': return b.partners - a.partners;
+        case 'courses-asc': return a.partners - b.partners;
         case 'offerings': return b.offerings - a.offerings;
+        case 'offerings-asc': return a.offerings - b.offerings;
         case 'recent': return a.latest === b.latest ? a.g.label.localeCompare(b.g.label) : bySemesterDesc(a.latest, b.latest);
+        case 'name-desc': return b.g.label.localeCompare(a.g.label);
         default: return a.g.label.localeCompare(b.g.label);
       }
     });
@@ -225,6 +231,42 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
 
   const isProf = kind === 'professors';
   const total = isProf ? ds.professors.length : ds.courses.length;
+  const sortByHeader = (header: string, first: SortKey, second: SortKey) => {
+    const next = lastHeaderSort.current === header
+      ? (sort === first ? second : first)
+      : first;
+    lastHeaderSort.current = header;
+    setSort(next);
+  };
+  const sortHeader = (
+    label: string,
+    header: string,
+    first: SortKey,
+    second: SortKey,
+    alignment: 'left' | 'center' | 'right' = 'right',
+    firstDirection: 'ascending' | 'descending' = 'descending',
+  ) => {
+    const active = sort === first || sort === second;
+    const direction = sort === first
+      ? firstDirection
+      : firstDirection === 'ascending' ? 'descending' : 'ascending';
+    const Icon = active
+      ? direction === 'ascending' ? ArrowUp : ArrowDown
+      : ArrowUpDown;
+    return (
+      <button
+        type="button"
+        onClick={() => sortByHeader(header, first, second)}
+        aria-label={`${label}, ${active ? `sorted ${direction}` : 'not sorted'}`}
+        aria-pressed={active}
+        data-testid={`button-sort-${header}`}
+        className={`inline-flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-sm py-0.5 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${alignment === 'left' ? 'justify-start' : alignment === 'center' ? 'justify-center' : 'justify-end text-right'}`}
+      >
+        <span className="truncate">{label}</span>
+        <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : 'opacity-50'}`} aria-hidden="true" />
+      </button>
+    );
+  };
 
   return (
     <div className="rise">
@@ -247,13 +289,25 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <option value="all">All semesters</option>
           {ds.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
         </NativeSelect>
-        <NativeSelect label="Sort" value={sort} onChange={(v) => setSort(v as SortKey)} testId="select-sort">
+        <NativeSelect label="Sort" value={sort} onChange={(v) => {
+          lastHeaderSort.current = null;
+          setSort(v as SortKey);
+        }} testId="select-sort">
           <option value="rating">Highest rated</option>
           <option value="rating-asc">Lowest rated</option>
           <option value="responses">Most reviews</option>
+          <option value="responses-asc">Fewest reviews</option>
+          {isProf && (
+            <>
+              <option value="courses">Most courses taught</option>
+              <option value="courses-asc">Fewest courses taught</option>
+            </>
+          )}
           <option value="offerings">{isProf ? 'Most times taught' : 'Most offerings'}</option>
+          <option value="offerings-asc">{isProf ? 'Fewest times taught' : 'Fewest offerings'}</option>
           <option value="recent">Most recently taught</option>
           <option value="name">Name A–Z</option>
+          <option value="name-desc">Name Z–A</option>
         </NativeSelect>
       </div>
 
@@ -368,11 +422,15 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               ? 'hidden xl:grid xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
               : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem]'
             } gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40`}>
-              <span>#</span><span>{isProf ? 'Professor' : 'Course'}</span>
+              <span>#</span>
+              {isProf
+                ? sortHeader('Professor', 'professor', 'name', 'name-desc', 'left', 'ascending')
+                : <span>Course</span>}
               <span className={isProf ? 'hidden xl:block' : 'hidden lg:block'}>{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
-              <span className={isProf ? 'text-center' : 'text-right'}>{isProf ? 'Teaching' : 'Course'}</span>
-              <span className="text-right">{isProf ? 'Courses' : 'Teaching'}</span>
-              <span className="text-right">{isProf ? 'Times Taught' : 'Offerings'}</span><span className="text-right">Reviews</span><span />
+              <span className={isProf ? 'text-center' : 'text-right'}>{isProf ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc') : 'Course'}</span>
+              <span className="text-right">{isProf ? sortHeader('Courses', 'courses', 'courses', 'courses-asc') : 'Teaching'}</span>
+              <span className="text-right">{isProf ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc') : 'Offerings'}</span>
+              <span className="text-right">{isProf ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc') : 'Reviews'}</span><span />
             </div>
             {rows.slice(0, limit).map((r, i) => (
               <Link
