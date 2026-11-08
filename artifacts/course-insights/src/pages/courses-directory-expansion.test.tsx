@@ -82,6 +82,26 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('button-load-more')).toBeNull();
   });
 
+  it('places Filters between Semester and Sort in the search toolbar', () => {
+    render(<CoursesPage />);
+    const toolbar = screen.getByTestId('directory-toolbar-courses');
+    const semesterSelect = screen.getByTestId('select-semester');
+    const filtersButton = screen.getByTestId('button-toggle-course-filters');
+    const sortSelect = screen.getByTestId('select-sort');
+    const controlsPanel = document.getElementById('directory-filter-controls');
+
+    expect(filtersButton.parentElement).toBe(toolbar);
+    expect(semesterSelect.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(filtersButton.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toolbar.lastElementChild?.contains(sortSelect)).toBe(true);
+    expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(true);
+
+    fireEvent.click(filtersButton);
+
+    expect(filtersButton.getAttribute('aria-expanded')).toBe('true');
+    expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(false);
+  });
+
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
     render(<CoursesPage />);
 

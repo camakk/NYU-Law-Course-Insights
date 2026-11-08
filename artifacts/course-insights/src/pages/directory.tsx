@@ -520,22 +520,20 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             {ds.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
           </NativeSelect>
         )}
-        {isProf && (
-          <button
-            type="button"
-            aria-expanded={filtersOpen}
-            aria-controls="directory-filter-controls"
-            onClick={() => setFiltersOpen((open) => !open)}
-            className={`group flex h-11 shrink-0 cursor-pointer items-center justify-between gap-3 rounded-lg border border-input bg-card px-4 text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${filtersOpen ? 'bg-secondary/30' : ''}`}
-            data-testid="button-toggle-professor-filters"
-          >
-            <span className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
-              Filters
-            </span>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-          </button>
-        )}
+        <button
+          type="button"
+          aria-expanded={filtersOpen}
+          aria-controls="directory-filter-controls"
+          onClick={() => setFiltersOpen((open) => !open)}
+          className={`group flex h-11 shrink-0 cursor-pointer items-center justify-between gap-3 rounded-lg border border-input bg-card px-4 text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${filtersOpen ? 'bg-secondary/30' : ''}`}
+          data-testid={isProf ? 'button-toggle-professor-filters' : 'button-toggle-course-filters'}
+        >
+          <span className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+            Filters
+          </span>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
         <NativeSelect label="Sort" value={sort} onChange={(v) => {
           lastHeaderSort.current = null;
           setSort(v as SortKey);
@@ -558,39 +556,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </NativeSelect>
       </div>
 
-      {isProf ? (
-        <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0" hidden={!filtersOpen}>
-          <legend className="sr-only">Filters</legend>
-          <div id="directory-filter-controls" className="px-4 pb-4 pt-4 sm:px-5">
-            {filterPanelContent}
-          </div>
-        </fieldset>
-      ) : (
-        <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0">
-          <legend className="sr-only">Filters</legend>
-          <button
-            type="button"
-            aria-expanded={filtersOpen}
-            aria-controls="directory-filter-controls"
-            onClick={() => setFiltersOpen((open) => !open)}
-            className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${filtersOpen ? 'border-b bg-secondary/30' : ''}`}
-            data-testid="button-toggle-course-filters"
-          >
-            <span className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
-              Filters
-            </span>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-          </button>
-          <div
-            id="directory-filter-controls"
-            hidden={!filtersOpen}
-            className="px-4 pb-4 pt-1 sm:px-5"
-          >
-            {filterPanelContent}
-          </div>
-        </fieldset>
-      )}
+      <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0" hidden={!filtersOpen}>
+        <legend className="sr-only">Filters</legend>
+        <div id="directory-filter-controls" className="px-4 pb-4 pt-4 sm:px-5">
+          {filterPanelContent}
+        </div>
+      </fieldset>
 
       {rows.length === 0 ? (
         <Empty title="Nothing matches." hint="Lower the minimums, clear filters, or try a shorter search." />
