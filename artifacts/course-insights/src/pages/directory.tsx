@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowUpRight, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, LoadMore, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { Slider } from '@/components/ui/slider';
@@ -257,28 +257,34 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </NativeSelect>
       </div>
 
-      <fieldset className={`mb-6 rounded-xl border bg-card px-4 ${isProf && !filtersOpen ? 'pb-1' : 'pb-4'}`}>
-        <legend className="px-2">
-          {isProf ? (
+      <fieldset className={`mb-6 rounded-xl border bg-card ${isProf ? 'overflow-hidden p-0' : 'px-4 pb-4'}`}>
+        {isProf ? (
+          <>
+            <legend className="sr-only">Filters</legend>
             <button
               type="button"
               aria-expanded={filtersOpen}
               aria-controls="professor-filter-controls"
               onClick={() => setFiltersOpen((open) => !open)}
-              className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm font-semibold transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${filtersOpen ? 'border-b bg-secondary/30' : ''}`}
               data-testid="button-toggle-professor-filters"
             >
-              Filters
-              <ChevronDown className={`h-4 w-4 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+                Filters
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
-          ) : (
+          </>
+        ) : (
+          <legend className="px-2">
             <span className="text-sm font-semibold">Filter</span>
-          )}
-        </legend>
+          </legend>
+        )}
         <div
           id={isProf ? 'professor-filter-controls' : 'course-filter-controls'}
           hidden={isProf && !filtersOpen}
-          className="pt-1"
+          className={`pt-1 ${isProf ? 'px-4 pb-4 sm:px-5' : ''}`}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
             <RangeFilter
