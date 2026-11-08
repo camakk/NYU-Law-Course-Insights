@@ -121,6 +121,20 @@ describe('Professor table sorting', () => {
     expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(false);
   });
 
+  it('changes the Minimum reviews slider in ten-review increments', () => {
+    renderDirectory();
+    fireEvent.click(screen.getByTestId('button-toggle-professor-filters'));
+
+    const slider = screen.getByTestId('filter-min-responses-slider')
+      .querySelector('[role="slider"]') as HTMLElement;
+    expect(slider.getAttribute('aria-valuenow')).toBe('50');
+
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+
+    expect(slider.getAttribute('aria-valuenow')).toBe('60');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('60+');
+  });
+
   it('shows up to three recent distinct semesters for a professor-course pair', () => {
     const historyDataset = buildDataset({
       questions: [],

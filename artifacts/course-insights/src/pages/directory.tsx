@@ -414,6 +414,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           onChange={updateMinimum(setMinResponses)}
           min={0}
           max={maxReviews}
+          step={isProf ? 10 : 1}
           id="filter-min-responses"
           formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
           minLabel="No minimum"
