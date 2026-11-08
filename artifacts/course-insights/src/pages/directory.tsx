@@ -462,7 +462,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       )}
                     </span>
                     <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>Latest {r.latest}</span>
+                      <span>{isProf ? 'Last Taught' : 'Latest'} {r.latest}</span>
                       {!isProf && r.g.courseCategories?.map((category) => (
                         <span key={category} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{category}</span>
                       ))}
