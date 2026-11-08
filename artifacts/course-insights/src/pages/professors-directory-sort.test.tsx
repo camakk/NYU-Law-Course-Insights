@@ -8,12 +8,12 @@ vi.mock('@/lib/data', async (importOriginal) => ({
   useDataset: vi.fn(),
 }));
 
-function makeRecord(id: number, professor: string, course: string, rating: number, responded: number): RawData['records'][number] {
+function makeRecord(id: number, professor: string, course: string, rating: number, responded: number, semester = 'Fall 2025'): RawData['records'][number] {
   return {
     id,
     professor,
     course,
-    semester: 'Fall 2025',
+    semester,
     enrolled: 100,
     responded,
     scores: Array(10).fill(rating),
@@ -47,6 +47,16 @@ function renderDirectory() {
   return render(<ProfessorsPage />);
 }
 
+function renderDirectoryWithData(data: ReturnType<typeof buildDataset>) {
+  vi.mocked(useDataset).mockReturnValue({
+    data,
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  } as unknown as ReturnType<typeof useDataset>);
+  return render(<ProfessorsPage />);
+}
+
 function professorOrder(container: HTMLElement) {
   return Array.from(container.querySelectorAll('[data-testid^="row-professors-"]'))
     .map((row) => row.querySelector('.font-medium.truncate')?.textContent);
@@ -69,6 +79,25 @@ describe('Professor table sorting', () => {
   it('shows the requested professor-directory introduction', () => {
     renderDirectory();
     expect(screen.getByText("You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.")).toBeTruthy();
+  });
+
+  it('shows up to three recent distinct semesters for a professor-course pair', () => {
+    const historyDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Harawa, Daniel', 'Evidence', 4.5, 20, 'Spring 2026'),
+        makeRecord(2, 'Harawa, Daniel', 'Evidence', 4.5, 20, 'Spring 2025'),
+        makeRecord(3, 'Harawa, Daniel', 'Evidence', 4.5, 20, 'Fall 2024'),
+        makeRecord(4, 'Harawa, Daniel', 'Evidence', 4.5, 20, 'Spring 2024'),
+        makeRecord(5, 'Harawa, Daniel', 'Evidence', 4.5, 20, 'Spring 2025'),
+      ],
+    });
+
+    const { container } = renderDirectoryWithData(historyDataset);
+    const row = container.querySelector('[data-testid="row-professors-daniel-harawa"]');
+    expect(row?.textContent).toContain('Evidence · Spring 2026, Spring 2025, Fall 2024');
+    expect(row?.textContent).not.toContain('Spring 2024');
   });
 
   it('toggles each sortable column and syncs the Sort selector', () => {

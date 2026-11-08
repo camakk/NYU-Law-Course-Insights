@@ -191,21 +191,31 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         const m = aggregate(recs, metricIdx);
         const teach = kind === 'courses' ? aggregate(recs, 5) : null;
         const partners = new Set(recs.map((r) => (kind === 'professors' ? r.course : r.professor))).size;
-        const recentByPartner = new Map<string, { label: string; semester: string; professorSlug?: string }>();
+        const recentByPartner = new Map<string, { label: string; semesters: string[]; professorSlug?: string }>();
         for (const record of recs) {
           const partnerKey = kind === 'professors' ? record.course : record.professor;
           const label = kind === 'professors' ? record.course : friendlyName(record.professor);
           const existing = recentByPartner.get(partnerKey);
-          if (!existing || bySemesterDesc(record.semester, existing.semester) < 0) {
+          const semester = record.semester || 'Semester unavailable';
+          if (!existing) {
             recentByPartner.set(partnerKey, {
               label,
-              semester: record.semester || 'Semester unavailable',
+              semesters: [semester],
               professorSlug: kind === 'courses' ? ds.profSlugByName.get(record.professor) : undefined,
             });
+          } else if (kind === 'professors') {
+            recentByPartner.set(partnerKey, {
+              ...existing,
+              semesters: [...new Set([...existing.semesters, semester])]
+                .sort(bySemesterDesc)
+                .slice(0, 3),
+            });
+          } else if (bySemesterDesc(semester, existing.semesters[0]) < 0) {
+            recentByPartner.set(partnerKey, { ...existing, semesters: [semester] });
           }
         }
         const recent = [...recentByPartner.values()]
-          .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.label.localeCompare(b.label))
+          .sort((a, b) => bySemesterDesc(a.semesters[0] ?? '', b.semesters[0] ?? '') || a.label.localeCompare(b.label))
           .slice(0, 3);
         return { g, m, teach, offerings: recs.length, partners, latest: recs[0]?.semester ?? '', recent };
       })
@@ -469,22 +479,22 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                         {isProf ? 'Recent courses' : 'Recent professors'}
                       </span>
                       {r.recent.map((item) => (
-                        <span key={`${item.label}-${item.semester}`} className="block truncate">
+                        <span key={`${item.label}-${item.semesters.join('-')}`} className={`block ${isProf ? 'break-words' : 'truncate'}`}>
                           {!isProf && item.professorSlug
                             ? <Link href={`/professors/${item.professorSlug}`} className="font-medium text-foreground/80 hover:text-primary hover:underline">{item.label}</Link>
                             : item.label}
-                          <span className="whitespace-nowrap"> · {item.semester}</span>
+                          <span className={isProf ? '' : 'whitespace-nowrap'}> · {item.semesters.join(', ')}</span>
                         </span>
                       ))}
                     </span>
                   </span>
                   <span className={`hidden min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:block' : 'lg:block'}`}>
                     {r.recent.map((item) => (
-                      <span key={`${item.label}-${item.semester}`} className="block truncate">
+                      <span key={`${item.label}-${item.semesters.join('-')}`} className={`block ${isProf ? 'break-words' : 'truncate'}`}>
                         {!isProf && item.professorSlug
                           ? <Link href={`/professors/${item.professorSlug}`} className="font-medium text-foreground/80 hover:text-primary hover:underline">{item.label}</Link>
                           : <span className="font-medium text-foreground/80">{item.label}</span>}
-                        <span className="whitespace-nowrap"> · {item.semester}</span>
+                        <span className={isProf ? '' : 'whitespace-nowrap'}> · {item.semesters.join(', ')}</span>
                       </span>
                     ))}
                   </span>
