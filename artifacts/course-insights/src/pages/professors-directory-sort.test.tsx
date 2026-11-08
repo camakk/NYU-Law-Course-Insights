@@ -198,9 +198,10 @@ describe('Professor table sorting', () => {
 
   it('toggles each sortable column and syncs the Sort selector', () => {
     const { container } = renderDirectory();
-    const sort = screen.getByTestId('select-sort');
     expect(selectedSort()).toBe('name');
     expect(professorOrder(container)).toEqual(['Alice Doe', 'Bob Roe']);
+    expect(screen.queryByRole('option', { name: 'Most courses taught' })).toBeNull();
+    expect(screen.queryByRole('option', { name: 'Fewest courses taught' })).toBeNull();
 
     fireEvent.click(screen.getByTestId('button-sort-professor'));
     expect(selectedSort()).toBe('name');
@@ -220,13 +221,6 @@ describe('Professor table sorting', () => {
     expect(professorOrder(container)).toEqual(['Alice Doe', 'Bob Roe']);
 
     expect(screen.queryByTestId('button-sort-courses')).toBeNull();
-    fireEvent.change(sort, { target: { value: 'courses' } });
-    expect(selectedSort()).toBe('courses');
-    expect(professorOrder(container)).toEqual(['Alice Doe', 'Bob Roe']);
-    fireEvent.change(sort, { target: { value: 'courses-asc' } });
-    expect(selectedSort()).toBe('courses-asc');
-    expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);
-
     fireEvent.click(screen.getByTestId('button-sort-times-taught'));
     expect(selectedSort()).toBe('offerings');
     expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);

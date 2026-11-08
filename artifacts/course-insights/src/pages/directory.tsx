@@ -543,12 +543,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <option value="rating-asc">Lowest rated</option>
           <option value="responses">Most reviews</option>
           <option value="responses-asc">Fewest reviews</option>
-          {isProf && (
-            <>
-              <option value="courses">Most courses taught</option>
-              <option value="courses-asc">Fewest courses taught</option>
-            </>
-          )}
           <option value="offerings">{isProf ? 'Most times taught' : 'Most offerings'}</option>
           <option value="offerings-asc">{isProf ? 'Fewest times taught' : 'Fewest offerings'}</option>
           <option value="recent">Most recently taught</option>
