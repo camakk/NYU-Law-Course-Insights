@@ -63,6 +63,7 @@ describe('Courses table expansion', () => {
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
     render(<CoursesPage />);
 
+    expect(screen.getByText('You have to take Professional Responsibility, but there are 13 professors teaching it. How do you choose whose class to take? We have all the data to help you decide.')).toBeTruthy();
     const ratingHeader = screen.getByTestId('button-sort-rating');
     expect(ratingHeader.parentElement?.classList.contains('text-center')).toBe(true);
     expect(screen.queryByText('Teaching')).toBeNull();

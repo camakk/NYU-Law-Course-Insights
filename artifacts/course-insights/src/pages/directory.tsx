@@ -281,7 +281,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <p className="text-muted-foreground mt-2 max-w-2xl">
           {isProf
             ? <>You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.</>
-            : <>{fmtInt(total)} distinct course titles, scored by response-weighted "Overall course effective." Search also matches instructor names.</>}
+            : <>You have to take Professional Responsibility, but there are 13 professors teaching it. How do you choose whose class to take? We have all the data to help you decide.</>}
         </p>
         <p className="text-xs text-muted-foreground mt-3" role="status" aria-live="polite" data-testid="filter-summary">
           {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
