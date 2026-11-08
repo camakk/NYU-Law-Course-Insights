@@ -395,6 +395,79 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       </button>
     );
   };
+  const filterPanelContent = (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
+        <RangeFilter
+          label={isProf ? 'Minimum times taught' : 'Minimum class offerings'}
+          value={minOfferings}
+          onChange={updateMinimum(setMinOfferings)}
+          min={1}
+          max={maxOfferings}
+          id="filter-min-offerings"
+          formatValue={(value) => `${fmtInt(value)}+`}
+          maxLabel={isProf ? '30+' : undefined}
+        />
+        <RangeFilter
+          label="Minimum reviews"
+          value={minResponses}
+          onChange={updateMinimum(setMinResponses)}
+          min={0}
+          max={maxReviews}
+          id="filter-min-responses"
+          formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
+          minLabel="No minimum"
+          maxLabel={`${fmtInt(maxReviews)}+`}
+          snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
+        />
+        <RangeBandFilter
+          label={isProf ? 'Teaching score' : 'Average Course Rating'}
+          minValue={minScore === '' ? 0 : Number(minScore)}
+          maxValue={maxScore === '' ? 5 : Number(maxScore)}
+          onChange={([minimum, maximum]) => {
+            setMinScore(minimum === 0 ? '' : minimum.toFixed(1));
+            setMaxScore(maximum === 5 ? '' : maximum.toFixed(1));
+          }}
+          id={isProf ? 'filter-score-range' : 'filter-course-rating-range'}
+        />
+      </div>
+      <div className="mt-4 border-t pt-4">
+        <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
+        <div role="group" aria-labelledby="course-category-filter-label" className="mt-2 flex flex-wrap gap-2">
+          {COURSE_CATEGORIES.map((category) => (
+            <label key={category} className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs transition hover:border-primary/60">
+              <input
+                type="checkbox"
+                checked={includedCategories.includes(category)}
+                onChange={() => toggleCategory(category)}
+                data-testid={`filter-category-${category.toLowerCase()}`}
+                className="accent-primary"
+              />
+              {category}
+            </label>
+          ))}
+        </div>
+        {!isProf && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Uncheck a category to exclude those courses from the results. Categories are inferred from course titles; titles without a clear indicator are labeled Course.
+          </p>
+        )}
+      </div>
+      {!isProf && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+          <p className="text-xs text-muted-foreground max-w-3xl">
+            Professors counts distinct instructors; offerings counts individual sections of each course. Minimums include the selected value and apply within the selected semester. Review totals count student responses from offerings contributing to the displayed score.
+          </p>
+          {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
+        </div>
+      )}
+      {isProf && hasFilters && (
+        <div className="flex justify-end mt-3">
+          <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className="rise">
@@ -411,7 +484,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur py-3 -mx-1 px-1">
+      <div className="flex flex-wrap items-end gap-3 mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur py-3 -mx-1 px-1" data-testid={`directory-toolbar-${kind}`}>
         <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
         {isProf && (
           <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
@@ -447,6 +520,22 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             {ds.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
           </NativeSelect>
         )}
+        {isProf && (
+          <button
+            type="button"
+            aria-expanded={filtersOpen}
+            aria-controls="directory-filter-controls"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className={`group flex h-11 shrink-0 cursor-pointer items-center justify-between gap-3 rounded-lg border border-input bg-card px-4 text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${filtersOpen ? 'bg-secondary/30' : ''}`}
+            data-testid="button-toggle-professor-filters"
+          >
+            <span className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+              Filters
+            </span>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </button>
+        )}
         <NativeSelect label="Sort" value={sort} onChange={(v) => {
           lastHeaderSort.current = null;
           setSort(v as SortKey);
@@ -469,98 +558,39 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </NativeSelect>
       </div>
 
-      <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0">
-        <legend className="sr-only">Filters</legend>
-        <button
-          type="button"
-          aria-expanded={filtersOpen}
-          aria-controls="directory-filter-controls"
-          onClick={() => setFiltersOpen((open) => !open)}
-          className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${filtersOpen ? 'border-b bg-secondary/30' : ''}`}
-          data-testid={isProf ? 'button-toggle-professor-filters' : 'button-toggle-course-filters'}
-        >
-          <span className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
-            Filters
-          </span>
-          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-        </button>
-        <div
-          id="directory-filter-controls"
-          hidden={!filtersOpen}
-          className="px-4 pb-4 pt-1 sm:px-5"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
-            <RangeFilter
-              label={isProf ? 'Minimum times taught' : 'Minimum class offerings'}
-              value={minOfferings}
-              onChange={updateMinimum(setMinOfferings)}
-              min={1}
-              max={maxOfferings}
-              id="filter-min-offerings"
-              formatValue={(value) => `${fmtInt(value)}+`}
-              maxLabel={isProf ? '30+' : undefined}
-            />
-            <RangeFilter
-              label="Minimum reviews"
-              value={minResponses}
-              onChange={updateMinimum(setMinResponses)}
-              min={0}
-              max={maxReviews}
-              id="filter-min-responses"
-              formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
-              minLabel="No minimum"
-              maxLabel={`${fmtInt(maxReviews)}+`}
-              snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
-            />
-            <RangeBandFilter
-              label={isProf ? 'Teaching score' : 'Average Course Rating'}
-              minValue={minScore === '' ? 0 : Number(minScore)}
-              maxValue={maxScore === '' ? 5 : Number(maxScore)}
-              onChange={([minimum, maximum]) => {
-                setMinScore(minimum === 0 ? '' : minimum.toFixed(1));
-                setMaxScore(maximum === 5 ? '' : maximum.toFixed(1));
-              }}
-              id={isProf ? 'filter-score-range' : 'filter-course-rating-range'}
-            />
+      {isProf ? (
+        <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0" hidden={!filtersOpen}>
+          <legend className="sr-only">Filters</legend>
+          <div id="directory-filter-controls" className="px-4 pb-4 pt-4 sm:px-5">
+            {filterPanelContent}
           </div>
-          <div className="mt-4 border-t pt-4">
-            <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
-            <div role="group" aria-labelledby="course-category-filter-label" className="mt-2 flex flex-wrap gap-2">
-              {COURSE_CATEGORIES.map((category) => (
-                <label key={category} className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs transition hover:border-primary/60">
-                  <input
-                    type="checkbox"
-                    checked={includedCategories.includes(category)}
-                    onChange={() => toggleCategory(category)}
-                    data-testid={`filter-category-${category.toLowerCase()}`}
-                    className="accent-primary"
-                  />
-                  {category}
-                </label>
-              ))}
-            </div>
-            {!isProf && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Uncheck a category to exclude those courses from the results. Categories are inferred from course titles; titles without a clear indicator are labeled Course.
-              </p>
-            )}
+        </fieldset>
+      ) : (
+        <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0">
+          <legend className="sr-only">Filters</legend>
+          <button
+            type="button"
+            aria-expanded={filtersOpen}
+            aria-controls="directory-filter-controls"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${filtersOpen ? 'border-b bg-secondary/30' : ''}`}
+            data-testid="button-toggle-course-filters"
+          >
+            <span className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+              Filters
+            </span>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </button>
+          <div
+            id="directory-filter-controls"
+            hidden={!filtersOpen}
+            className="px-4 pb-4 pt-1 sm:px-5"
+          >
+            {filterPanelContent}
           </div>
-          {!isProf && (
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-              <p className="text-xs text-muted-foreground max-w-3xl">
-                Professors counts distinct instructors; offerings counts individual sections of each course. Minimums include the selected value and apply within the selected semester. Review totals count student responses from offerings contributing to the displayed score.
-              </p>
-              {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
-            </div>
-          )}
-          {isProf && hasFilters && (
-            <div className="flex justify-end mt-3">
-              <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
-            </div>
-          )}
-        </div>
-      </fieldset>
+        </fieldset>
+      )}
 
       {rows.length === 0 ? (
         <Empty title="Nothing matches." hint="Lower the minimums, clear filters, or try a shorter search." />

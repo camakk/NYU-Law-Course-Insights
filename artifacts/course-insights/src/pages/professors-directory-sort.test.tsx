@@ -103,6 +103,24 @@ describe('Professor table sorting', () => {
     expect(aliceRow.textContent).not.toContain('Latest Fall 2025');
   });
 
+  it('places Filters just left of Sort in the search toolbar and expands below it', () => {
+    renderDirectory();
+    const toolbar = screen.getByTestId('directory-toolbar-professors');
+    const filtersButton = screen.getByTestId('button-toggle-professor-filters');
+    const sortSelect = screen.getByTestId('select-sort');
+    const controlsPanel = document.getElementById('directory-filter-controls');
+
+    expect(filtersButton.parentElement).toBe(toolbar);
+    expect(filtersButton.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toolbar.lastElementChild?.contains(sortSelect)).toBe(true);
+    expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(true);
+
+    fireEvent.click(filtersButton);
+
+    expect(filtersButton.getAttribute('aria-expanded')).toBe('true');
+    expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(false);
+  });
+
   it('shows up to three recent distinct semesters for a professor-course pair', () => {
     const historyDataset = buildDataset({
       questions: [],
