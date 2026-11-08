@@ -49,7 +49,7 @@ describe('course audience labels', () => {
 });
 
 describe('professor identity aliases', () => {
-  it('groups Adam Cox with Adam B. Cox without merging Adam M. Cox', () => {
+  it('groups confirmed Adam Cox name variants under Adam B. Cox', () => {
     const dataset = buildDataset({
       questions: [],
       sourceNotes: [],
@@ -66,13 +66,32 @@ describe('professor identity aliases', () => {
     });
 
     const adamB = dataset.professors.find((group) => group.label === 'Adam B. Cox');
-    const adamM = dataset.professors.find((group) => group.label === 'Adam M. Cox');
-
     expect(adamB?.records.map((record) => record.professor)).toEqual([
+      'Cox, Adam B.',
       'Cox, Adam B.',
       'Cox, Adam B.',
     ]);
     expect(dataset.profSlugByName.get('Cox, Adam')).toBe(adamB?.slug);
-    expect(adamM?.records).toHaveLength(1);
+    expect(dataset.profSlugByName.get('Cox, Adam M.')).toBe(adamB?.slug);
+    expect(dataset.professors.some((group) => group.label === 'Adam M. Cox')).toBe(false);
+  });
+
+  it('keeps the confirmed typo alias resolvable when it is absent from source records', () => {
+    const dataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [{
+        id: 1,
+        course: 'Contracts',
+        professor: 'Cox, Adam B.',
+        semester: 'Fall 2025',
+        enrolled: 10,
+        responded: 5,
+        scores: Array(10).fill(4),
+        inaccessible: false,
+      }],
+    });
+
+    expect(dataset.profSlugByName.get('Cox, Adam M.')).toBe(dataset.professors[0].slug);
   });
 });

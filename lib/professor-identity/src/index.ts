@@ -13,6 +13,7 @@ interface ParsedName {
 // Explicitly verified source alias; automatic matching stays conservative when initials conflict.
 const EXPLICIT_IDENTITY_OVERRIDES = [
   ["Cox, Adam", "Cox, Adam B."],
+  ["Cox, Adam M.", "Cox, Adam B."],
 ] as const;
 
 function normalizeTokens(value: string): string[] {
@@ -149,7 +150,7 @@ export function buildProfessorNameAliases(
   }
 
   for (const [alias, preferredName] of EXPLICIT_IDENTITY_OVERRIDES) {
-    if (!counts.has(alias) || !counts.has(preferredName)) continue;
+    if (!counts.has(preferredName)) continue;
     canonicalByName.set(
       alias,
       canonicalByName.get(preferredName) ?? preferredName,
