@@ -128,7 +128,7 @@ function RangeBandFilter({ label, minValue, maxValue, onChange, id }: {
 function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [q, setQ] = useState('');
   const [sem, setSem] = useState('all');
-  const [sort, setSort] = useState<SortKey>('name');
+  const [sort, setSort] = useState<SortKey>(kind === 'courses' ? 'responses' : 'name');
   const [limit, setLimit] = useState(100);
   const [minOfferings, setMinOfferings] = useState('1');
   const [minResponses, setMinResponses] = useState('50');
@@ -412,7 +412,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <div className="bg-card border rounded-xl overflow-hidden">
             <div className={`${isProf
               ? 'hidden xl:grid xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
-              : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem]'
+              : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_12rem_6rem_7rem_2rem]'
             } gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40`}>
               <span>#</span>
               {isProf
@@ -431,7 +431,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 data-testid={`row-${kind}-${r.g.slug}`}
                 className={`group grid grid-cols-[2rem_1fr_auto] ${isProf
                   ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
-                  : 'md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem]'
+                  : 'md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_12rem_6rem_7rem_2rem]'
                 } gap-3 items-center px-4 py-3 border-b last:border-0 hover:bg-secondary/60 transition-colors`}
               >
                 <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
@@ -468,12 +468,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     </span>
                   ))}
                 </span>
-                <span className={isProf ? 'xl:justify-self-end' : 'md:text-right'}>
+                <span className={isProf ? 'xl:justify-self-end' : 'md:justify-self-end'}>
                   {isProf
                     ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />
-                    : <Score v={r.m.avg} />}
+                    : <RatingBar rating={r.m.avg} label={`${r.g.label} overall course rating`} compact testId={`rating-course-${r.g.slug}`} />}
                 </span>
-                <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{isProf ? r.partners : r.teach ? <Score v={r.teach.avg} size="sm" /> : null}</span>
+                <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{isProf ? r.partners : <RatingBar rating={r.teach?.avg ?? null} label={`${r.g.label} overall professor teaching rating`} compact testId={`rating-course-teaching-${r.g.slug}`} />}</span>
                 <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{r.offerings}</span>
                 <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{fmtInt(r.m.responses)}</span>
                 <ArrowUpRight className={isProf ? 'hidden xl:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition' : 'hidden md:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition'} />
