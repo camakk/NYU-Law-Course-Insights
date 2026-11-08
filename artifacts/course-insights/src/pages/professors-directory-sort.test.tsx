@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, useDataset, type RawData } from '@/lib/data';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { ProfessorsPage } from './directory';
 
 vi.mock('@/lib/data', async (importOriginal) => ({
@@ -44,7 +45,7 @@ function renderDirectory() {
     error: null,
     refetch: vi.fn(),
   } as unknown as ReturnType<typeof useDataset>);
-  return render(<ProfessorsPage />);
+  return render(<TooltipProvider><ProfessorsPage /></TooltipProvider>);
 }
 
 function renderDirectoryWithData(data: ReturnType<typeof buildDataset>) {
@@ -54,7 +55,7 @@ function renderDirectoryWithData(data: ReturnType<typeof buildDataset>) {
     error: null,
     refetch: vi.fn(),
   } as unknown as ReturnType<typeof useDataset>);
-  return render(<ProfessorsPage />);
+  return render(<TooltipProvider><ProfessorsPage /></TooltipProvider>);
 }
 
 function professorOrder(container: HTMLElement) {
@@ -145,6 +146,19 @@ describe('Professor table sorting', () => {
     expect(badge.previousElementSibling?.textContent).toBe('Last Taught Spring 2021');
     expect(screen.queryByTestId('badge-professor-inactive-alex-recent')).toBeNull();
     expect(screen.getByTestId('row-professors-alex-recent')).toBeTruthy();
+  });
+
+  it('explains the active-professor time window from the info tooltip', async () => {
+    renderDirectory();
+    const infoButton = screen.getByTestId('button-professor-activity-info');
+
+    fireEvent.pointerMove(infoButton, { pointerType: 'mouse', clientX: 0, clientY: 0 });
+
+    expect(await screen.findByText(
+      'A professor is considered active if they have taught a course in the last three years.',
+      {},
+      { timeout: 3000 },
+    )).toBeTruthy();
   });
 
   it('toggles each sortable column and syncs the Sort selector', () => {

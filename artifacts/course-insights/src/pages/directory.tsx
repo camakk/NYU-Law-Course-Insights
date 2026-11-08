@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
-import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, Info, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CourseProfessorExpansion } from '@/components/course-professor-expansion';
 
 type Kind = 'professors' | 'courses';
@@ -423,6 +424,21 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             <label htmlFor="toggle-active-professors" className="cursor-pointer select-none text-sm">
               Active professors only
             </label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Professor activity information"
+                  data-testid="button-professor-activity-info"
+                  className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Info aria-hidden="true" className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                A professor is considered active if they have taught a course in the last three years.
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
         <NativeSelect label="Semester" value={sem} onChange={setSem} testId="select-semester">
