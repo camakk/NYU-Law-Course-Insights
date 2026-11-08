@@ -311,34 +311,26 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </NativeSelect>
       </div>
 
-      <fieldset className={`mb-6 rounded-xl border bg-card ${isProf ? 'overflow-hidden p-0' : 'px-4 pb-4'}`}>
-        {isProf ? (
-          <>
-            <legend className="sr-only">Filters</legend>
-            <button
-              type="button"
-              aria-expanded={filtersOpen}
-              aria-controls="professor-filter-controls"
-              onClick={() => setFiltersOpen((open) => !open)}
-              className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${filtersOpen ? 'border-b bg-secondary/30' : ''}`}
-              data-testid="button-toggle-professor-filters"
-            >
-              <span className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
-                Filters
-              </span>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-            </button>
-          </>
-        ) : (
-          <legend className="px-2">
-            <span className="text-sm font-semibold">Filter</span>
-          </legend>
-        )}
+      <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0">
+        <legend className="sr-only">Filters</legend>
+        <button
+          type="button"
+          aria-expanded={filtersOpen}
+          aria-controls="directory-filter-controls"
+          onClick={() => setFiltersOpen((open) => !open)}
+          className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${filtersOpen ? 'border-b bg-secondary/30' : ''}`}
+          data-testid={isProf ? 'button-toggle-professor-filters' : 'button-toggle-course-filters'}
+        >
+          <span className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+            Filters
+          </span>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
         <div
-          id={isProf ? 'professor-filter-controls' : 'course-filter-controls'}
-          hidden={isProf && !filtersOpen}
-          className={`pt-1 ${isProf ? 'px-4 pb-4 sm:px-5' : ''}`}
+          id="directory-filter-controls"
+          hidden={!filtersOpen}
+          className="px-4 pb-4 pt-1 sm:px-5"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
             <RangeFilter
