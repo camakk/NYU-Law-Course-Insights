@@ -111,6 +111,8 @@ describe('Courses table expansion', () => {
     expect(table.classList.contains('overflow-clip')).toBe(true);
     expect(tableHeader.classList.contains('sticky')).toBe(true);
     expect(tableHeader.classList.contains('top-36')).toBe(true);
+    expect(tableHeader.textContent).toContain('Recent Professors');
+    expect(tableHeader.textContent).not.toContain('Recent professors and semesters');
     const ratingHeader = screen.getByTestId('button-sort-rating');
     expect(ratingHeader.parentElement?.classList.contains('text-center')).toBe(true);
     expect(screen.queryByText('Teaching')).toBeNull();

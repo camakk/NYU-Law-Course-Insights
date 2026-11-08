@@ -97,6 +97,8 @@ describe('Professor table sorting', () => {
     expect(screen.getByText("You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.")).toBeTruthy();
     expect(screen.getByTestId('directory-table-header').classList.contains('sticky')).toBe(true);
     expect(screen.getByTestId('directory-table-header').classList.contains('top-36')).toBe(true);
+    expect(screen.getByTestId('directory-table-header').textContent).toContain('Recent Courses');
+    expect(screen.getByTestId('directory-table-header').textContent).not.toContain('Recent courses and semesters');
     expect(screen.queryByTestId('select-semester')).toBeNull();
     const aliceRow = screen.getByTestId('row-professors-alice-doe');
     expect(aliceRow.textContent).toContain('Last Taught Fall 2025');
