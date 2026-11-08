@@ -280,7 +280,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">
           {isProf
-            ? <>You're in law school to learn from the best professors. Who are the best professors? It's nearly impossible to find that data, so we went out and collected it all.</>
+            ? <>You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.</>
             : <>{fmtInt(total)} distinct course titles, scored by response-weighted "Overall course effective." Search also matches instructor names.</>}
         </p>
         <p className="text-xs text-muted-foreground mt-3" role="status" aria-live="polite" data-testid="filter-summary">

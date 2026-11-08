@@ -68,7 +68,7 @@ beforeEach(() => {
 describe('Professor table sorting', () => {
   it('shows the requested professor-directory introduction', () => {
     renderDirectory();
-    expect(screen.getByText("You're in law school to learn from the best professors. Who are the best professors? It's nearly impossible to find that data, so we went out and collected it all.")).toBeTruthy();
+    expect(screen.getByText("You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.")).toBeTruthy();
   });
 
   it('toggles each sortable column and syncs the Sort selector', () => {
