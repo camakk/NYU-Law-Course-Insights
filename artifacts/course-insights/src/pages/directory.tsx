@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, LoadMore, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { Slider } from '@/components/ui/slider';
+import { CourseProfessorExpansion } from '@/components/course-professor-expansion';
 
 type Kind = 'professors' | 'courses';
 type SortKey = 'rating' | 'rating-asc' | 'responses' | 'responses-asc' | 'courses' | 'courses-asc' | 'offerings' | 'offerings-asc' | 'name' | 'name-desc' | 'recent';
@@ -424,61 +425,88 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               <span className="text-right">{isProf ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc') : 'Offerings'}</span>
               <span className="text-right">{isProf ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc') : 'Reviews'}</span><span />
             </div>
-            {rows.slice(0, limit).map((r, i) => (
-              <Link
-                key={r.g.slug}
-                href={`/${kind}/${r.g.slug}`}
-                data-testid={`row-${kind}-${r.g.slug}`}
-                className={`group grid grid-cols-[2rem_1fr_auto] ${isProf
-                  ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
-                  : 'md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_12rem_6rem_7rem_2rem]'
-                } gap-3 items-center px-4 py-3 border-b last:border-0 hover:bg-secondary/60 transition-colors`}
-              >
-                <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
-                <span className="min-w-0">
-                  <span className="block font-medium truncate group-hover:text-primary transition-colors">{r.g.label}</span>
-                  <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span>Latest {r.latest}</span>
-                    {!isProf && r.g.courseCategories?.map((category) => (
-                      <span key={category} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{category}</span>
-                    ))}
-                    {!isProf && r.g.courseLabels?.map((label) => (
-                      <span key={`label-${label}`} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
-                    ))}
-                    {isProf && <span className="xl:hidden num">· {r.offerings} times taught</span>}
-                    <span className={isProf ? 'xl:hidden num' : 'md:hidden num'}>· {fmtInt(r.m.responses)} reviews</span>
-                    <SmallSample responses={r.m.responses} />
-                  </span>
-                  <span className={`mt-1 block min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:hidden' : 'lg:hidden'}`}>
-                    <span className="block text-[10px] font-medium uppercase tracking-wide">
-                      {isProf ? 'Recent courses' : 'Recent professors'}
+            {rows.slice(0, limit).map((r, i) => {
+              const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
+                ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
+                : 'md:grid-cols-[3rem_1fr_7rem_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_7rem_6rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_12rem_6rem_7rem_2rem]'
+              } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
+              const renderCells = (expandButton: ReactNode = null) => (
+                <>
+                  <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
+                  <span className="min-w-0">
+                    <span className="block font-medium truncate group-hover:text-primary transition-colors">
+                      {isProf ? r.g.label : (
+                        <Link href={`/courses/${r.g.slug}`} className="hover:underline">
+                          {r.g.label}
+                        </Link>
+                      )}
                     </span>
+                    <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>Latest {r.latest}</span>
+                      {!isProf && r.g.courseCategories?.map((category) => (
+                        <span key={category} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{category}</span>
+                      ))}
+                      {!isProf && r.g.courseLabels?.map((label) => (
+                        <span key={`label-${label}`} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
+                      ))}
+                      {isProf && <span className="xl:hidden num">· {r.offerings} times taught</span>}
+                      <span className={isProf ? 'xl:hidden num' : 'md:hidden num'}>· {fmtInt(r.m.responses)} reviews</span>
+                      {!isProf && expandButton}
+                      <SmallSample responses={r.m.responses} />
+                    </span>
+                    <span className={`mt-1 block min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:hidden' : 'lg:hidden'}`}>
+                      <span className="block text-[10px] font-medium uppercase tracking-wide">
+                        {isProf ? 'Recent courses' : 'Recent professors'}
+                      </span>
+                      {r.recent.map((item) => (
+                        <span key={`${item.label}-${item.semester}`} className="block truncate">
+                          {item.label} <span className="whitespace-nowrap">· {item.semester}</span>
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                  <span className={`hidden min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:block' : 'lg:block'}`}>
                     {r.recent.map((item) => (
                       <span key={`${item.label}-${item.semester}`} className="block truncate">
-                        {item.label} <span className="whitespace-nowrap">· {item.semester}</span>
+                        <span className="font-medium text-foreground/80">{item.label}</span>
+                        <span className="whitespace-nowrap"> · {item.semester}</span>
                       </span>
                     ))}
                   </span>
-                </span>
-                <span className={`hidden min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:block' : 'lg:block'}`}>
-                  {r.recent.map((item) => (
-                    <span key={`${item.label}-${item.semester}`} className="block truncate">
-                      <span className="font-medium text-foreground/80">{item.label}</span>
-                      <span className="whitespace-nowrap"> · {item.semester}</span>
-                    </span>
-                  ))}
-                </span>
-                <span className={isProf ? 'xl:justify-self-end' : 'md:justify-self-end'}>
-                  {isProf
-                    ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />
-                    : <RatingBar rating={r.m.avg} label={`${r.g.label} overall course rating`} compact testId={`rating-course-${r.g.slug}`} />}
-                </span>
-                <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{isProf ? r.partners : <RatingBar rating={r.teach?.avg ?? null} label={`${r.g.label} overall professor teaching rating`} compact testId={`rating-course-teaching-${r.g.slug}`} />}</span>
-                <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{r.offerings}</span>
-                <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{fmtInt(r.m.responses)}</span>
-                <ArrowUpRight className={isProf ? 'hidden xl:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition' : 'hidden md:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition'} />
-              </Link>
-            ))}
+                  <span className={isProf ? 'xl:justify-self-end' : 'md:justify-self-end'}>
+                    {isProf
+                      ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />
+                      : <RatingBar rating={r.m.avg} label={`${r.g.label} overall course rating`} compact testId={`rating-course-${r.g.slug}`} />}
+                  </span>
+                  <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{isProf ? r.partners : <RatingBar rating={r.teach?.avg ?? null} label={`${r.g.label} overall professor teaching rating`} compact testId={`rating-course-teaching-${r.g.slug}`} />}</span>
+                  <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{r.offerings}</span>
+                  <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{fmtInt(r.m.responses)}</span>
+                  <ArrowUpRight className={isProf ? 'hidden xl:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition' : 'hidden md:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition'} />
+                </>
+              );
+              if (isProf) {
+                return (
+                  <Link
+                    key={r.g.slug}
+                    href={`/professors/${r.g.slug}`}
+                    data-testid={`row-professors-${r.g.slug}`}
+                    className={rowClass}
+                  >
+                    {renderCells()}
+                  </Link>
+                );
+              }
+              return (
+                <CourseProfessorExpansion key={r.g.slug} course={r.g} dataset={ds}>
+                  {({ button, panel }) => (
+                    <div data-testid={`row-courses-${r.g.slug}`} className="border-b last:border-0">
+                      <div className={rowClass}>{renderCells(button)}</div>
+                      {panel}
+                    </div>
+                  )}
+                </CourseProfessorExpansion>
+              );
+            })}
           </div>
           <LoadMore shown={limit} total={rows.length} onMore={() => setLimit((l) => l + 100)} />
         </>
