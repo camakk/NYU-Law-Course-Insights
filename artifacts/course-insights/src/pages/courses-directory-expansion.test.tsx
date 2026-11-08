@@ -13,13 +13,16 @@ function makeRecord(
   professor: string,
   teachingRating: number,
   responded: number,
+  course = 'Evidence',
+  courseRating = 4.2,
 ): RawData['records'][number] {
   const scores = Array(10).fill(4.2);
   scores[5] = teachingRating;
+  scores[8] = courseRating;
   return {
     id,
     professor,
-    course: 'Evidence',
+    course,
     semester: 'Fall 2025',
     enrolled: 100,
     responded,
@@ -36,6 +39,7 @@ const dataset = buildDataset({
     { ...makeRecord(2, 'Doe, Alice', 4.9, 25), semester: 'Spring 2026' },
     { ...makeRecord(3, 'Roe, Bob', 4.6, 25), semester: 'Spring 2024' },
     makeRecord(4, 'Small, Sam', 5, 19),
+    makeRecord(5, 'Doe, Alice', 4.8, 100, 'Contracts', 4.8),
   ],
 });
 
@@ -59,8 +63,8 @@ describe('Courses table expansion', () => {
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
     render(<CoursesPage />);
 
-    const ratingHeader = screen.getByText('Course Rating');
-    expect(ratingHeader.classList.contains('text-center')).toBe(true);
+    const ratingHeader = screen.getByTestId('button-sort-rating');
+    expect(ratingHeader.parentElement?.classList.contains('text-center')).toBe(true);
     expect(screen.queryByText('Teaching')).toBeNull();
     const row = screen.getByTestId('row-courses-evidence');
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
@@ -90,5 +94,40 @@ describe('Courses table expansion', () => {
     expect(panel.hidden).toBe(true);
     fireEvent.click(within(row).getByRole('link', { name: 'Evidence' }));
     expect(window.location.pathname).toBe('/courses/evidence');
+  });
+
+  it('sorts course rows from their column headers and keeps the Sort control in sync', () => {
+    render(<CoursesPage />);
+    const sortControl = screen.getByTestId('select-sort') as HTMLSelectElement;
+    const sortedCourseSlugs = () => screen.getAllByTestId(/^row-courses-/)
+      .map((row) => row.getAttribute('data-testid')!.replace('row-courses-', ''));
+
+    fireEvent.click(screen.getByTestId('button-sort-course'));
+    expect(sortControl.value).toBe('name');
+    expect(sortedCourseSlugs()).toEqual(['contracts', 'evidence']);
+    fireEvent.click(screen.getByTestId('button-sort-course'));
+    expect(sortControl.value).toBe('name-desc');
+    expect(sortedCourseSlugs()).toEqual(['evidence', 'contracts']);
+
+    fireEvent.click(screen.getByTestId('button-sort-rating'));
+    expect(sortControl.value).toBe('rating');
+    expect(sortedCourseSlugs()).toEqual(['contracts', 'evidence']);
+    fireEvent.click(screen.getByTestId('button-sort-rating'));
+    expect(sortControl.value).toBe('rating-asc');
+    expect(sortedCourseSlugs()).toEqual(['evidence', 'contracts']);
+
+    fireEvent.click(screen.getByTestId('button-sort-offerings'));
+    expect(sortControl.value).toBe('offerings');
+    expect(sortedCourseSlugs()).toEqual(['evidence', 'contracts']);
+    fireEvent.click(screen.getByTestId('button-sort-offerings'));
+    expect(sortControl.value).toBe('offerings-asc');
+    expect(sortedCourseSlugs()).toEqual(['contracts', 'evidence']);
+
+    fireEvent.click(screen.getByTestId('button-sort-reviews'));
+    expect(sortControl.value).toBe('responses');
+    expect(sortedCourseSlugs()).toEqual(['contracts', 'evidence']);
+    fireEvent.click(screen.getByTestId('button-sort-reviews'));
+    expect(sortControl.value).toBe('responses-asc');
+    expect(sortedCourseSlugs()).toEqual(['evidence', 'contracts']);
   });
 });

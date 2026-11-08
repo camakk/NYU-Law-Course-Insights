@@ -422,12 +422,18 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               <span>#</span>
               {isProf
                 ? sortHeader('Professor', 'professor', 'name', 'name-desc', 'left', 'ascending')
-                : <span>Course</span>}
+                : sortHeader('Course', 'course', 'name', 'name-desc', 'left', 'ascending')}
               <span className={isProf ? 'hidden xl:block' : 'hidden lg:block'}>{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
-              <span className="text-center">{isProf ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc') : 'Course Rating'}</span>
+              <span className="text-center">{isProf
+                ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc')
+                : sortHeader('Course Rating', 'rating', 'rating', 'rating-asc', 'center')}</span>
               {isProf && <span className="text-right">{sortHeader('Courses', 'courses', 'courses', 'courses-asc')}</span>}
-              <span className="text-right">{isProf ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc') : 'Offerings'}</span>
-              <span className="text-right">{isProf ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc') : 'Reviews'}</span><span />
+              <span className="text-right">{isProf
+                ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')
+                : sortHeader('Offerings', 'offerings', 'offerings', 'offerings-asc')}</span>
+              <span className="text-right">{isProf
+                ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')
+                : sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')}</span><span />
             </div>
             {rows.slice(0, limit).map((r, i) => {
               const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
