@@ -417,7 +417,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <div className="bg-card border rounded-xl overflow-hidden">
             <div className={`${isProf
               ? 'hidden xl:grid xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
-              : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_6rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
+              : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
             } gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40`}>
               <span>#</span>
               {isProf
@@ -430,7 +430,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               {isProf && <span className="text-right">{sortHeader('Courses', 'courses', 'courses', 'courses-asc')}</span>}
               <span className="text-right">{isProf
                 ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')
-                : sortHeader('Offerings', 'offerings', 'offerings', 'offerings-asc')}</span>
+                : sortHeader('Times Offered', 'offerings', 'offerings', 'offerings-asc')}</span>
               <span className="text-right">{isProf
                 ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')
                 : sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')}</span><span />
@@ -438,7 +438,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             {rows.slice(0, limit).map((r, i) => {
               const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
                 ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
-                : 'md:grid-cols-[3rem_1fr_7rem_6rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_6rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
+                : 'md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
               } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
               const renderCells = (expandButton: ReactNode = null) => (
                 <>

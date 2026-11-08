@@ -102,6 +102,8 @@ describe('Courses table expansion', () => {
     const sortedCourseSlugs = () => screen.getAllByTestId(/^row-courses-/)
       .map((row) => row.getAttribute('data-testid')!.replace('row-courses-', ''));
 
+    expect(screen.getByTestId('button-sort-offerings').getAttribute('aria-label')).toContain('Times Offered');
+
     fireEvent.click(screen.getByTestId('button-sort-course'));
     expect(sortControl.value).toBe('name');
     expect(sortedCourseSlugs()).toEqual(['contracts', 'evidence']);
