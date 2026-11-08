@@ -426,7 +426,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <>
           <div className="bg-card border rounded-xl overflow-hidden">
             <div className={`${isProf
-              ? 'hidden xl:grid xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
+              ? 'hidden xl:grid xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
               : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
             } gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40`}>
               <span>#</span>
@@ -437,7 +437,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               <span className="text-center">{isProf
                 ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc')
                 : sortHeader('Course Rating', 'rating', 'rating', 'rating-asc', 'center')}</span>
-              {isProf && <span className="text-right">{sortHeader('Courses', 'courses', 'courses', 'courses-asc')}</span>}
               <span className="text-right">{isProf
                 ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')
                 : sortHeader('Times Offered', 'offerings', 'offerings', 'offerings-asc')}</span>
@@ -447,7 +446,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             </div>
             {rows.slice(0, limit).map((r, i) => {
               const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
-                ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_7rem_6rem_7rem_2rem]'
+                ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
                 : 'md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
               } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
               const renderCells = (expandButton: ReactNode = null) => (
@@ -503,7 +502,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />
                       : <RatingBar rating={r.m.avg} label={`${r.g.label} overall course rating`} compact testId={`rating-course-${r.g.slug}`} />}
                   </span>
-                  {isProf && <span className="hidden xl:block text-right num text-sm">{r.partners}</span>}
                   <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{r.offerings}</span>
                   <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{fmtInt(r.m.responses)}</span>
                   <ArrowUpRight className={isProf ? 'hidden xl:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition' : 'hidden md:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition'} />

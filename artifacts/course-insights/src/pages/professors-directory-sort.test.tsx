@@ -123,10 +123,11 @@ describe('Professor table sorting', () => {
     expect(selectedSort()).toBe('rating-asc');
     expect(professorOrder(container)).toEqual(['Alice Doe', 'Bob Roe']);
 
-    fireEvent.click(screen.getByTestId('button-sort-courses'));
+    expect(screen.queryByTestId('button-sort-courses')).toBeNull();
+    fireEvent.change(sort, { target: { value: 'courses' } });
     expect(selectedSort()).toBe('courses');
     expect(professorOrder(container)).toEqual(['Alice Doe', 'Bob Roe']);
-    fireEvent.click(screen.getByTestId('button-sort-courses'));
+    fireEvent.change(sort, { target: { value: 'courses-asc' } });
     expect(selectedSort()).toBe('courses-asc');
     expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);
 
