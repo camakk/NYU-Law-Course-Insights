@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Link } from 'wouter';
-import { fmtInt, PROF_OVERALL, rankBy, type Dataset, type EvalRecord, type Group } from '@/lib/data';
+import { bySemesterDesc, fmtInt, PROF_OVERALL, rankBy, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { RatingBar, SmallSample } from '@/components/kit';
 
 const MIN_PROFESSOR_COURSE_REVIEWS = 20;
@@ -27,13 +27,18 @@ function CourseTopProfessorsList({ course, professors, includeMostRecent = false
   professors: TopCourseProfessor[];
   includeMostRecent?: boolean;
 }) {
-  const mostRecentSemester = course.semesters[0] || 'Semester unavailable';
   return (
     <>
       <h3 className="text-xs font-semibold">Professors for this course</h3>
       {professors.length > 0 ? (
         <ol className="mt-2 divide-y divide-border/70">
-          {professors.map(({ group, metric }, index) => (
+          {professors.map(({ group, metric }, index) => {
+            const mostRecentSemester = course.records
+              .filter((record) => record.professor === group.name)
+              .map((record) => record.semester)
+              .filter(Boolean)
+              .sort(bySemesterDesc)[0] || 'Semester unavailable';
+            return (
             <li key={group.slug} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2" data-testid={`course-top-professor-${course.slug}-${group.slug}`}>
               <span className="num w-3 text-xs text-muted-foreground">{index + 1}</span>
               <div className="min-w-0 flex-1">
@@ -52,7 +57,8 @@ function CourseTopProfessorsList({ course, professors, includeMostRecent = false
                 <RatingBar rating={metric.avg} compact label={`${group.label} overall teaching rating for ${course.label}`} testId={`rating-course-professor-${course.slug}-${group.slug}`} />
               </div>
             </li>
-          ))}
+            );
+          })}
         </ol>
       ) : (
         <p className="mt-2 text-sm text-muted-foreground">No professors have teaching ratings with at least {MIN_PROFESSOR_COURSE_REVIEWS} reviews for this course.</p>
