@@ -36,7 +36,18 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       };
     });
   }, [recs]);
-  const distinctCourseCount = useMemo(() => new Set(recs.map((record) => record.course)).size, [recs]);
+  const distinctCourses = useMemo(() => {
+    const latestSemesterByCourse = new Map<string, string>();
+    for (const record of recs) {
+      const latestSemester = latestSemesterByCourse.get(record.course);
+      if (!latestSemester || bySemesterDesc(record.semester, latestSemester) < 0) {
+        latestSemesterByCourse.set(record.course, record.semester);
+      }
+    }
+    return [...latestSemesterByCourse.entries()]
+      .map(([course, semester]) => ({ course, semester: semester || 'Semester unavailable' }))
+      .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.course.localeCompare(b.course));
+  }, [recs]);
   const overall = useMemo(() => Array.from({ length: 10 }, (_, q) => aggregate(recs, q)), [recs]);
   const qs = ds.questions;
   const totalResp = recs.reduce((s, r) => s + (!r.inaccessible && r.responded ? r.responded : 0), 0);
@@ -57,11 +68,25 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-3 my-6" data-testid="professor-summary-cards">
         <Stat label="Offerings" value={recs.length} sub={sem === 'all' ? 'all semesters' : sem} />
-        <Stat label="Distinct courses" value={distinctCourseCount} />
+        <Stat
+          label="Distinct courses"
+          value={distinctCourses.length}
+          sub={distinctCourses.length > 0 ? (
+            <ul className="mt-2 max-h-60 space-y-1 overflow-y-auto pr-2" data-testid="list-professor-distinct-courses">
+              {distinctCourses.map(({ course, semester }, index) => (
+                <li key={course} className="break-words leading-relaxed" data-testid={`text-professor-course-history-${index}`}>
+                  <span className="font-medium text-foreground">{course}</span>
+                  <span> (last taught {semester})</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2">No courses taught in this semester.</p>
+          )}
+        />
         <Stat label="Responses (offering totals)" value={fmtInt(totalResp)} sub={<SmallSample responses={overall[5].responses} />} />
-        <Stat label="Course effective" value={fmt(overall[8].avg)} sub="/ 5, response-weighted" />
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">
