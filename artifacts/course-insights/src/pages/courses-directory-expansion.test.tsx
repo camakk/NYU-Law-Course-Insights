@@ -64,6 +64,11 @@ describe('Courses table expansion', () => {
     render(<CoursesPage />);
 
     expect(screen.getByText('You have to take Professional Responsibility, but there are 13 professors teaching it. How do you choose whose class to take? We have all the data to help you decide.')).toBeTruthy();
+    const table = screen.getByTestId('directory-table');
+    const tableHeader = screen.getByTestId('directory-table-header');
+    expect(table.classList.contains('overflow-clip')).toBe(true);
+    expect(tableHeader.classList.contains('sticky')).toBe(true);
+    expect(tableHeader.classList.contains('top-36')).toBe(true);
     const ratingHeader = screen.getByTestId('button-sort-rating');
     expect(ratingHeader.parentElement?.classList.contains('text-center')).toBe(true);
     expect(screen.queryByText('Teaching')).toBeNull();

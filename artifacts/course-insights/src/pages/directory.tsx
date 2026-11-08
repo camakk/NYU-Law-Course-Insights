@@ -463,11 +463,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <Empty title="Nothing matches." hint="Lower the minimums, clear filters, or try a shorter search." />
       ) : (
         <>
-          <div className="bg-card border rounded-xl overflow-hidden">
+          <div className="bg-card border rounded-xl overflow-clip" data-testid="directory-table">
             <div className={`${isProf
               ? 'hidden xl:grid xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
               : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
-            } gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/40`}>
+            } sticky top-36 z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`} data-testid="directory-table-header">
               <span>#</span>
               {isProf
                 ? sortHeader('Professor', 'professor', 'name', 'name-desc', 'left', 'ascending')
