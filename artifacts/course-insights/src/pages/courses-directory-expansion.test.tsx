@@ -64,6 +64,9 @@ describe('Courses table expansion', () => {
     expect(screen.queryByText('Teaching')).toBeNull();
     const row = screen.getByTestId('row-courses-evidence');
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
+    const recentProfessorLinks = within(row).getAllByRole('link', { name: 'Alice Doe' });
+    expect(recentProfessorLinks.length).toBeGreaterThan(0);
+    expect(recentProfessorLinks.every((link) => link.getAttribute('href') === '/professors/alice-doe')).toBe(true);
     const button = within(row).getByRole('button', { name: 'Expand top professors for Evidence' });
     const panel = screen.getByTestId('panel-top-professors-evidence');
 
