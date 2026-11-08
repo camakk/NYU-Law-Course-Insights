@@ -59,7 +59,10 @@ describe('Courses table expansion', () => {
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
     render(<CoursesPage />);
 
+    expect(screen.getByText('Course Rating')).toBeTruthy();
+    expect(screen.queryByText('Teaching')).toBeNull();
     const row = screen.getByTestId('row-courses-evidence');
+    expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
     const button = within(row).getByRole('button', { name: 'Expand top professors for Evidence' });
     const panel = screen.getByTestId('panel-top-professors-evidence');
 
