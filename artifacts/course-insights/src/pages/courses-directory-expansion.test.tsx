@@ -59,7 +59,8 @@ describe('Courses table expansion', () => {
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
     render(<CoursesPage />);
 
-    expect(screen.getByText('Course Rating')).toBeTruthy();
+    const ratingHeader = screen.getByText('Course Rating');
+    expect(ratingHeader.classList.contains('text-center')).toBe(true);
     expect(screen.queryByText('Teaching')).toBeNull();
     const row = screen.getByTestId('row-courses-evidence');
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();

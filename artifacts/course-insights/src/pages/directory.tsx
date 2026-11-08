@@ -420,7 +420,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 ? sortHeader('Professor', 'professor', 'name', 'name-desc', 'left', 'ascending')
                 : <span>Course</span>}
               <span className={isProf ? 'hidden xl:block' : 'hidden lg:block'}>{isProf ? 'Recent courses and semesters' : 'Recent professors and semesters'}</span>
-              <span className={isProf ? 'text-center' : 'text-right'}>{isProf ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc') : 'Course Rating'}</span>
+              <span className="text-center">{isProf ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc') : 'Course Rating'}</span>
               {isProf && <span className="text-right">{sortHeader('Courses', 'courses', 'courses', 'courses-asc')}</span>}
               <span className="text-right">{isProf ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc') : 'Offerings'}</span>
               <span className="text-right">{isProf ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc') : 'Reviews'}</span><span />
