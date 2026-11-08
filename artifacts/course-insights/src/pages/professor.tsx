@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft } from 'lucide-react';
-import { aggregate, bySemesterDesc, fmt, fmtInt, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
-import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Score, Stat, useTitle } from '@/components/kit';
+import { aggregate, bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
+import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Stat, useTitle } from '@/components/kit';
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
@@ -49,6 +49,13 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.course.localeCompare(b.course));
   }, [recs]);
   const overall = useMemo(() => Array.from({ length: 10 }, (_, q) => aggregate(recs, q)), [recs]);
+  const standing = useMemo(
+    () => calculateProfessorStanding(
+      ds.professors.map((professor) => professor.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.avg ?? null),
+      g.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.avg ?? null,
+    ),
+    [ds.professors, g],
+  );
   const qs = ds.questions;
   const totalResp = recs.reduce((s, r) => s + (!r.inaccessible && r.responded ? r.responded : 0), 0);
 
@@ -62,10 +69,35 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
           {g.label !== g.name && <p className="text-xs text-muted-foreground mt-1">Listed in source as "{g.name}"</p>}
           <p className="text-sm text-muted-foreground mt-2">Taught {g.semesters[g.semesters.length - 1]} – {g.semesters[0]}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right text-xs text-muted-foreground max-w-[10rem]">Overall this professor was effective</div>
-          <Score v={overall[5].avg} size="lg" testId="text-overall-score" />
-        </div>
+      </div>
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="professor-standing-cards">
+        <Stat
+          label="Overall rank"
+          value={standing.rank == null ? 'Not ranked' : `Rank #${fmtInt(standing.rank)}`}
+          sub={standing.rank == null
+            ? 'No overall teaching score to rank'
+            : `out of ${fmtInt(standing.totalRated)} rated professors`}
+        />
+        <Stat
+          label="Percentile standing"
+          value={standing.rank == null
+            ? 'Not ranked'
+            : standing.topPercent == null
+              ? 'Below top 50%'
+              : `Top ${standing.topPercent}%`}
+          sub={standing.rank == null
+            ? 'No score to compare'
+            : standing.topPercent == null
+              ? 'Outside the listed percentile groups'
+              : 'Highest applicable percentile group'}
+        />
+        <Stat
+          label="Effectiveness grade"
+          value={standing.grade ?? '—'}
+          sub={standing.grade == null
+            ? 'No overall teaching score'
+            : 'Based on overall effectiveness percentile'}
+        />
       </div>
       {g.profileNotes?.map((note, index) => (
         <aside

@@ -78,6 +78,31 @@ describe('Professor detail summary', () => {
     expect(container.querySelector('[data-testid="text-professor-course-history-0"]')).toBeTruthy();
   });
 
+  it('shows all-time rank, percentile tier, and grade instead of the old score header', () => {
+    const rankedDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: Array.from({ length: 100 }, (_, index) => {
+        const scores = Array(10).fill(4.5);
+        scores[5] = 5 - index * 0.04;
+        return {
+          ...makeRecord(index + 1, `Course ${index + 1}`, 'Fall 2025', `Prof, Faculty ${index}`),
+          scores,
+        };
+      }),
+    });
+    const topProfessor = rankedDataset.professors.find((group) => group.name === 'Prof, Faculty 0')!;
+    renderProfessorPage(rankedDataset, topProfessor.slug);
+
+    expect(screen.queryByTestId('text-overall-score')).toBeNull();
+    const standingCards = screen.getByTestId('professor-standing-cards');
+    expect(standingCards.textContent).toContain('Rank #1');
+    expect(standingCards.textContent).toContain('out of 100 rated professors');
+    expect(standingCards.textContent).toContain('Top 1%');
+    expect(standingCards.textContent).toContain('A+');
+    expect(screen.queryByText('Overall this professor was effective')).toBeNull();
+  });
+
   it('updates the distinct course list to the selected semester', () => {
     renderProfessorPage();
     fireEvent.change(screen.getByTestId('select-semester'), {

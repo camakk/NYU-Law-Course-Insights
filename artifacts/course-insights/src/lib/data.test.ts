@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDataset, classifyCourseLabels, friendlyName, is1LCourse } from './data';
+import { buildDataset, calculateProfessorStanding, classifyCourseLabels, friendlyName, is1LCourse } from './data';
 
 describe('course audience labels', () => {
   it('adds a 1L label to titles that say for 1Ls', () => {
@@ -207,6 +207,49 @@ describe('professor identity aliases', () => {
       'Sprigman, Christopher',
       'Sprigman, Christopher Jon',
     ]);
+  });
+});
+
+describe('professor standing', () => {
+  const scores = Array.from({ length: 100 }, (_, index) => 100 - index);
+
+  it('assigns percentile tiers and grades from overall-score rank bands', () => {
+    expect(calculateProfessorStanding(scores, 100)).toEqual({
+      rank: 1,
+      totalRated: 100,
+      topPercent: 1,
+      grade: 'A+',
+    });
+    expect(calculateProfessorStanding(scores, 99).grade).toBe('A+');
+    expect(calculateProfessorStanding(scores, 98).grade).toBe('A');
+    expect(calculateProfessorStanding(scores, 97).grade).toBe('A');
+    expect(calculateProfessorStanding(scores, 89).grade).toBe('A');
+    expect(calculateProfessorStanding(scores, 88).grade).toBe('A-');
+    expect(calculateProfessorStanding(scores, 69).grade).toBe('A-');
+    expect(calculateProfessorStanding(scores, 68).grade).toBe('B+');
+    expect(calculateProfessorStanding(scores, 39).grade).toBe('B+');
+    expect(calculateProfessorStanding(scores, 38).grade).toBe('B');
+    expect(calculateProfessorStanding(scores, 9).grade).toBe('B');
+    expect(calculateProfessorStanding(scores, 8).grade).toBe('B-');
+  });
+
+  it('uses the strongest applicable top-percent group and keeps ties at one rank', () => {
+    const largeScores = Array.from({ length: 1000 }, (_, index) => 1000 - index);
+    expect(calculateProfessorStanding(largeScores, 996).topPercent).toBe(0.5);
+    expect(calculateProfessorStanding([5, 4, 4, 3], 4)).toMatchObject({
+      rank: 2,
+      totalRated: 4,
+      topPercent: 50,
+    });
+  });
+
+  it('leaves professors without an overall rating unranked', () => {
+    expect(calculateProfessorStanding([null, 4, Number.NaN], null)).toEqual({
+      rank: null,
+      totalRated: 1,
+      topPercent: null,
+      grade: null,
+    });
   });
 });
 

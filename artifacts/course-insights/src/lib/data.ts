@@ -291,6 +291,44 @@ export interface Ranked {
   rank: number | null;
 }
 
+export type ProfessorLetterGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-';
+
+export interface ProfessorStanding {
+  rank: number | null;
+  totalRated: number;
+  topPercent: number | null;
+  grade: ProfessorLetterGrade | null;
+}
+
+/** Rank a professor by overall score, keeping equal scores tied. */
+export function calculateProfessorStanding(
+  scores: Array<number | null>,
+  score: number | null,
+): ProfessorStanding {
+  const ratedScores = scores.filter((value): value is number => value != null && Number.isFinite(value));
+  if (score == null || !Number.isFinite(score) || ratedScores.length === 0) {
+    return { rank: null, totalRated: ratedScores.length, topPercent: null, grade: null };
+  }
+
+  const rank = ratedScores.filter((value) => value > score).length + 1;
+  const topShare = rank / ratedScores.length;
+  const topPercent = [0.1, 0.5, 1, 5, 10, 20, 50]
+    .find((threshold) => topShare <= threshold / 100) ?? null;
+  const grade: ProfessorLetterGrade = topShare <= 0.02
+    ? 'A+'
+    : topShare <= 0.12
+      ? 'A'
+      : topShare <= 0.32
+        ? 'A-'
+        : topShare <= 0.62
+          ? 'B+'
+          : topShare <= 0.92
+            ? 'B'
+            : 'B-';
+
+  return { rank, totalRated: ratedScores.length, topPercent, grade };
+}
+
 /** Rank groups by a metric over (optionally filtered) records. Unrated go last with rank null. */
 export function rankBy(groups: { group: Group; records: EvalRecord[] }[], q: number): Ranked[] {
   const rows = groups.map(({ group, records }) => ({ group, metric: aggregate(records, q), rank: null as number | null }));
