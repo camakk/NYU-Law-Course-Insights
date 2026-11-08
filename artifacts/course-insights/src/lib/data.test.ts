@@ -138,6 +138,50 @@ describe('professor identity aliases', () => {
       text: 'Some course reviews refer to Scott Hemphill as Christopher Hemphill.',
     }]);
   });
+
+  it('groups Christopher Sprigman records under Christopher Jon Sprigman without mutating source records', () => {
+    const sourceRecords = [
+      {
+        id: 1,
+        course: 'Intellectual Property',
+        professor: 'Sprigman, Christopher',
+        semester: 'Spring 2017',
+        enrolled: 30,
+        responded: 20,
+        scores: Array(10).fill(4.2),
+        inaccessible: false,
+      },
+      {
+        id: 2,
+        course: 'Copyright Law',
+        professor: 'Sprigman, Christopher Jon',
+        semester: 'Fall 2025',
+        enrolled: 40,
+        responded: 25,
+        scores: Array(10).fill(4.6),
+        inaccessible: false,
+      },
+    ];
+    const dataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: sourceRecords,
+    });
+    const professor = dataset.professors.find((group) => group.label === 'Christopher Jon Sprigman');
+
+    expect(dataset.professors).toHaveLength(1);
+    expect(professor?.records.map((record) => record.professor)).toEqual([
+      'Sprigman, Christopher Jon',
+      'Sprigman, Christopher Jon',
+    ]);
+    expect(professor?.records.map((record) => record.id)).toEqual([2, 1]);
+    expect(professor?.metrics[5].responses).toBe(45);
+    expect(dataset.profSlugByName.get('Sprigman, Christopher')).toBe(professor?.slug);
+    expect(sourceRecords.map((record) => record.professor)).toEqual([
+      'Sprigman, Christopher',
+      'Sprigman, Christopher Jon',
+    ]);
+  });
 });
 
 describe('professor activity status', () => {
