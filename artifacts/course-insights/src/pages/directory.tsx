@@ -32,6 +32,11 @@ type DirectorySnapshot = {
 
 const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
 const PROFESSOR_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsProfessorDirectory';
+const COURSE_CATEGORY_TOGGLES: Array<{ id: string; label: string; categories: CourseCategory[] }> = [
+  { id: 'toggle-include-courses', label: 'Include Courses', categories: ['Course'] },
+  { id: 'toggle-include-seminars-colloquiums', label: 'Include Seminars/Colloquiums', categories: ['Seminar', 'Colloquium'] },
+  { id: 'toggle-include-clinics-externships', label: 'Include Clinics/Externships', categories: ['Clinic', 'Externship'] },
+];
 
 function readDirectorySnapshot(key: string): DirectorySnapshot | null {
   if (typeof window === 'undefined') return null;
@@ -295,11 +300,14 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       ] as const;
     }));
   }, [ds.professors, kind]);
-  const toggleCategory = (category: CourseCategory) => {
-    setIncludedCategories((current) =>
-      current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
-    );
+  const setCourseCategoryGroup = (categories: CourseCategory[], included: boolean) => {
+    setIncludedCategories((current) => {
+      const remaining = current.filter((category) => !categories.includes(category));
+      return included ? [...remaining, ...categories] : remaining;
+    });
   };
+  const isCourseCategoryGroupIncluded = (categories: CourseCategory[]) =>
+    categories.every((category) => includedCategories.includes(category));
   const saveDirectorySnapshot = () => {
     const currentState = window.history.state;
     const historyState = currentState && typeof currentState === 'object'
@@ -487,7 +495,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   );
   const filterPanelContent = (
     <>
-      {isProf && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
         <RangeFilter
           label="Minimum times taught"
           value={minOfferings}
@@ -509,52 +517,20 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           }}
           id="filter-score-range"
         />
-      </div>}
-      {!isProf && (
-        <div className="mt-4 border-t pt-4">
-          <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
-          <div role="group" aria-labelledby="course-category-filter-label" className="mt-2 flex flex-wrap gap-2">
-            {COURSE_CATEGORIES.map((category) => (
-              <label key={category} className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs transition hover:border-primary/60">
-                <input
-                  type="checkbox"
-                  checked={includedCategories.includes(category)}
-                  onChange={() => toggleCategory(category)}
-                  data-testid={`filter-category-${category.toLowerCase()}`}
-                  className="accent-primary"
-                />
-                {category}
-              </label>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Uncheck a category to exclude those courses from the results. Categories are inferred from course titles; titles without a clear indicator are labeled Course.
-          </p>
-        </div>
-      )}
-      {!isProf && (
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-          <p className="text-xs text-muted-foreground max-w-3xl">
-            Professors counts distinct instructors; offerings counts individual sections of each course. Minimums include the selected value and apply within the selected semester. Review totals count student responses from offerings contributing to the displayed score.
-          </p>
-          {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
-        </div>
-      )}
-      {isProf && (
-        <div className="flex items-center justify-end gap-3 mt-3">
-          <button
-            type="button"
-            onClick={setDefaultFilters}
-            className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline"
-            data-testid="button-set-default-filters"
-          >
-            Set default filters
-          </button>
-          {hasFilters && (
-            <button type="button" onClick={clearFilters} className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
-          )}
-        </div>
-      )}
+      </div>
+      <div className="flex items-center justify-end gap-3 mt-3">
+        <button
+          type="button"
+          onClick={setDefaultFilters}
+          className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline"
+          data-testid="button-set-default-filters"
+        >
+          Set default filters
+        </button>
+        {hasFilters && (
+          <button type="button" onClick={clearFilters} className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
+        )}
+      </div>
     </>
   );
 
@@ -573,7 +549,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur py-3 -mx-1 px-1" data-testid={`directory-toolbar-${kind}`}>
+      <div className="mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur py-3 -mx-1 px-1" data-testid={`directory-toolbar-${kind}`}>
+        <div className="flex flex-wrap items-end gap-3" data-testid={`directory-toolbar-primary-row-${kind}`}>
         <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
         {isProf && (
           <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
@@ -645,19 +622,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           </div>
         )}
         {!isProf && (
-          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-            <Switch
-              id="toggle-include-online-international-courses"
-              checked={includeOnlineInternationalCourses}
-              onCheckedChange={setIncludeOnlineInternationalCourses}
-              data-testid="toggle-include-online-international-courses"
-            />
-            <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
-              Online/International Courses
-            </label>
-          </div>
-        )}
-        {!isProf && (
           <div
             className="h-11 w-56 shrink-0 rounded-lg border border-input bg-card px-3"
             data-testid="course-min-reviews-control"
@@ -665,7 +629,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             {minimumReviewsFilter}
           </div>
         )}
-        <button
+        {isProf && <button
           type="button"
           aria-expanded={filtersOpen}
           aria-controls="directory-filter-controls"
@@ -678,7 +642,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             Filters
           </span>
           <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-        </button>
+        </button>}
         <NativeSelect label="Sort" value={sort} onChange={(v) => {
           lastHeaderSort.current = null;
           setSort(v as SortKey);
@@ -693,14 +657,46 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <option value="name">Name A–Z</option>
           <option value="name-desc">Name Z–A</option>
         </NativeSelect>
+        </div>
+        {!isProf && (
+          <div
+            className="mt-3 flex flex-wrap items-center gap-3"
+            role="group"
+            aria-label="Course category and delivery filters"
+            data-testid="course-toggle-filter-row"
+          >
+            {COURSE_CATEGORY_TOGGLES.map(({ id, label, categories }) => (
+              <div key={id} className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+                <Switch
+                  id={id}
+                  checked={isCourseCategoryGroupIncluded(categories)}
+                  onCheckedChange={(checked) => setCourseCategoryGroup(categories, checked)}
+                  data-testid={id}
+                />
+                <label htmlFor={id} className="cursor-pointer select-none text-sm">{label}</label>
+              </div>
+            ))}
+            <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+              <Switch
+                id="toggle-include-online-international-courses"
+                checked={includeOnlineInternationalCourses}
+                onCheckedChange={setIncludeOnlineInternationalCourses}
+                data-testid="toggle-include-online-international-courses"
+              />
+              <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
+                Show Online/International Courses
+              </label>
+            </div>
+          </div>
+        )}
       </div>
 
-      <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0" hidden={!filtersOpen}>
+      {isProf && <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0" hidden={!filtersOpen}>
         <legend className="sr-only">Filters</legend>
         <div id="directory-filter-controls" className="px-4 pb-4 pt-4 sm:px-5">
           {filterPanelContent}
         </div>
-      </fieldset>
+      </fieldset>}
 
       {rows.length === 0 ? (
         <Empty title="Nothing matches." hint="Lower the minimums, clear filters, or try a shorter search." />
@@ -710,7 +706,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             <div className={`${isProf
               ? 'hidden xl:grid xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]'
               : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
-            } sticky top-36 z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`} data-testid="directory-table-header">
+            } sticky ${isProf ? 'top-36' : 'top-48 md:top-[18rem] xl:top-48'} z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`} data-testid="directory-table-header">
               <span>#</span>
               {isProf
                 ? sortHeader('Professor', 'professor', 'name', 'name-desc', 'left', 'ascending')

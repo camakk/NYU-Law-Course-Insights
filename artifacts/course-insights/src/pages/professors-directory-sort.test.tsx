@@ -164,13 +164,15 @@ describe('Professor table sorting', () => {
   it('places Filters just left of Sort in the search toolbar and expands below it', () => {
     renderDirectory();
     const toolbar = screen.getByTestId('directory-toolbar-professors');
+    const primaryRow = screen.getByTestId('directory-toolbar-primary-row-professors');
     const filtersButton = screen.getByTestId('button-toggle-professor-filters');
     const sortSelect = screen.getByTestId('select-sort');
     const controlsPanel = document.getElementById('directory-filter-controls');
 
-    expect(filtersButton.parentElement).toBe(toolbar);
+    expect(filtersButton.parentElement).toBe(primaryRow);
     expect(filtersButton.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(toolbar.lastElementChild?.contains(sortSelect)).toBe(true);
+    expect(toolbar.firstElementChild).toBe(primaryRow);
+    expect(primaryRow.lastElementChild?.contains(sortSelect)).toBe(true);
     expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(true);
 
     fireEvent.click(filtersButton);

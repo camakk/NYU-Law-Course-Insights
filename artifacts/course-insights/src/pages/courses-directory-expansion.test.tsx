@@ -104,15 +104,19 @@ describe('Courses table expansion', () => {
     expect(courseLink.className).not.toContain('truncate');
   });
 
-  it('keeps course toggles and minimum reviews in the toolbar before Filters', () => {
+  it('shows course category and delivery toggles beneath the primary toolbar row', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
+    const primaryRow = screen.getByTestId('directory-toolbar-primary-row-courses');
+    const categoryToggleRow = screen.getByTestId('course-toggle-filter-row');
     const include1LToggle = screen.getByTestId('toggle-include-1l-courses');
+    const includeCoursesToggle = screen.getByTestId('toggle-include-courses');
+    const includeSeminarsToggle = screen.getByTestId('toggle-include-seminars-colloquiums');
+    const includeClinicsToggle = screen.getByTestId('toggle-include-clinics-externships');
     const includeOnlineInternationalToggle = screen.getByTestId('toggle-include-online-international-courses');
     const minimumReviewsControl = screen.getByTestId('course-min-reviews-control');
     const minimumReviewsSlider = screen.getByTestId('filter-min-responses-slider')
       .querySelector('[role="slider"]') as HTMLElement;
-    const filtersButton = screen.getByTestId('button-toggle-course-filters');
     const sortSelect = screen.getByTestId('select-sort');
     const controlsPanel = document.getElementById('directory-filter-controls');
 
@@ -120,34 +124,78 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('button-set-default-filters')).toBeNull();
     expect(include1LToggle.getAttribute('aria-checked')).toBe('true');
     expect(include1LToggle.parentElement?.textContent).toBe('1L Courses');
-    expect(include1LToggle.parentElement?.parentElement).toBe(toolbar);
+    expect(include1LToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('true');
-    expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Online/International Courses');
-    expect(include1LToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(includeOnlineInternationalToggle.compareDocumentPosition(minimumReviewsControl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(minimumReviewsControl.parentElement).toBe(toolbar);
+    expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Show Online/International Courses');
+    expect(includeCoursesToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeCoursesToggle.parentElement?.textContent).toBe('Include Courses');
+    expect(includeSeminarsToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeSeminarsToggle.parentElement?.textContent).toBe('Include Seminars/Colloquiums');
+    expect(includeClinicsToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeClinicsToggle.parentElement?.textContent).toBe('Include Clinics/Externships');
+    expect(toolbar.children[0]).toBe(primaryRow);
+    expect(toolbar.children[1]).toBe(categoryToggleRow);
+    expect(categoryToggleRow.parentElement).toBe(toolbar);
+    expect(includeCoursesToggle.parentElement?.parentElement).toBe(categoryToggleRow);
+    expect(includeSeminarsToggle.compareDocumentPosition(includeClinicsToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeClinicsToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(categoryToggleRow.lastElementChild?.contains(includeOnlineInternationalToggle)).toBe(true);
+    expect(minimumReviewsControl.parentElement).toBe(primaryRow);
     expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('50');
     expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('500');
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
     expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
     expect(within(minimumReviewsControl).queryByText('No minimum')).toBeNull();
     expect(within(minimumReviewsControl).queryByText('500+')).toBeNull();
-    expect(minimumReviewsControl.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(filtersButton.parentElement).toBe(toolbar);
-    expect(include1LToggle.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(filtersButton.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(toolbar.lastElementChild?.contains(sortSelect)).toBe(true);
-    expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(true);
-
-    fireEvent.click(filtersButton);
-
-    expect(filtersButton.getAttribute('aria-expanded')).toBe('true');
-    expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(false);
-    expect(controlsPanel?.contains(minimumReviewsControl)).toBe(false);
+    expect(minimumReviewsControl.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sortSelect.parentElement?.parentElement).toBe(primaryRow);
+    expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();
+    expect(controlsPanel).toBeNull();
     expect(screen.queryByTestId('filter-min-offerings-slider')).toBeNull();
     expect(screen.queryByTestId('filter-course-rating-range-slider')).toBeNull();
     expect(screen.queryByText('Minimum class offerings')).toBeNull();
     expect(screen.queryByText('Average Course Rating')).toBeNull();
+  });
+
+  it('filters course category groups independently', () => {
+    const categorizedDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Doe, Alice', 4.5, 60, 'Evidence'),
+        makeRecord(2, 'Doe, Alice', 4.5, 60, 'Evidence Seminar'),
+        makeRecord(3, 'Doe, Alice', 4.5, 60, 'Evidence Colloquium'),
+        makeRecord(4, 'Doe, Alice', 4.5, 60, 'Evidence Clinic'),
+        makeRecord(5, 'Doe, Alice', 4.5, 60, 'Evidence Externship'),
+        makeRecord(6, 'Doe, Alice', 4.5, 60, 'Clinic Seminar Evidence'),
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: categorizedDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+
+    render(<CoursesPage />);
+    expect(screen.getByTestId('filter-summary').textContent).toContain('6 matching');
+
+    fireEvent.click(screen.getByTestId('toggle-include-courses'));
+    expect(screen.getByTestId('filter-summary').textContent).toContain('5 matching');
+    expect(screen.queryByRole('link', { name: 'Evidence', exact: true })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Evidence Seminar' })).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('toggle-include-seminars-colloquiums'));
+    expect(screen.getByTestId('filter-summary').textContent).toContain('3 matching');
+    expect(screen.queryByRole('link', { name: 'Evidence Seminar' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Evidence Colloquium' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Clinic Seminar Evidence' })).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('toggle-include-clinics-externships'));
+    expect(screen.getByTestId('filter-summary').textContent).toContain('0 matching');
+    expect(screen.queryByRole('link', { name: 'Evidence Externship' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Evidence Clinic' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Clinic Seminar Evidence' })).toBeNull();
   });
 
   it('filters course results using the minimum reviews slider in the toolbar', () => {
@@ -260,7 +308,7 @@ describe('Courses table expansion', () => {
     const tableHeader = screen.getByTestId('directory-table-header');
     expect(table.classList.contains('overflow-clip')).toBe(true);
     expect(tableHeader.classList.contains('sticky')).toBe(true);
-    expect(tableHeader.classList.contains('top-36')).toBe(true);
+    expect(tableHeader.classList.contains('top-48')).toBe(true);
     expect(tableHeader.textContent).toContain('Recent Professors');
     expect(tableHeader.textContent).not.toContain('Recent professors and semesters');
     const recentProfessorsHeading = Array.from(tableHeader.querySelectorAll('span'))
@@ -464,8 +512,7 @@ describe('Courses table expansion', () => {
       fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
       fireEvent.click(screen.getByTestId('toggle-include-online-international-courses'));
       fireEvent.change(screen.getByTestId('select-sort'), { target: { value: 'rating-asc' } });
-      fireEvent.click(screen.getByTestId('button-toggle-course-filters'));
-      fireEvent.click(screen.getByTestId('filter-category-seminar'));
+      fireEvent.click(screen.getByTestId('toggle-include-seminars-colloquiums'));
       fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
       fireEvent.click(screen.getByTestId('button-toggle-course-history-evidence-compact'));
       fireEvent.click(screen.getByRole('link', { name: 'Evidence' }));
@@ -487,8 +534,8 @@ describe('Courses table expansion', () => {
       expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
       expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('false');
       expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('rating-asc');
-      expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(false);
-      expect(screen.getByTestId('button-toggle-course-filters').getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByTestId('toggle-include-seminars-colloquiums').getAttribute('aria-checked')).toBe('false');
+      expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();
       expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('button-toggle-course-history-evidence-compact').getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe Collapse');
