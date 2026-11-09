@@ -550,13 +550,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               data-testid="toggle-minimum-sample-size"
             />
             <label htmlFor="toggle-minimum-sample-size" className="cursor-pointer select-none text-sm">
-              Minimum sample size
+              Exclude small samples
             </label>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  aria-label="Minimum sample size information"
+                  aria-label="Exclude small samples information"
                   data-testid="button-minimum-sample-size-info"
                   className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >

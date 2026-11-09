@@ -180,6 +180,7 @@ describe('Professor table sorting', () => {
     renderDirectoryWithData(reviewDataset);
     const sampleToggle = screen.getByTestId('toggle-minimum-sample-size');
 
+    expect(screen.getByText('Exclude small samples')).toBeTruthy();
     expect(sampleToggle.getAttribute('aria-checked')).toBe('true');
     expect(screen.queryByTestId('row-professors-alex-low')).toBeNull();
     expect(screen.getByTestId('row-professors-pat-threshold')).toBeTruthy();
