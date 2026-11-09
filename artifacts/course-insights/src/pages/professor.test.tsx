@@ -161,4 +161,40 @@ describe('Professor detail summary', () => {
     expect(screen.getByTestId('list-professor-offerings').textContent)
       .toContain('Survey of Intellectual Property (for 1Ls)');
   });
+
+  it('uses consistent blue, brown, and purple blocks for matching course offerings', () => {
+    const yoshinoDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Constitutional Law (for 1Ls)', 'Spring 2026', 'Yoshino, Kenji'),
+        makeRecord(2, 'Free Expression and Social Media Seminar', 'Fall 2025', 'Yoshino, Kenji'),
+        makeRecord(3, 'Leadership, Diversity, and Inclusion', 'Spring 2025', 'Yoshino, Kenji'),
+        makeRecord(4, 'Constitutional Law (for 1Ls)', 'Fall 2024', 'Yoshino, Kenji'),
+        makeRecord(5, 'Free Expression and Social Media Seminar', 'Spring 2024', 'Yoshino, Kenji'),
+      ],
+    });
+    const professor = yoshinoDataset.professors.find((group) => group.label === 'Kenji Yoshino')!;
+    renderProfessorPage(yoshinoDataset, professor.slug);
+
+    const colorFor = (recordId: number) =>
+      screen.getByTestId(`course-color-block-${recordId}`).style.backgroundColor;
+    const blue = colorFor(1);
+    const brown = colorFor(2);
+    const purple = colorFor(3);
+
+    expect(blue).toBe('rgb(37, 99, 235)');
+    expect(brown).toBe('rgb(139, 90, 43)');
+    expect(purple).toBe('rgb(124, 58, 237)');
+    expect(colorFor(4)).toBe(blue);
+    expect(colorFor(5)).toBe(brown);
+    expect(new Set([blue, brown, purple]).size).toBe(3);
+
+    const row = screen.getByTestId('row-offering-1');
+    const marker = screen.getByTestId('course-color-block-1');
+    expect(row.classList.contains('relative')).toBe(true);
+    expect(marker.classList.contains('absolute')).toBe(true);
+    expect(marker.classList.contains('left-0')).toBe(true);
+    expect(marker.classList.contains('inset-y-0')).toBe(true);
+  });
 });

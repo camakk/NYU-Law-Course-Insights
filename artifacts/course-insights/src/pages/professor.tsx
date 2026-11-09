@@ -8,6 +8,22 @@ const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
 const OTHER_QUESTION_INDEXES = Array.from({ length: 10 }, (_, index) => index)
   .filter((index) => index !== PROFESSOR_EFFECTIVE_QUESTION && index !== COURSE_EFFECTIVE_QUESTION);
+const COURSE_COLOR_BLUE = '#2563EB';
+const COURSE_COLOR_BROWN = '#8B5A2B';
+const COURSE_COLOR_PURPLE = '#7C3AED';
+const COURSE_COLOR_OVERRIDES: Record<string, string> = {
+  'constitutional law (for 1ls)': COURSE_COLOR_BLUE,
+  'free expression and social media seminar': COURSE_COLOR_BROWN,
+  'leadership, diversity, and inclusion': COURSE_COLOR_PURPLE,
+};
+const COURSE_COLOR_PALETTE = [
+  COURSE_COLOR_BLUE, '#1D4ED8', '#3B82F6', '#1E40AF', '#60A5FA', '#0EA5E9', '#0284C7', '#075985', '#1E3A8A', '#4338CA',
+  COURSE_COLOR_PURPLE, '#8B5CF6', '#6D28D9', '#9333EA', '#A855F7', '#C084FC', '#5B21B6', '#A21CAF', '#C026D3', '#D946EF', '#86198F', '#701A75',
+  '#0891B2', '#06B6D4', '#0E7490', '#155E75', '#22D3EE', '#164E63',
+  COURSE_COLOR_BROWN, '#A0522D', '#6F4E37', '#795548', '#92400E', '#78350F',
+  '#475569', '#64748B', '#334155', '#52525B',
+];
+const EXTRA_COURSE_COLOR_HUES = [210, 222, 234, 246, 258, 270, 282, 294, 306, 190, 198, 28, 32];
 const EFFECTIVENESS_GRADE_PILL_STYLES: Record<string, string> = {
   'A+': 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200',
   A: 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200',
@@ -19,6 +35,44 @@ const EFFECTIVENESS_GRADE_PILL_STYLES: Record<string, string> = {
 
 function offeringScore(record: EvalRecord, questionIndex: number): number | null {
   return usable(record, questionIndex) ? record.scores[questionIndex] : null;
+}
+
+function extraCourseColor(index: number): string {
+  const hue = EXTRA_COURSE_COLOR_HUES[index % EXTRA_COURSE_COLOR_HUES.length];
+  const shade = Math.floor(index / EXTRA_COURSE_COLOR_HUES.length);
+  const isBrown = hue === 28 || hue === 32;
+  const saturation = 55 + (shade % 7) * 5;
+  const lightness = isBrown
+    ? 24 + (Math.floor(shade / 7) % 6) * 3
+    : 32 + (Math.floor(shade / 7) % 11) * 4;
+  return `hsl(${hue} ${saturation}% ${lightness}%)`;
+}
+
+function buildCourseOfferingColors(courseNames: string[]): Map<string, string> {
+  const courses = [...new Set(courseNames)].sort((a, b) => a.localeCompare(b));
+  const colorByCourse = new Map<string, string>();
+  const usedColors = new Set<string>();
+
+  courses.forEach((course) => {
+    const preferredColor = COURSE_COLOR_OVERRIDES[course.trim().toLowerCase()];
+    if (preferredColor) {
+      colorByCourse.set(course, preferredColor);
+      usedColors.add(preferredColor);
+    }
+  });
+
+  let paletteIndex = 0;
+  for (const course of courses) {
+    if (colorByCourse.has(course)) continue;
+    while (paletteIndex < COURSE_COLOR_PALETTE.length && usedColors.has(COURSE_COLOR_PALETTE[paletteIndex])) {
+      paletteIndex++;
+    }
+    const color = COURSE_COLOR_PALETTE[paletteIndex] ?? extraCourseColor(paletteIndex - COURSE_COLOR_PALETTE.length);
+    paletteIndex++;
+    colorByCourse.set(course, color);
+    usedColors.add(color);
+  }
+  return colorByCourse;
 }
 
 function Profile({ ds, g }: { ds: Dataset; g: Group }) {
@@ -66,6 +120,10 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
   );
   const qs = ds.questions;
   const totalResp = recs.reduce((s, r) => s + (!r.inaccessible && r.responded ? r.responded : 0), 0);
+  const courseColors = useMemo(
+    () => buildCourseOfferingColors(g.records.map((record) => record.course)),
+    [g.records],
+  );
 
   return (
     <div className="rise">
@@ -196,9 +254,15 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 return (
                   <li
                     key={record.id}
-                    className="grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[minmax(0,1fr)_10rem_10rem] xl:grid-cols-[minmax(14rem,1fr)_12rem_12rem_minmax(26rem,2fr)] xl:items-center"
+                    className="relative grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[minmax(0,1fr)_10rem_10rem] xl:grid-cols-[minmax(14rem,1fr)_12rem_12rem_minmax(26rem,2fr)] xl:items-center"
                     data-testid={`row-offering-${record.id}`}
                   >
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-y-0 left-0 w-1.5"
+                      style={{ backgroundColor: courseColors.get(record.course) ?? COURSE_COLOR_BLUE }}
+                      data-testid={`course-color-block-${record.id}`}
+                    />
                     <div className="min-w-0">
                       <Link
                         href={`/courses/${ds.courseSlugByName.get(record.course)!}`}
