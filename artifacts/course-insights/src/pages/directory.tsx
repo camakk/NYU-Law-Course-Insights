@@ -569,7 +569,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
 
   return (
     <div className="rise">
-      <div className="mb-8">
+      <div className={isProf ? 'mb-8' : 'mb-2'}>
         <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Directory</div>
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
         <p className="text-muted-foreground mt-2 max-w-2xl">
@@ -582,7 +582,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </p>
       </div>
 
-      <div className="mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur py-3 -mx-1 px-1" data-testid={`directory-toolbar-${kind}`}>
+      <div className={`mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur ${isProf ? 'py-3' : 'pt-1 pb-3'} -mx-1 px-1`} data-testid={`directory-toolbar-${kind}`}>
         <div className="flex flex-wrap items-end gap-3" data-testid={`directory-toolbar-primary-row-${kind}`}>
         <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
         {isProf && (
