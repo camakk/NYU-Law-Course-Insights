@@ -130,13 +130,13 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('select-semester')).toBeNull();
     expect(screen.queryByTestId('button-set-default-filters')).toBeNull();
     expect(include1LToggle.getAttribute('aria-checked')).toBe('true');
-    expect(include1LToggle.parentElement?.textContent).toBe('Show 1L Courses');
+    expect(include1LToggle.parentElement?.textContent).toBe('Include 1L Courses');
     expect(include1LToggle.parentElement?.parentElement).toBe(primaryRow);
-    expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('false');
     expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Include Online/International Courses');
     expect(includeOnlineInternationalToggle.parentElement?.parentElement).toBe(categoryToggleRow);
     expect(includeTaxToggle.getAttribute('aria-checked')).toBe('true');
-    expect(includeTaxToggle.parentElement?.textContent).toBe('Show Upper-Level Tax');
+    expect(includeTaxToggle.parentElement?.textContent).toBe('Include Upper-Level Tax Courses');
     expect(includeTaxToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(include1LToggle.compareDocumentPosition(includeTaxToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeTaxToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -306,7 +306,7 @@ describe('Courses table expansion', () => {
     expect(screen.getByTestId('row-courses-contracts-for-ll-m-students')).toBeTruthy();
   });
 
-  it('shows online and international courses by default and hides both when disabled', () => {
+  it('hides online and international courses by default and shows both when enabled', () => {
     const courseNames = [
       'International Arbitration (Paris)',
       'Human Rights Seminar in Buenos Aires',
@@ -330,6 +330,15 @@ describe('Courses table expansion', () => {
     render(<CoursesPage />);
 
     const rowFor = (course: string) => screen.getByTestId(`row-courses-${classifiedDataset.courseSlugByName.get(course)}`);
+    expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('false');
+    for (const course of courseNames.slice(0, 3)) {
+      expect(screen.queryByTestId(`row-courses-${classifiedDataset.courseSlugByName.get(course)}`)).toBeNull();
+    }
+    expect(rowFor(courseNames[3])).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('toggle-include-online-international-courses'));
+
+    expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('true');
     expect(rowFor(courseNames[0]).textContent).toContain('International');
     expect(rowFor(courseNames[1]).textContent).toContain('International');
     expect(rowFor(courseNames[2]).textContent).toContain('Online');
@@ -624,7 +633,7 @@ describe('Courses table expansion', () => {
       render(<CoursesPage />);
       expect((screen.getByTestId('input-search-courses') as HTMLInputElement).value).toBe('Evidence');
       expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
-      expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('true');
       expect(screen.getByTestId('toggle-include-upper-level-tax-courses').getAttribute('aria-checked')).toBe('false');
       expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('rating-asc');
       expect(screen.getByTestId('toggle-include-seminars-colloquiums').getAttribute('aria-checked')).toBe('false');
@@ -635,7 +644,7 @@ describe('Courses table expansion', () => {
       expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
       expect(screen.queryByTestId('row-courses-evidence-for-1ls')).toBeNull();
-      expect(screen.queryByTestId('row-courses-evidence-online')).toBeNull();
+      expect(screen.getByTestId('row-courses-evidence-online')).toBeTruthy();
       await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 640));
     } finally {
       scrollTo.mockRestore();

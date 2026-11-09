@@ -261,7 +261,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'));
   const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? true);
   const [includeOnlineInternationalCourses, setIncludeOnlineInternationalCourses] = useState(
-    () => returnSnapshot?.includeOnlineInternationalCourses ?? true,
+    () => returnSnapshot?.includeOnlineInternationalCourses ?? false,
   );
   const [includeUpperLevelTaxCourses, setIncludeUpperLevelTaxCourses] = useState(
     () => returnSnapshot?.includeUpperLevelTaxCourses ?? true,
@@ -652,7 +652,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               data-testid="toggle-include-1l-courses"
             />
             <label htmlFor="toggle-include-1l-courses" className="cursor-pointer select-none text-sm">
-              Show 1L Courses
+              Include 1L Courses
             </label>
           </div>
         )}
@@ -665,7 +665,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               data-testid="toggle-include-upper-level-tax-courses"
             />
             <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
-              Show Upper-Level Tax
+              Include Upper-Level Tax Courses
             </label>
             <Tooltip>
               <TooltipTrigger asChild>
