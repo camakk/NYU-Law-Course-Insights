@@ -648,7 +648,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 <>
                   <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
                   <span className="min-w-0">
-                    <span className="block whitespace-normal break-words font-medium group-hover:text-primary transition-colors">
+                    <span className={`${isProf ? 'inline-block max-w-full hover:underline' : 'block'} whitespace-normal break-words font-medium group-hover:text-primary transition-colors`}>
                       {isProf ? r.g.label : (
                         <Link href={`/courses/${r.g.slug}`} className="block whitespace-normal break-words hover:underline" onClick={saveCourseDirectorySnapshot}>
                           {r.g.label}

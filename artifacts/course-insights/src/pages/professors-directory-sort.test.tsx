@@ -108,6 +108,7 @@ describe('Professor table sorting', () => {
     const professorName = row.querySelector('.font-medium');
     expect(professorName?.classList.contains('whitespace-normal')).toBe(true);
     expect(professorName?.classList.contains('break-words')).toBe(true);
+    expect(professorName?.classList.contains('hover:underline')).toBe(true);
     expect(professorName?.classList.contains('truncate')).toBe(false);
     expect(screen.queryByTestId('select-semester')).toBeNull();
     expect(row.textContent).toContain('Last Taught Fall 2025');
