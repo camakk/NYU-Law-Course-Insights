@@ -64,10 +64,47 @@ beforeEach(() => {
 });
 
 describe('Professor detail summary', () => {
+  it('selects and deselects all courses while keeping bulk actions available', () => {
+    renderProfessorPage(dataset);
+    const controls = within(screen.getByTestId('professor-history-course-filters'));
+    const selectAll = controls.getByRole('button', { name: 'select all', exact: true });
+    const deselectAll = controls.getByRole('button', { name: 'deselect all', exact: true });
+    expect(selectAll.className).toContain('text-primary');
+    expect(deselectAll.className).toContain('text-primary');
+    const expectAllChecked = (checked: boolean) => {
+      for (const checkbox of controls.getAllByRole('checkbox')) {
+        expect(checkbox.getAttribute('data-state')).toBe(checked ? 'checked' : 'unchecked');
+      }
+    };
+
+    fireEvent.click(deselectAll);
+    expectAllChecked(false);
+    expect(screen.queryByTestId('list-professor-offerings')).toBeNull();
+    expect(screen.getByText('No courses selected')).toBeTruthy();
+    expect(controls.getByRole('button', { name: 'select all', exact: true })).toBe(selectAll);
+    fireEvent.click(deselectAll);
+    expectAllChecked(false);
+
+    fireEvent.click(selectAll);
+    expectAllChecked(true);
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(5);
+    fireEvent.click(selectAll);
+    expectAllChecked(true);
+
+    fireEvent.click(controls.getByRole('button', { name: 'Show only Contracts' }));
+    fireEvent.click(selectAll);
+    expectAllChecked(true);
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(5);
+    fireEvent.click(deselectAll);
+    fireEvent.click(controls.getByRole('button', { name: 'Show only Evidence' }));
+    expect(controls.getByRole('checkbox', { name: 'Evidence' }).getAttribute('data-state')).toBe('checked');
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(3);
+  });
+
   it('selects only the requested course, including when it was unchecked', () => {
     renderProfessorPage(dataset);
     const controls = within(screen.getByTestId('professor-history-course-filters'));
-    expect(controls.getAllByRole('button').map((button) => button.textContent)).toEqual(['(only)', '(only)', '(only)']);
+    expect(controls.getAllByRole('button', { name: /^Show only / }).map((button) => button.textContent)).toEqual(['(only)', '(only)', '(only)']);
     const onlyEvidence = controls.getByRole('button', { name: 'Show only Evidence' });
     expect(onlyEvidence.className).toContain('underline');
     expect(onlyEvidence.className).toContain('text-[10px]');

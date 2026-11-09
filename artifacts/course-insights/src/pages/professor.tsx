@@ -422,6 +422,22 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 </div>
               );
             })}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="cursor-pointer rounded px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                onClick={() => setHiddenCourses(new Set())}
+              >
+                select all
+              </button>
+              <button
+                type="button"
+                className="cursor-pointer rounded px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                onClick={() => setHiddenCourses(new Set(historyCourses))}
+              >
+                deselect all
+              </button>
+            </div>
           </div>
         </fieldset>
         {visibleOfferings.length === 0 ? (
