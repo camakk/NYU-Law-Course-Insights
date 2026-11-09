@@ -260,7 +260,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     kind === 'courses' ? COURSE_DIRECTORY_SNAPSHOT_KEY : PROFESSOR_DIRECTORY_SNAPSHOT_KEY,
   ));
   const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
-  const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'));
+  const [sort, setSort] = useState<SortKey>(() =>
+    kind === 'professors' && returnSnapshot?.sort === 'recent'
+      ? 'rating'
+      : returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'),
+  );
   const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? true);
   const [includeOnlineInternationalCourses, setIncludeOnlineInternationalCourses] = useState(
     () => returnSnapshot?.includeOnlineInternationalCourses ?? false,
@@ -713,7 +717,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <option value="responses-asc">Fewest reviews</option>
           <option value="offerings">{isProf ? 'Most times taught' : 'Most offerings'}</option>
           <option value="offerings-asc">{isProf ? 'Fewest times taught' : 'Fewest offerings'}</option>
-          <option value="recent">Most recently taught</option>
+          {!isProf && <option value="recent">Most recently taught</option>}
           <option value="name">Name A–Z</option>
           <option value="name-desc">Name Z–A</option>
         </NativeSelect>

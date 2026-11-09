@@ -78,6 +78,25 @@ beforeEach(() => {
 });
 
 describe('Professor table sorting', () => {
+  it('does not offer Most recently taught as a professor sort', () => {
+    renderDirectory();
+    expect(screen.queryByRole('option', { name: 'Most recently taught' })).toBeNull();
+    expect(selectedSort()).toBe('rating');
+  });
+
+  it('falls back to Highest rated when restoring the removed recent sort', () => {
+    window.history.replaceState({
+      courseInsightsProfessorDirectory: {
+        version: 1,
+        sort: 'recent',
+        includedCategories: [],
+        scrollY: 0,
+      },
+    }, '', '/professors');
+    renderDirectory();
+    expect(selectedSort()).toBe('rating');
+  });
+
   it('shows every matching professor without a Load More control', () => {
     const allProfessorsDataset = buildDataset({
       questions: [],
