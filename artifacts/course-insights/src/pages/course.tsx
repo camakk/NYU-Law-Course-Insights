@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
 import { ChevronLeft } from 'lucide-react';
 import { aggregate, fmt, fmtInt, rankBy, shortQ, SMALL_SAMPLE, useDataset, type Dataset, type Group } from '@/lib/data';
@@ -11,6 +11,10 @@ function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
   const [sem, setSem] = useState('all');
   const [metric, setMetric] = useState(5);
   const qs = ds.questions;
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [g.slug]);
 
   const recs = useMemo(() => (sem === 'all' ? g.records : g.records.filter((r) => r.semester === sem)), [g, sem]);
   const ranked = useMemo(() => {

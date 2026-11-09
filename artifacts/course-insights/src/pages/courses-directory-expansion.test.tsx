@@ -217,15 +217,19 @@ describe('Courses table expansion', () => {
     expect(tableHeader.classList.contains('top-36')).toBe(true);
     expect(tableHeader.textContent).toContain('Recent Professors');
     expect(tableHeader.textContent).not.toContain('Recent professors and semesters');
+    const recentProfessorsHeading = Array.from(tableHeader.querySelectorAll('span'))
+      .find((span) => span.textContent === 'Recent Professors');
+    expect(recentProfessorsHeading?.classList.contains('normal-case')).toBe(true);
     const ratingHeader = screen.getByTestId('button-sort-rating');
     expect(ratingHeader.parentElement?.classList.contains('text-center')).toBe(true);
     expect(screen.queryByText('Teaching')).toBeNull();
     const row = screen.getByTestId('row-courses-evidence');
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
     const spring2026 = within(row).getByTestId('recent-semester-evidence-compact-0');
-    expect(spring2026.textContent).toBe('Spring 2026 • Alice Doe');
-    expect(spring2026.querySelector('strong')?.textContent).toBe('Spring 2026');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('Fall 2025 • Alice Doe, Sam Small');
+    expect(spring2026.textContent).toBe('🌸 Spring 2026 • Alice Doe');
+    expect(spring2026.querySelector('strong')?.textContent).toBe('🌸 Spring 2026');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe, Sam Small');
+    expect(row.textContent).toMatch(/Latest (🌸 Spring|🍂 Fall|☀️ Summer) \d{4}/);
     const recentProfessorLinks = within(row).getAllByRole('link', { name: 'Alice Doe' });
     expect(recentProfessorLinks.length).toBeGreaterThan(0);
     expect(recentProfessorLinks.every((link) => link.getAttribute('href') === '/professors/alice-doe')).toBe(true);
@@ -244,8 +248,8 @@ describe('Courses table expansion', () => {
       'Bob Roe',
     ]);
     expect(within(panel).queryByText('Sam Small')).toBeNull();
-    expect(within(entries[0]).getByText('50 reviews · 2 times taught · Most recently: Spring 2026')).toBeTruthy();
-    expect(within(entries[1]).getByText('25 reviews · 1 time taught · Most recently: Spring 2024')).toBeTruthy();
+    expect(within(entries[0]).getByText('50 reviews · 2 times taught · Most recently: 🌸 Spring 2026')).toBeTruthy();
+    expect(within(entries[1]).getByText('25 reviews · 1 time taught · Most recently: 🌸 Spring 2024')).toBeTruthy();
     expect(window.location.pathname).toBe('/');
 
     fireEvent.click(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }));
@@ -265,6 +269,7 @@ describe('Courses table expansion', () => {
         { ...makeRecord(4, 'Roe, Bob', 4.5, 10), semester: 'Spring 2025' },
         { ...makeRecord(5, 'Doe, Alice', 4.4, 10), semester: 'Fall 2024' },
         { ...makeRecord(6, 'Roe, Bob', 4.3, 10), semester: 'Spring 2024' },
+        { ...makeRecord(7, 'Doe, Alice', 4.2, 10), semester: 'Summer 2023' },
       ],
     });
     vi.mocked(useDataset).mockReturnValue({
@@ -277,9 +282,9 @@ describe('Courses table expansion', () => {
 
     const row = screen.getByTestId('row-courses-evidence');
     const historyToggle = () => within(row).getByTestId('button-toggle-course-history-evidence-compact');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-0').textContent).toBe('Spring 2026 • Alice Doe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('Fall 2025 • Alice Doe, Bob Roe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('Spring 2025 • Bob Roe [...]');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-0').textContent).toBe('🌸 Spring 2026 • Alice Doe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe, Bob Roe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('🌸 Spring 2025 • Bob Roe [...]');
     expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
     expect(historyToggle().textContent).toBe('[...]');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('false');
@@ -289,15 +294,57 @@ describe('Courses table expansion', () => {
 
     expect(historyToggle().textContent).toBe('Collapse');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('true');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('Fall 2024 • Alice Doe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('Spring 2024 • Bob Roe Collapse');
-    expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-4'));
+    expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('🌸 Spring 2024 • Bob Roe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-5').textContent).toBe('☀️ Summer 2023 • Alice Doe Collapse');
+    expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-5'));
 
     fireEvent.click(historyToggle());
 
     expect(historyToggle().textContent).toBe('[...]');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('false');
     expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
+  });
+
+  it('hides the history toggle when three or fewer entries cover the course history', () => {
+    const courseNames = [
+      'Two Offering Course',
+      'Three Offering Course',
+      'Four Offerings, Three Semesters',
+      'Four Semester Course',
+    ];
+    const records: RawData['records'] = [
+      { ...makeRecord(1, 'Doe, Alice', 4.6, 30, courseNames[0]), semester: 'Spring 2026' },
+      { ...makeRecord(2, 'Roe, Bob', 4.5, 30, courseNames[0]), semester: 'Fall 2025' },
+      { ...makeRecord(3, 'Doe, Alice', 4.6, 30, courseNames[1]), semester: 'Spring 2026' },
+      { ...makeRecord(4, 'Roe, Bob', 4.5, 30, courseNames[1]), semester: 'Fall 2025' },
+      { ...makeRecord(5, 'Doe, Alice', 4.4, 30, courseNames[1]), semester: 'Spring 2025' },
+      { ...makeRecord(6, 'Doe, Alice', 4.6, 30, courseNames[2]), semester: 'Spring 2026' },
+      { ...makeRecord(7, 'Roe, Bob', 4.5, 30, courseNames[2]), semester: 'Fall 2025' },
+      { ...makeRecord(8, 'Doe, Alice', 4.4, 30, courseNames[2]), semester: 'Fall 2025' },
+      { ...makeRecord(9, 'Roe, Bob', 4.3, 30, courseNames[2]), semester: 'Spring 2025' },
+      { ...makeRecord(10, 'Doe, Alice', 4.6, 30, courseNames[3]), semester: 'Spring 2026' },
+      { ...makeRecord(11, 'Roe, Bob', 4.5, 30, courseNames[3]), semester: 'Fall 2025' },
+      { ...makeRecord(12, 'Doe, Alice', 4.4, 30, courseNames[3]), semester: 'Spring 2025' },
+      { ...makeRecord(13, 'Roe, Bob', 4.3, 30, courseNames[3]), semester: 'Fall 2024' },
+    ];
+    const compactHistoryDataset = buildDataset({ questions: [], sourceNotes: [], records });
+    vi.mocked(useDataset).mockReturnValue({
+      data: compactHistoryDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    render(<CoursesPage />);
+
+    for (const courseName of courseNames.slice(0, 3)) {
+      const slug = compactHistoryDataset.courseSlugByName.get(courseName)!;
+      expect(screen.queryByTestId(`button-toggle-course-history-${slug}-compact`)).toBeNull();
+      expect(screen.queryByTestId(`button-toggle-course-history-${slug}-wide`)).toBeNull();
+    }
+
+    const fourSemesterSlug = compactHistoryDataset.courseSlugByName.get(courseNames[3])!;
+    expect(screen.getByTestId(`button-toggle-course-history-${fourSemesterSlug}-compact`).textContent).toBe('[...]');
   });
 
   it('sorts course rows from their column headers and keeps the Sort control in sync', () => {
@@ -396,7 +443,7 @@ describe('Courses table expansion', () => {
       expect(screen.getByTestId('button-toggle-course-filters').getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('button-toggle-course-history-evidence-compact').getAttribute('aria-expanded')).toBe('true');
-      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('Fall 2024 • Alice Doe Collapse');
+      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe Collapse');
       expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
       expect(screen.queryByTestId('row-courses-evidence-for-1ls')).toBeNull();

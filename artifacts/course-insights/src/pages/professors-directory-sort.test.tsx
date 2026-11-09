@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, useDataset, type RawData } from '@/lib/data';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -68,6 +68,7 @@ function selectedSort() {
 }
 
 beforeEach(() => {
+  window.history.replaceState(null, '', '/');
   vi.stubGlobal('ResizeObserver', class {
     observe() {}
     unobserve() {}
@@ -267,6 +268,85 @@ describe('Professor table sorting', () => {
     expect(screen.queryByTestId('row-professors-pat-old')).toBeNull();
     expect(selectedSort()).toBe('rating');
     expect((screen.getByTestId('input-search-professors') as HTMLInputElement).value).toBe('');
+  });
+
+  it('restores professor filters and position after returning from an individual profile', async () => {
+    const returnDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Doe, Alice', 'Evidence', 4.5, 20, 'Spring 2026'),
+        makeRecord(2, 'Doe, Alice', 'Contracts', 4.4, 20, 'Fall 2025'),
+        makeRecord(3, 'Roe, Bob', 'Evidence', 4.6, 20, 'Spring 2026'),
+        makeRecord(4, 'Roe, Bob', 'Torts', 4.5, 20, 'Spring 2021'),
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: returnDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    window.history.pushState(null, '', '/professors');
+    const scrollYDescriptor = Object.getOwnPropertyDescriptor(window, 'scrollY');
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 640 });
+
+    try {
+      const { unmount } = renderDirectoryWithData(returnDataset);
+      fireEvent.change(screen.getByTestId('input-search-professors'), { target: { value: 'Evidence' } });
+      fireEvent.click(screen.getByTestId('button-toggle-professor-filters'));
+
+      const offeringsSlider = screen.getByTestId('filter-min-offerings-slider')
+        .querySelector('[role="slider"]') as HTMLElement;
+      const reviewsSlider = screen.getByTestId('filter-min-responses-slider')
+        .querySelector('[role="slider"]') as HTMLElement;
+      const scoreSliders = Array.from(screen.getByTestId('filter-score-range-slider').querySelectorAll('[role="slider"]'));
+      fireEvent.keyDown(offeringsSlider, { key: 'ArrowRight' });
+      fireEvent.keyDown(reviewsSlider, { key: 'ArrowLeft' });
+      scoreSliders[0].focus();
+      fireEvent.keyDown(scoreSliders[0], { key: 'ArrowRight' });
+      scoreSliders[1].focus();
+      fireEvent.keyDown(scoreSliders[1], { key: 'ArrowLeft' });
+      fireEvent.click(screen.getByTestId('toggle-active-professors'));
+      fireEvent.change(screen.getByTestId('select-sort'), { target: { value: 'name-desc' } });
+
+      expect(screen.getByTestId('row-professors-alice-doe')).toBeTruthy();
+      expect(screen.getByTestId('row-professors-bob-roe')).toBeTruthy();
+      expect(screen.getByTestId('filter-min-offerings-value').textContent).toBe('2+');
+      expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('40+');
+      expect(screen.getByTestId('filter-score-range-value').textContent).toBe('≥ 0.1 · ≤ 4.9');
+      expect(screen.getByTestId('toggle-minimum-sample-size').getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByTestId('toggle-active-professors').getAttribute('aria-checked')).toBe('false');
+      expect(selectedSort()).toBe('name-desc');
+
+      fireEvent.click(screen.getByTestId('row-professors-alice-doe'));
+      expect(window.location.pathname).toBe('/professors/alice-doe');
+      unmount();
+
+      const returned = new Promise<void>((resolve) => {
+        window.addEventListener('popstate', () => resolve(), { once: true });
+      });
+      await act(async () => {
+        window.history.back();
+        await returned;
+      });
+      expect(window.location.pathname).toBe('/professors');
+
+      renderDirectoryWithData(returnDataset);
+      expect((screen.getByTestId('input-search-professors') as HTMLInputElement).value).toBe('Evidence');
+      expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('name-desc');
+      expect(screen.getByTestId('toggle-active-professors').getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByTestId('toggle-minimum-sample-size').getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByTestId('button-toggle-professor-filters').getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByTestId('filter-min-offerings-value').textContent).toBe('2+');
+      expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('40+');
+      expect(screen.getByTestId('filter-score-range-value').textContent).toBe('≥ 0.1 · ≤ 4.9');
+      await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 640));
+    } finally {
+      scrollTo.mockRestore();
+      if (scrollYDescriptor) Object.defineProperty(window, 'scrollY', scrollYDescriptor);
+    }
   });
 
   it('shows up to three recent distinct semesters for a professor-course pair', () => {

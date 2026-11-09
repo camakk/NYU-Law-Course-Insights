@@ -235,11 +235,14 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       ))}
 
       <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-3 my-6" data-testid="professor-summary-cards">
-        <Stat label="Offerings" value={recs.length} sub={sem === 'all' ? 'all semesters' : sem} />
-        <Stat
-          label="Distinct courses"
-          value={distinctCourses.length}
-          sub={distinctCourses.length > 0 ? (
+        <div className="bg-card border rounded-xl p-4">
+          <div
+            className="text-[11px] normal-case tracking-normal text-muted-foreground"
+            data-testid="text-professor-distinct-courses-label"
+          >
+            Distinct Courses - {distinctCourses.length}
+          </div>
+          {distinctCourses.length > 0 ? (
             <ul className="mt-2 max-h-60 space-y-1 overflow-y-auto pr-2" data-testid="list-professor-distinct-courses">
               {distinctCourses.map(({ course, semester }, index) => (
                 <li key={course} className="break-words leading-relaxed" data-testid={`text-professor-course-history-${index}`}>
@@ -249,9 +252,10 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
               ))}
             </ul>
           ) : (
-            <p className="mt-2">No courses taught in this semester.</p>
+            <p className="mt-2 text-xs text-muted-foreground">No courses taught in this semester.</p>
           )}
-        />
+        </div>
+        <Stat label="Offerings" value={recs.length} sub={sem === 'all' ? 'all semesters' : sem} />
         <Stat label="Responses (offering totals)" value={fmtInt(totalResp)} sub={<SmallSample responses={overall[5].responses} />} />
       </div>
 

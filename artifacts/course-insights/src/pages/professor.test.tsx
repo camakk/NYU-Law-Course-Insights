@@ -75,7 +75,10 @@ describe('Professor detail summary', () => {
     expect(summary.className).toContain('md:grid-cols-3');
     expect(summary.children).toHaveLength(3);
     expect(screen.queryByText('Course effective')).toBeNull();
-    expect(screen.getByText('Distinct courses')).toBeTruthy();
+    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Distinct Courses - 3');
+    expect(summary.children[0].querySelector('[data-testid="list-professor-distinct-courses"]')).toBeTruthy();
+    expect(summary.children[1].textContent).toContain('Offerings');
+    expect(summary.children[1].textContent).toContain('5');
 
     const courses = within(screen.getByTestId('list-professor-distinct-courses'))
       .getAllByRole('listitem')
@@ -185,7 +188,7 @@ describe('Professor detail summary', () => {
     expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
       'Torts (last taught Fall 2024)',
     ]);
-    expect(screen.getByText('Distinct courses')).toBeTruthy();
+    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Distinct Courses - 1');
   });
 
   it('shows a reusable name-variation note on Scott Hemphill’s profile', () => {

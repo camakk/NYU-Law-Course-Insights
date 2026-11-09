@@ -10,7 +10,7 @@ import { CourseProfessorExpansion } from '@/components/course-professor-expansio
 
 type Kind = 'professors' | 'courses';
 type SortKey = 'rating' | 'rating-asc' | 'responses' | 'responses-asc' | 'courses' | 'courses-asc' | 'offerings' | 'offerings-asc' | 'name' | 'name-desc' | 'recent';
-type CourseDirectorySnapshot = {
+type DirectorySnapshot = {
   version: 1;
   q: string;
   sort: SortKey;
@@ -21,6 +21,7 @@ type CourseDirectorySnapshot = {
   minScore: string;
   maxScore: string;
   includedCategories: CourseCategory[];
+  activeOnly?: boolean;
   filtersOpen: boolean;
   lastHeaderSort: string | null;
   expandedCourseSlugs?: string[];
@@ -29,33 +30,49 @@ type CourseDirectorySnapshot = {
 };
 
 const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
+const PROFESSOR_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsProfessorDirectory';
 
-function readCourseDirectorySnapshot(): CourseDirectorySnapshot | null {
+function readDirectorySnapshot(key: string): DirectorySnapshot | null {
   if (typeof window === 'undefined') return null;
   const historyState = window.history.state;
   if (!historyState || typeof historyState !== 'object') return null;
-  const snapshot = (historyState as Record<string, unknown>)[COURSE_DIRECTORY_SNAPSHOT_KEY];
-  if (!snapshot || typeof snapshot !== 'object' || (snapshot as CourseDirectorySnapshot).version !== 1) return null;
-  return snapshot as CourseDirectorySnapshot;
+  const snapshot = (historyState as Record<string, unknown>)[key];
+  if (!snapshot || typeof snapshot !== 'object' || (snapshot as DirectorySnapshot).version !== 1) return null;
+  return snapshot as DirectorySnapshot;
 }
 
 type RecentEntry =
   | { kind: 'course'; label: string; semesters: string[] }
   | { kind: 'semester'; semester: string; professors: Array<{ label: string; slug?: string }> };
 
-function RecentEntryContent({ item, compact }: { item: RecentEntry; compact: boolean }) {
+function formatSemesterForDisplay(semester: string) {
+  return semester.replace(/\b(Spring|Fall|Summer)\b/g, (season) => {
+    const emoji = season === 'Spring' ? '🌸' : season === 'Fall' ? '🍂' : '☀️';
+    return `${emoji} ${season}`;
+  });
+}
+
+function RecentEntryContent({
+  item,
+  compact,
+  formatSemester,
+}: {
+  item: RecentEntry;
+  compact: boolean;
+  formatSemester?: (semester: string) => string;
+}) {
   if (item.kind === 'course') {
     return (
       <>
         <span className={compact ? '' : 'font-medium text-foreground/80'}>{item.label}</span>
-        <span className={compact ? '' : 'whitespace-nowrap'}> · {item.semesters.join(', ')}</span>
+        <span className={compact ? '' : 'whitespace-nowrap'}> · {item.semesters.map((semester) => formatSemester?.(semester) ?? semester).join(', ')}</span>
       </>
     );
   }
 
   return (
     <>
-      <strong className="font-semibold text-foreground">{item.semester}</strong>
+      <strong className="font-semibold text-foreground">{formatSemester?.(item.semester) ?? item.semester}</strong>
       <span aria-hidden="true"> • </span>
       {item.professors.map((professor, index) => (
         <span key={professor.slug ?? professor.label}>
@@ -187,7 +204,9 @@ function RangeBandFilter({ label, minValue, maxValue, onChange, id }: {
 }
 
 function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
-  const [returnSnapshot] = useState(() => kind === 'courses' ? readCourseDirectorySnapshot() : null);
+  const [returnSnapshot] = useState(() => readDirectorySnapshot(
+    kind === 'courses' ? COURSE_DIRECTORY_SNAPSHOT_KEY : PROFESSOR_DIRECTORY_SNAPSHOT_KEY,
+  ));
   const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
   const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'));
   const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? true);
@@ -201,14 +220,14 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>(() =>
     returnSnapshot ? [...returnSnapshot.includedCategories] : [...COURSE_CATEGORIES],
   );
-  const [activeOnly, setActiveOnly] = useState(true);
+  const [activeOnly, setActiveOnly] = useState(() => returnSnapshot?.activeOnly ?? true);
   const [filtersOpen, setFiltersOpen] = useState(() => returnSnapshot?.filtersOpen ?? false);
   const [expandedRecentSemesters, setExpandedRecentSemesters] = useState<Record<string, boolean>>(
     () => Object.fromEntries((returnSnapshot?.expandedRecentSemesterSlugs ?? []).map((slug) => [slug, true])),
   );
   const lastHeaderSort = useRef<string | null>(returnSnapshot?.lastHeaderSort ?? null);
   useEffect(() => {
-    if (kind !== 'courses' || !returnSnapshot) return;
+    if (!returnSnapshot) return;
     const frame = window.requestAnimationFrame(() => window.scrollTo(0, returnSnapshot.scrollY));
     return () => window.cancelAnimationFrame(frame);
   }, [kind, returnSnapshot]);
@@ -250,12 +269,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
     );
   };
-  const saveCourseDirectorySnapshot = () => {
+  const saveDirectorySnapshot = () => {
     const currentState = window.history.state;
     const historyState = currentState && typeof currentState === 'object'
       ? currentState as Record<string, unknown>
       : {};
-    const snapshot: CourseDirectorySnapshot = {
+    const snapshot: DirectorySnapshot = {
       version: 1,
       q,
       sort,
@@ -266,6 +285,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       minScore,
       maxScore,
       includedCategories: [...includedCategories],
+      activeOnly,
       filtersOpen,
       lastHeaderSort: lastHeaderSort.current,
       expandedCourseSlugs: Array.from(document.querySelectorAll<HTMLButtonElement>(
@@ -278,9 +298,10 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         .map(([slug]) => slug),
       scrollY: window.scrollY,
     };
+    const snapshotKey = kind === 'courses' ? COURSE_DIRECTORY_SNAPSHOT_KEY : PROFESSOR_DIRECTORY_SNAPSHOT_KEY;
     window.history.replaceState({
       ...historyState,
-      [COURSE_DIRECTORY_SNAPSHOT_KEY]: snapshot,
+      [snapshotKey]: snapshot,
     }, '', window.location.href);
   };
 
@@ -651,7 +672,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               {isProf
                 ? sortHeader('Professor', 'professor', 'name', 'name-desc', 'left', 'ascending')
                 : sortHeader('Course', 'course', 'name', 'name-desc', 'left', 'ascending')}
-              <span className={isProf ? 'hidden xl:block normal-case tracking-normal' : 'hidden lg:block'}>{isProf ? 'Recent Courses' : 'Recent Professors'}</span>
+              <span className={isProf ? 'hidden xl:block normal-case tracking-normal' : 'hidden lg:block normal-case tracking-normal'}>{isProf ? 'Recent Courses' : 'Recent Professors'}</span>
               <span className="text-center">{isProf
                 ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc', 'center')
                 : sortHeader('Course Rating', 'rating', 'rating', 'rating-asc', 'center')}</span>
@@ -669,6 +690,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
               const recentSemestersExpanded = expandedRecentSemesters[r.g.slug] ?? false;
               const visibleRecentEntries = isProf || recentSemestersExpanded ? r.recent : r.recent.slice(0, 3);
+              const canExpandRecentHistory = !isProf && r.offerings > 3 && r.recent.length > 3;
               const renderRecentEntries = (compact: boolean) => (
                 <>
                   {visibleRecentEntries.map((item, index) => (
@@ -679,8 +701,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       className="block break-words"
                       data-testid={item.kind === 'semester' ? `recent-semester-${r.g.slug}-${compact ? 'compact' : 'wide'}-${index}` : undefined}
                     >
-                      <RecentEntryContent item={item} compact={compact} />
-                      {!isProf && index === visibleRecentEntries.length - 1 && (
+                      <RecentEntryContent item={item} compact={compact} formatSemester={isProf ? undefined : formatSemesterForDisplay} />
+                      {canExpandRecentHistory && index === visibleRecentEntries.length - 1 && (
                         <>
                           {' '}
                           <button
@@ -708,13 +730,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   <span className="min-w-0">
                     <span className={`${isProf ? 'inline-block max-w-full hover:underline' : 'block'} whitespace-normal break-words font-medium group-hover:text-primary transition-colors`}>
                       {isProf ? r.g.label : (
-                        <Link href={`/courses/${r.g.slug}`} className="block whitespace-normal break-words hover:underline" onClick={saveCourseDirectorySnapshot}>
+                        <Link href={`/courses/${r.g.slug}`} className="block whitespace-normal break-words hover:underline" onClick={saveDirectorySnapshot}>
                           {r.g.label}
                         </Link>
                       )}
                     </span>
                     <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>{isProf ? 'Last Taught' : 'Latest'} {r.latest}</span>
+                      <span>{isProf ? 'Last Taught' : 'Latest'} {isProf ? r.latest : formatSemesterForDisplay(r.latest)}</span>
                       {isProf && r.g.professorStatus === 'Inactive' && (
                         <span
                           className="inline-flex items-center rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive"
@@ -735,8 +757,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       <SmallSample responses={r.m.responses} />
                     </span>
                     <span className={`mt-1 block min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:hidden' : 'lg:hidden'}`}>
-                      <span className="block text-[10px] font-medium uppercase tracking-wide">
-                        {isProf ? 'Recent courses' : 'Recent professors'}
+                       <span className={`block text-[10px] font-medium ${isProf ? 'uppercase tracking-wide' : 'normal-case tracking-normal'}`}>
+                         {isProf ? 'Recent courses' : 'Recent Professors'}
                       </span>
                       {renderRecentEntries(true)}
                     </span>
@@ -761,6 +783,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     href={`/professors/${r.g.slug}`}
                     data-testid={`row-professors-${r.g.slug}`}
                     className={rowClass}
+                    onClick={saveDirectorySnapshot}
                   >
                     {renderCells()}
                   </Link>
@@ -772,6 +795,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   course={r.g}
                   dataset={ds}
                   includeMostRecent
+                  formatSemester={formatSemesterForDisplay}
                   initialExpanded={returnSnapshot?.expandedCourseSlugs?.includes(r.g.slug) ?? false}
                 >
                   {({ button, panel }) => (
