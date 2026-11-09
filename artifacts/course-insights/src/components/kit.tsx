@@ -158,10 +158,10 @@ export function SearchBox({ value, onChange, placeholder, testId, featured = fal
   );
 }
 
-export function NativeSelect({ value, onChange, children, label, testId }: { value: string; onChange: (v: string) => void; children: ReactNode; label: string; testId: string }) {
+export function NativeSelect({ value, onChange, children, label, testId, hideLabel = false }: { value: string; onChange: (v: string) => void; children: ReactNode; label: string; testId: string; hideLabel?: boolean }) {
   return (
     <label className="flex flex-col gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-      {label}
+      <span className={hideLabel ? 'sr-only' : undefined}>{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}

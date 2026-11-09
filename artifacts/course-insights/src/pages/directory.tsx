@@ -751,18 +751,18 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           </span>
           <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         </button>}
-        <NativeSelect label="Sort" value={sort} onChange={(v) => {
+        <NativeSelect label={isProf ? 'Sort' : 'Sort by'} hideLabel={!isProf} value={sort} onChange={(v) => {
           lastHeaderSort.current = null;
           setSort(v as SortKey);
         }} testId="select-sort">
-          <option value="rating">Highest rated</option>
-          <option value="rating-asc">Lowest rated</option>
-          <option value="responses">Most reviews</option>
-          <option value="responses-asc">Fewest reviews</option>
-          <option value="offerings">{isProf ? 'Most times taught' : 'Most offerings'}</option>
-          <option value="offerings-asc">{isProf ? 'Fewest times taught' : 'Fewest offerings'}</option>
-          <option value="name">Name A–Z</option>
-          <option value="name-desc">Name Z–A</option>
+          <option value="rating">{isProf ? 'Highest rated' : 'Sort by: Highest rated'}</option>
+          <option value="rating-asc">{isProf ? 'Lowest rated' : 'Sort by: Lowest rated'}</option>
+          <option value="responses">{isProf ? 'Most reviews' : 'Sort by: Most reviews'}</option>
+          <option value="responses-asc">{isProf ? 'Fewest reviews' : 'Sort by: Fewest reviews'}</option>
+          <option value="offerings">{isProf ? 'Most times taught' : 'Sort by: Most offerings'}</option>
+          <option value="offerings-asc">{isProf ? 'Fewest times taught' : 'Sort by: Fewest offerings'}</option>
+          <option value="name">{isProf ? 'Name A–Z' : 'Sort by: Name A–Z'}</option>
+          <option value="name-desc">{isProf ? 'Name Z–A' : 'Sort by: Name Z–A'}</option>
         </NativeSelect>
         </div>
         {!isProf && (
