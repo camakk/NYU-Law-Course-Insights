@@ -623,10 +623,17 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         )}
         {!isProf && (
           <div
-            className="h-11 w-56 shrink-0 rounded-lg border border-input bg-card px-3"
-            data-testid="course-min-reviews-control"
+            className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3"
           >
-            {minimumReviewsFilter}
+            <Switch
+              id="toggle-include-online-international-courses"
+              checked={includeOnlineInternationalCourses}
+              onCheckedChange={setIncludeOnlineInternationalCourses}
+              data-testid="toggle-include-online-international-courses"
+            />
+            <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
+              Show Online/International Courses
+            </label>
           </div>
         )}
         {isProf && <button
@@ -676,16 +683,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 <label htmlFor={id} className="cursor-pointer select-none text-sm">{label}</label>
               </div>
             ))}
-            <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-              <Switch
-                id="toggle-include-online-international-courses"
-                checked={includeOnlineInternationalCourses}
-                onCheckedChange={setIncludeOnlineInternationalCourses}
-                data-testid="toggle-include-online-international-courses"
-              />
-              <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
-                Show Online/International Courses
-              </label>
+            <div
+              className="h-11 min-w-[14rem] flex-1 rounded-lg border border-input bg-card px-3"
+              data-testid="course-min-reviews-control"
+            >
+              {minimumReviewsFilter}
             </div>
           </div>
         )}

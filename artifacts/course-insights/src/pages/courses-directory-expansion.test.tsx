@@ -104,7 +104,7 @@ describe('Courses table expansion', () => {
     expect(courseLink.className).not.toContain('truncate');
   });
 
-  it('shows course category and delivery toggles beneath the primary toolbar row', () => {
+  it('places online filtering in the primary row and stretches minimum reviews across the second row', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
     const primaryRow = screen.getByTestId('directory-toolbar-primary-row-courses');
@@ -127,6 +127,9 @@ describe('Courses table expansion', () => {
     expect(include1LToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Show Online/International Courses');
+    expect(includeOnlineInternationalToggle.parentElement?.parentElement).toBe(primaryRow);
+    expect(include1LToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeOnlineInternationalToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeCoursesToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeCoursesToggle.parentElement?.textContent).toBe('Include Courses');
     expect(includeSeminarsToggle.getAttribute('aria-checked')).toBe('true');
@@ -138,16 +141,16 @@ describe('Courses table expansion', () => {
     expect(categoryToggleRow.parentElement).toBe(toolbar);
     expect(includeCoursesToggle.parentElement?.parentElement).toBe(categoryToggleRow);
     expect(includeSeminarsToggle.compareDocumentPosition(includeClinicsToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(includeClinicsToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(categoryToggleRow.lastElementChild?.contains(includeOnlineInternationalToggle)).toBe(true);
-    expect(minimumReviewsControl.parentElement).toBe(primaryRow);
+    expect(includeClinicsToggle.compareDocumentPosition(minimumReviewsControl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(categoryToggleRow.lastElementChild?.contains(minimumReviewsControl)).toBe(true);
+    expect(minimumReviewsControl.parentElement).toBe(categoryToggleRow);
+    expect(minimumReviewsControl.classList.contains('flex-1')).toBe(true);
     expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('50');
     expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('500');
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
     expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
     expect(within(minimumReviewsControl).queryByText('No minimum')).toBeNull();
     expect(within(minimumReviewsControl).queryByText('500+')).toBeNull();
-    expect(minimumReviewsControl.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(sortSelect.parentElement?.parentElement).toBe(primaryRow);
     expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();
     expect(controlsPanel).toBeNull();
