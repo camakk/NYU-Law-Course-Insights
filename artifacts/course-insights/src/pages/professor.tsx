@@ -1,8 +1,8 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft, Info } from 'lucide-react';
-import { aggregate, bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
-import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Stat, useTitle } from '@/components/kit';
+import { bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
+import { Empty, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, useTitle } from '@/components/kit';
 import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -123,7 +123,22 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       .map(([course, semester]) => ({ course, semester: semester || 'Semester unavailable' }))
       .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.course.localeCompare(b.course));
   }, [recs]);
-  const overall = useMemo(() => Array.from({ length: 10 }, (_, q) => aggregate(recs, q)), [recs]);
+  const distinctClinicsAndExternships = useMemo(() => {
+    const latestSemesterByCourse = new Map<string, string>();
+    for (const record of recs) {
+      if (
+        !record.courseCategories.includes('Clinic') &&
+        !record.courseCategories.includes('Externship')
+      ) continue;
+      const latestSemester = latestSemesterByCourse.get(record.course);
+      if (!latestSemester || bySemesterDesc(record.semester, latestSemester) < 0) {
+        latestSemesterByCourse.set(record.course, record.semester);
+      }
+    }
+    return [...latestSemesterByCourse.entries()]
+      .map(([course, semester]) => ({ course, semester: semester || 'Semester unavailable' }))
+      .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.course.localeCompare(b.course));
+  }, [recs]);
   const standing = useMemo(
     () => calculateProfessorStanding(
       ds.professors.map((professor) => ({
@@ -138,7 +153,6 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
     [ds.professors, g],
   );
   const qs = ds.questions;
-  const totalResp = recs.reduce((s, r) => s + (!r.inaccessible && r.responded ? r.responded : 0), 0);
   const effectivenessScore = g.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.avg ?? null;
   const courseColors = useMemo(
     () => buildCourseOfferingColors(g.records.map((record) => record.course)),
@@ -298,7 +312,35 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
             </p>
           )}
         </div>
-        <Stat label="Responses (offering totals)" value={fmtInt(totalResp)} sub={<SmallSample responses={overall[5].responses} />} />
+        <div className="min-w-0 rounded-xl border bg-card p-4">
+          <div
+            className="text-[11px] normal-case tracking-normal text-muted-foreground"
+            data-testid="text-professor-clinics-externships-label"
+          >
+            Clinics and Externships Taught - {fmtInt(distinctClinicsAndExternships.length)}
+          </div>
+          {distinctClinicsAndExternships.length > 0 ? (
+            <ul
+              className="mt-2 max-h-60 space-y-1 overflow-y-auto pr-2"
+              data-testid="list-professor-clinics-externships"
+            >
+              {distinctClinicsAndExternships.map(({ course, semester }, index) => (
+                <li
+                  key={course}
+                  className="break-words leading-relaxed"
+                  data-testid={`text-professor-clinic-externship-history-${index}`}
+                >
+                  <span className="font-medium text-foreground">{course}</span>
+                  <span> (last taught {semester})</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              No clinics or externships taught{sem === 'all' ? '' : ' in this semester'}.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">

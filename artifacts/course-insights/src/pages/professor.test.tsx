@@ -80,6 +80,9 @@ describe('Professor detail summary', () => {
     expect(screen.getByTestId('text-professor-seminars-colloquiums-label').textContent)
       .toBe('Seminars and Colloquiums Taught - 0');
     expect(summary.children[1].textContent).toContain('No seminars or colloquiums taught.');
+    expect(screen.getByTestId('text-professor-clinics-externships-label').textContent)
+      .toBe('Clinics and Externships Taught - 0');
+    expect(summary.children[2].textContent).toContain('No clinics or externships taught.');
 
     const courses = within(screen.getByTestId('list-professor-distinct-courses'))
       .getAllByRole('listitem')
@@ -226,6 +229,7 @@ describe('Professor detail summary', () => {
         makeRecord(7, 'Judicial Externship', 'Fall 2020'),
         makeRecord(8, 'Housing Clinic Seminar', 'Spring 2019'),
         makeRecord(9, 'Research Seminar', 'Fall 2021'),
+        makeRecord(10, 'Housing Clinic', 'Fall 2022'),
       ],
     });
     renderProfessorPage(mixedDataset);
@@ -244,8 +248,17 @@ describe('Professor detail summary', () => {
       'Policy Colloquium (last taught Fall 2022)',
       'Housing Clinic Seminar (last taught Spring 2019)',
     ]);
-    expect(screen.getByText('Taught 9 Offerings from Spring 2019 - Spring 2026')).toBeTruthy();
-    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(9);
+    expect(screen.getByText('Clinics and Externships Taught - 3')).toBeTruthy();
+    const clinics = within(screen.getByTestId('list-professor-clinics-externships'))
+      .getAllByRole('listitem')
+      .map((item) => item.textContent);
+    expect(clinics).toEqual([
+      'Housing Clinic (last taught Fall 2022)',
+      'Judicial Externship (last taught Fall 2020)',
+      'Housing Clinic Seminar (last taught Spring 2019)',
+    ]);
+    expect(screen.getByText('Taught 10 Offerings from Spring 2019 - Spring 2026')).toBeTruthy();
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(10);
 
     fireEvent.change(screen.getByTestId('select-semester'), { target: { value: 'Spring 2023' } });
     expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 0');
@@ -256,8 +269,11 @@ describe('Professor detail summary', () => {
     expect(within(screen.getByTestId('list-professor-seminars-colloquiums')).getAllByRole('listitem')
       .map((item) => item.textContent))
       .toEqual(['Research Seminar (last taught Spring 2023)']);
+    expect(screen.getByTestId('text-professor-clinics-externships-label').textContent)
+      .toBe('Clinics and Externships Taught - 0');
+    expect(screen.getByText('No clinics or externships taught in this semester.')).toBeTruthy();
     expect(screen.getByTestId('list-professor-offerings').textContent).toContain('Research Seminar');
-    expect(screen.getByText('Taught 9 Offerings from Spring 2019 - Spring 2026')).toBeTruthy();
+    expect(screen.getByText('Taught 10 Offerings from Spring 2019 - Spring 2026')).toBeTruthy();
   });
 
   it('shows a reusable name-variation note on Scott Hemphill’s profile', () => {
