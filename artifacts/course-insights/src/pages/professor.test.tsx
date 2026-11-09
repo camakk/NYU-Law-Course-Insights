@@ -80,7 +80,9 @@ describe('Professor detail summary', () => {
     expect(cell.textContent).toBe(shortLabel);
     expect(cell.getAttribute('title')).toBe(semester);
     expect(cell.getAttribute('aria-label')).toBe(semester);
-    expect(cell.className).toContain('text-2xl');
+    expect(cell.className).toContain('text-base');
+    expect(cell.className).toContain('font-medium');
+    expect(cell.className).toContain('text-muted-foreground');
     expect(cell.className).toContain('font-sans');
     expect(cell.className).not.toContain('font-display');
     expect(cell.previousElementSibling?.getAttribute('data-testid')).toBe('course-color-block-1');

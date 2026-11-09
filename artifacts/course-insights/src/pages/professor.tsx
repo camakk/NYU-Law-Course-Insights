@@ -461,7 +461,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                       data-testid={`course-color-block-${record.id}`}
                     />
                     <div
-                      className="whitespace-nowrap font-sans text-2xl font-semibold tabular-nums text-primary/80 md:text-center"
+                      className="whitespace-nowrap font-sans text-base font-medium tabular-nums text-muted-foreground md:text-center"
                       title={record.semester}
                       aria-label={record.semester}
                       data-testid={`offering-semester-${record.id}`}
@@ -471,7 +471,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                     <div className="min-w-0">
                       <Link
                         href={`/courses/${ds.courseSlugByName.get(record.course)!}`}
-                        className="block truncate font-medium hover:text-primary hover:underline underline-offset-4"
+                        className="block whitespace-normal break-words font-medium hover:text-primary hover:underline underline-offset-4"
                         data-testid={`link-offering-course-${record.id}`}
                       >
                         {record.course}
