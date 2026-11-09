@@ -96,6 +96,11 @@ describe('Professor detail summary', () => {
 
     expect(screen.queryByTestId('text-overall-score')).toBeNull();
     const standingCards = screen.getByTestId('professor-standing-cards');
+    const professorHeader = screen.getByTestId('professor-header');
+    expect(standingCards.parentElement).toBe(professorHeader);
+    expect(professorHeader.className).toContain('xl:grid-cols-');
+    expect(standingCards.className).toContain('xl:justify-self-end');
+    expect(screen.getByTestId('professor-standing-rank').className).toContain('rounded-[1.6rem]');
     expect(standingCards.textContent).toContain('Rank #1');
     expect(standingCards.textContent).toContain('out of 100 rated professors');
     expect(standingCards.textContent).toContain('Top 1%');

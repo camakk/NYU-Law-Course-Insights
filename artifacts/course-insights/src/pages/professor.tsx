@@ -62,42 +62,65 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
   return (
     <div className="rise">
       <Link href="/professors" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4" data-testid="link-back"><ChevronLeft className="h-4 w-4" />All professors</Link>
-      <div className="flex flex-wrap items-end justify-between gap-6 pb-6 border-b">
-        <div>
+      <div className="grid min-w-0 gap-6 pb-6 border-b xl:grid-cols-[minmax(0,1fr)_minmax(32rem,1.2fr)] xl:items-start" data-testid="professor-header">
+        <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Professor</div>
           <h1 className="font-display text-4xl md:text-6xl font-semibold mt-2" data-testid="text-professor-name">{g.label}</h1>
           {g.label !== g.name && <p className="text-xs text-muted-foreground mt-1">Listed in source as "{g.name}"</p>}
           <p className="text-sm text-muted-foreground mt-2">Taught {g.semesters[g.semesters.length - 1]} – {g.semesters[0]}</p>
         </div>
-      </div>
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="professor-standing-cards">
-        <Stat
-          label="Overall rank"
-          value={standing.rank == null ? 'Not ranked' : `Rank #${fmtInt(standing.rank)}`}
-          sub={standing.rank == null
-            ? 'No overall teaching score to rank'
-            : `out of ${fmtInt(standing.totalRated)} rated professors`}
-        />
-        <Stat
-          label="Percentile standing"
-          value={standing.rank == null
-            ? 'Not ranked'
-            : standing.topPercent == null
-              ? 'Below top 50%'
-              : `Top ${standing.topPercent}%`}
-          sub={standing.rank == null
-            ? 'No score to compare'
-            : standing.topPercent == null
-              ? 'Outside the listed percentile groups'
-              : 'Highest applicable percentile group'}
-        />
-        <Stat
-          label="Effectiveness grade"
-          value={standing.grade ?? '—'}
-          sub={standing.grade == null
-            ? 'No overall teaching score'
-            : 'Based on overall effectiveness percentile'}
-        />
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 xl:w-full xl:justify-self-end" data-testid="professor-standing-cards">
+          {[
+            {
+              id: 'rank',
+              label: 'Overall Rank',
+              value: standing.rank == null ? 'Not ranked' : `Rank #${fmtInt(standing.rank)}`,
+              sub: standing.rank == null
+                ? 'No overall teaching score to rank'
+                : `out of ${fmtInt(standing.totalRated)} rated professors`,
+            },
+            {
+              id: 'percentile',
+              label: 'Percentile Standing',
+              value: standing.rank == null
+                ? 'Not ranked'
+                : standing.topPercent == null
+                  ? 'Below top 50%'
+                  : `Top ${standing.topPercent}%`,
+              sub: standing.rank == null
+                ? 'No score to compare'
+                : standing.topPercent == null
+                  ? 'Outside the listed percentile groups'
+                  : 'Highest applicable percentile group',
+            },
+            {
+              id: 'grade',
+              label: 'Effectiveness Grade',
+              value: standing.grade ?? '—',
+              sub: standing.grade == null
+                ? 'No overall teaching score'
+                : 'Based on overall effectiveness percentile',
+            },
+          ].map((card) => (
+            <article
+              key={card.id}
+              className="relative isolate flex min-h-[9rem] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[1.6rem] border border-primary/15 bg-gradient-to-br from-card via-card to-primary/[0.07] p-4 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              data-testid={`professor-standing-${card.id}`}
+            >
+              <span aria-hidden="true" className="absolute -right-4 -top-5 h-16 w-16 rounded-full bg-primary/[0.07]" />
+              <span aria-hidden="true" className="absolute -bottom-5 -left-4 h-10 w-10 rounded-full bg-accent/20" />
+              <div className="relative z-10 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                {card.label}
+              </div>
+              <div className="relative z-10 mt-2 inline-flex min-h-10 max-w-full items-center justify-center rounded-full border border-primary/10 bg-primary/10 px-4 text-lg font-semibold text-primary num sm:text-xl">
+                {card.value}
+              </div>
+              <p className="relative z-10 mt-2 max-w-full text-xs leading-relaxed text-muted-foreground">
+                {card.sub}
+              </p>
+            </article>
+          ))}
+        </div>
       </div>
       {g.profileNotes?.map((note, index) => (
         <aside
