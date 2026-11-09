@@ -95,14 +95,18 @@ describe('Professor table sorting', () => {
   it('shows the requested professor-directory introduction', () => {
     renderDirectory();
     expect(screen.getByText("You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.")).toBeTruthy();
-    expect(screen.getByTestId('directory-table-header').classList.contains('sticky')).toBe(true);
-    expect(screen.getByTestId('directory-table-header').classList.contains('top-36')).toBe(true);
-    expect(screen.getByTestId('directory-table-header').textContent).toContain('Recent Courses');
-    expect(screen.getByTestId('directory-table-header').textContent).not.toContain('Recent courses and semesters');
+    const header = screen.getByTestId('directory-table-header');
+    const row = screen.getByTestId('row-professors-alice-doe');
+    expect(header.classList.contains('sticky')).toBe(true);
+    expect(header.classList.contains('top-36')).toBe(true);
+    expect(header.textContent).toContain('Recent Courses');
+    expect(header.textContent).not.toContain('Recent courses and semesters');
+    const professorColumnLayout = 'xl:grid-cols-[3rem_minmax(10rem,0.8fr)_minmax(18rem,1.4fr)_12rem_6rem_7rem_2rem]';
+    expect(header.classList.contains(professorColumnLayout)).toBe(true);
+    expect(row.classList.contains(professorColumnLayout)).toBe(true);
     expect(screen.queryByTestId('select-semester')).toBeNull();
-    const aliceRow = screen.getByTestId('row-professors-alice-doe');
-    expect(aliceRow.textContent).toContain('Last Taught Fall 2025');
-    expect(aliceRow.textContent).not.toContain('Latest Fall 2025');
+    expect(row.textContent).toContain('Last Taught Fall 2025');
+    expect(row.textContent).not.toContain('Latest Fall 2025');
   });
 
   it('places Filters just left of Sort in the search toolbar and expands below it', () => {

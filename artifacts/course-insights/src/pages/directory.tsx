@@ -571,7 +571,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <>
           <div className="bg-card border rounded-xl overflow-clip" data-testid="directory-table">
             <div className={`${isProf
-              ? 'hidden xl:grid xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
+              ? 'hidden xl:grid xl:grid-cols-[3rem_minmax(10rem,0.8fr)_minmax(18rem,1.4fr)_12rem_6rem_7rem_2rem]'
               : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
             } sticky top-36 z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`} data-testid="directory-table-header">
               <span>#</span>
@@ -591,7 +591,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             </div>
             {rows.map((r, i) => {
               const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
-                ? 'xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_6rem_7rem_2rem]'
+                ? 'xl:grid-cols-[3rem_minmax(10rem,0.8fr)_minmax(18rem,1.4fr)_12rem_6rem_7rem_2rem]'
                 : 'md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
               } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
               const renderRecentEntries = (compact: boolean) => r.recent.map((item, index) => (
