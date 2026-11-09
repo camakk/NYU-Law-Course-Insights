@@ -147,6 +147,11 @@ describe('Courses table expansion', () => {
     expect(minimumReviewsControl.classList.contains('flex-1')).toBe(true);
     expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('50');
     expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('500');
+    expect(minimumReviewsSlider.getAttribute('aria-valuemin')).toBe('0');
+    expect(screen.getByTestId('filter-min-responses-tick-0').textContent).toBe('0');
+    expect(screen.getByTestId('filter-min-responses-tick-50').textContent).toBe('50');
+    expect(screen.getByTestId('filter-min-responses-tick-500').textContent).toBe('500');
+    expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(11);
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
     expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
     expect(within(minimumReviewsControl).queryByText('No minimum')).toBeNull();
@@ -207,7 +212,8 @@ describe('Courses table expansion', () => {
       sourceNotes: [],
       records: [
         makeRecord(1, 'Doe, Alice', 4.5, 50, 'Evidence'),
-        makeRecord(2, 'Roe, Bob', 4.5, 51, 'Torts'),
+        makeRecord(2, 'Roe, Bob', 4.5, 55, 'Torts'),
+        makeRecord(3, 'Smith, Sam', 4.5, 60, 'Contracts'),
       ],
     });
     vi.mocked(useDataset).mockReturnValue({
@@ -221,14 +227,22 @@ describe('Courses table expansion', () => {
 
     expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
     expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-contracts')).toBeTruthy();
     const reviewsSlider = screen.getByTestId('filter-min-responses-slider')
       .querySelector('[role="slider"]') as HTMLElement;
     reviewsSlider.focus();
     fireEvent.keyDown(reviewsSlider, { key: 'ArrowRight' });
 
-    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('51+');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('60+');
     expect(screen.queryByTestId('row-courses-evidence')).toBeNull();
-    expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
+    expect(screen.queryByTestId('row-courses-torts')).toBeNull();
+    expect(screen.getByTestId('row-courses-contracts')).toBeTruthy();
+
+    fireEvent.keyDown(reviewsSlider, { key: 'ArrowLeft' });
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
+    fireEvent.keyDown(reviewsSlider, { key: 'ArrowLeft' });
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('40+');
+    expect(reviewsSlider.getAttribute('aria-valuenow')).toBe('40');
   });
 
   it('shows 1L courses by default and hides only those courses when the toggle is off', () => {

@@ -32,6 +32,7 @@ type DirectorySnapshot = {
 
 const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
 const PROFESSOR_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsProfessorDirectory';
+const COURSE_REVIEW_TICKS = Array.from({ length: 11 }, (_, index) => index * 50);
 const COURSE_CATEGORY_TOGGLES: Array<{ id: string; label: string; categories: CourseCategory[] }> = [
   { id: 'toggle-include-courses', label: 'Include Courses', categories: ['Course'] },
   { id: 'toggle-include-seminars-colloquiums', label: 'Include Seminars/Colloquiums', categories: ['Seminar', 'Colloquium'] },
@@ -105,7 +106,7 @@ function matches(g: Group, terms: string[], kind: Kind, records = g.records) {
   return terms.every((t) => hay.includes(t) || other.includes(t));
 }
 
-function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatValue, minLabel, maxLabel, snapPoints, snapRange = 1, inline = false }: {
+function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatValue, minLabel, maxLabel, snapPoints, snapRange = 1, tickMarks, inline = false }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -118,6 +119,7 @@ function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatVal
   maxLabel?: string;
   snapPoints?: number[];
   snapRange?: number;
+  tickMarks?: number[];
   inline?: boolean;
 }) {
   const numericValue = value === '' ? min : Number(value);
@@ -151,7 +153,30 @@ function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatVal
       {inline ? (
         <div className="flex h-11 min-w-0 items-center gap-2 text-xs">
           <span id={labelId} className="shrink-0 whitespace-nowrap text-muted-foreground">{label}</span>
-          {slider}
+          {tickMarks?.length ? (
+            <div className="relative flex h-8 min-w-0 flex-1 items-center">
+              {slider}
+              {tickMarks.map((point) => (
+                <span
+                  key={`mark-${point}`}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 z-10 h-2 w-px -translate-x-1/2 -translate-y-1/2 bg-muted-foreground/70"
+                  style={{ left: `${((point - min) / (max - min)) * 100}%` }}
+                />
+              ))}
+              {tickMarks.map((point) => (
+                <span
+                  key={`label-${point}`}
+                  aria-hidden="true"
+                  data-testid={`${id}-tick-${point}`}
+                  className={`pointer-events-none absolute bottom-0 text-[8px] leading-none text-muted-foreground ${point === min ? '' : point === max ? '-translate-x-full' : '-translate-x-1/2'}`}
+                  style={{ left: `${((point - min) / (max - min)) * 100}%` }}
+                >
+                  {fmtInt(point)}
+                </span>
+              ))}
+            </div>
+          ) : slider}
           <output className="shrink-0 font-medium text-foreground" data-testid={`${id}-value`}>
             {formatValue(numericValue)}
           </output>
@@ -484,12 +509,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       onChange={updateMinimum(setMinResponses)}
       min={0}
       max={maxReviews}
-      step={isProf ? 10 : 1}
+      step={10}
       id="filter-min-responses"
       formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
       minLabel="No minimum"
       maxLabel={`${fmtInt(maxReviews)}+`}
       snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
+      tickMarks={isProf ? undefined : COURSE_REVIEW_TICKS}
       inline={!isProf}
     />
   );
