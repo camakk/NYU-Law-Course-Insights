@@ -146,7 +146,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
     <div>
       <section className="rise grid lg:grid-cols-[1.4fr_1fr] gap-10 items-end pb-10 rule-double pt-6">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.3em] text-primary font-semibold">The NYU Law Unofficial Course Catalog · {ds.semesters[ds.semesters.length - 1]} to {ds.semesters[0]}</div>
+          <div className="text-[11px] uppercase tracking-[0.3em] text-primary font-semibold">An Unofficial Viewer for NYU Law Course Evaluations · {ds.semesters[ds.semesters.length - 1]} to {ds.semesters[0]}</div>
           <h1 className="font-display text-5xl md:text-7xl font-semibold leading-[0.95] mt-4">Pick the teacher,<br /><span className="italic text-primary">not just the class.</span></h1>
           <p className="text-muted-foreground mt-5 max-w-xl">Ten years of student evaluations, organized so you can see who taught a course, how students rated them, and the data behind each number.</p>
         </div>

@@ -243,6 +243,7 @@ describe('Courses table expansion', () => {
     const minimumReviewsSlider = screen.getByTestId('filter-min-responses-slider')
       .querySelector('[role="slider"]') as HTMLElement;
     const filterActions = screen.getByTestId('course-filter-actions');
+    const filterSummary = screen.getByTestId('filter-summary');
     const setDefaultFiltersButton = screen.getByTestId('button-set-default-filters');
     const clearFiltersButton = screen.getByTestId('button-clear-filters');
     const sortSelect = screen.getByTestId('select-sort');
@@ -251,9 +252,11 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('select-semester')).toBeNull();
     expect(setDefaultFiltersButton.textContent).toBe('Set default filters');
     expect(clearFiltersButton.textContent).toBe('Clear all filters');
-    expect(filterActions.parentElement).toBe(toolbar);
-    expect(toolbar.children[2]).toBe(filterActions);
-    expect(filterActions.className).toContain('justify-end');
+    expect(filterActions.parentElement).toBe(filterSummary.parentElement);
+    expect(filterActions.parentElement?.className).toContain('justify-between');
+    expect(filterActions.parentElement?.previousElementSibling?.tagName).toBe('H1');
+    expect(toolbar.contains(filterActions)).toBe(false);
+    expect(toolbar.className).toContain('pt-0');
     expect(setDefaultFiltersButton.parentElement).toBe(filterActions);
     expect(clearFiltersButton.parentElement).toBe(filterActions);
     expect(include1LToggle.getAttribute('aria-checked')).toBe('false');
@@ -765,7 +768,7 @@ describe('Courses table expansion', () => {
     render(<CoursesPage />);
 
     expect(screen.queryByText(/You have to take Professional Responsibility/)).toBeNull();
-    expect(screen.getByTestId('filter-summary').previousElementSibling?.tagName).toBe('H1');
+    expect(screen.getByTestId('filter-summary').parentElement?.previousElementSibling?.tagName).toBe('H1');
     const table = screen.getByTestId('directory-table');
     const tableHeader = screen.getByTestId('directory-table-header');
     expect(table.classList.contains('overflow-clip')).toBe(true);

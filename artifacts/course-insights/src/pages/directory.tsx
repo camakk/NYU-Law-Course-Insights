@@ -635,15 +635,22 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
 
   return (
     <div className="rise">
-      <div className="mb-2">
+      <div className={isProf ? 'mb-2' : 'mb-0'}>
         <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Directory</div>
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
-        <p className="text-xs text-muted-foreground mt-3" role="status" aria-live="polite" data-testid="filter-summary">
-          {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
-        </p>
+        <div className={isProf ? '' : 'mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2'}>
+          <p className={`text-xs text-muted-foreground ${isProf ? 'mt-3' : ''}`} role="status" aria-live="polite" data-testid="filter-summary">
+            {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
+          </p>
+          {!isProf && (
+            <div className="flex items-center gap-3" data-testid="course-filter-actions">
+              {filterActionButtons}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className={`mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur ${isProf ? 'py-3' : 'pt-1 pb-3'} -mx-1 px-1`} data-testid={`directory-toolbar-${kind}`}>
+      <div className={`mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur ${isProf ? 'py-3' : 'pt-0 pb-3'} -mx-1 px-1`} data-testid={`directory-toolbar-${kind}`}>
         <div className="flex flex-wrap items-end gap-3" data-testid={`directory-toolbar-primary-row-${kind}`}>
         <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
         {isProf && (
@@ -825,11 +832,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             >
               {minimumReviewsFilter}
             </div>
-          </div>
-        )}
-        {!isProf && (
-          <div className="mt-3 flex justify-end gap-3" data-testid="course-filter-actions">
-            {filterActionButtons}
           </div>
         )}
       </div>

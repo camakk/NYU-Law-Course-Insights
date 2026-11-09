@@ -26,7 +26,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <header className="bg-sidebar text-sidebar-foreground sticky top-0 z-40 border-b border-sidebar-border">
         <div className="mx-auto max-w-[88rem] w-full px-4 md:px-6 min-h-14 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 lg:gap-x-6 lg:py-0">
           <Link href="/" className="flex items-baseline gap-2 shrink-0" data-testid="link-home">
-            <span className="font-display text-xl font-semibold">Course Insights</span>
+            <span className="font-display text-xl font-semibold italic">Per Curiam</span>
             <span className="hidden md:inline text-[11px] uppercase tracking-[0.2em] text-sidebar-primary">NYU Law</span>
           </Link>
           <nav aria-label="Main navigation" className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 text-sm">
