@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { Route, Router, Switch } from 'wouter';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, useDataset, type RawData } from '@/lib/data';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { CoursesPage } from './directory';
 import CoursePage from './course';
 
@@ -48,12 +49,14 @@ describe('course detail navigation', () => {
 
     try {
       render(
-        <Router>
-          <Switch>
-            <Route path="/courses" component={CoursesPage} />
-            <Route path="/courses/:id" component={CoursePage} />
-          </Switch>
-        </Router>,
+        <TooltipProvider>
+          <Router>
+            <Switch>
+              <Route path="/courses" component={CoursesPage} />
+              <Route path="/courses/:id" component={CoursePage} />
+            </Switch>
+          </Router>
+        </TooltipProvider>,
       );
 
       fireEvent.click(screen.getByRole('link', { name: 'Evidence' }));

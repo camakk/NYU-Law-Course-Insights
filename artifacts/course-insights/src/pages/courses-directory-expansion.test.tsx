@@ -1,12 +1,18 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render as renderPage, screen, waitFor, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, useDataset, type RawData } from '@/lib/data';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { CoursesPage } from './directory';
 
 vi.mock('@/lib/data', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/data')>()),
   useDataset: vi.fn(),
 }));
+
+function render(ui: ReactNode) {
+  return renderPage(<TooltipProvider>{ui}</TooltipProvider>);
+}
 
 function makeRecord(
   id: number,
@@ -168,6 +174,21 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('filter-course-rating-range-slider')).toBeNull();
     expect(screen.queryByText('Minimum class offerings')).toBeNull();
     expect(screen.queryByText('Average Course Rating')).toBeNull();
+  });
+
+  it('explains the upper-level tax filter on hover without changing the toggle', async () => {
+    render(<CoursesPage />);
+    const toggle = screen.getByTestId('toggle-include-upper-level-tax-courses');
+    fireEvent.pointerMove(screen.getByTestId('button-upper-level-tax-info'), {
+      pointerType: 'mouse', clientX: 0, clientY: 0,
+    });
+
+    expect(await screen.findByText(
+      'Excludes all tax classes except for Income Taxation',
+      {},
+      { timeout: 3000 },
+    )).toBeTruthy();
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
   });
 
   it('filters course category groups independently', () => {

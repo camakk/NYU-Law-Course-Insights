@@ -680,6 +680,21 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
               Show Upper-Level Tax
             </label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Upper-level tax courses information"
+                  data-testid="button-upper-level-tax-info"
+                  className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Info aria-hidden="true" className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                Excludes all tax classes except for Income Taxation
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
         {isProf && <button
