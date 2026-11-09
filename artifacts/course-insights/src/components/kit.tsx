@@ -85,13 +85,15 @@ export function RatingBar({
   label,
   testId,
   compact = false,
+  condensed = false,
 }: {
   rating: number | null;
   label: string;
   testId?: string;
   compact?: boolean;
+  condensed?: boolean;
 }) {
-  const widthClass = compact ? 'w-32 max-w-full sm:w-36 xl:w-48' : 'w-60';
+  const widthClass = condensed ? 'w-[6.5rem] shrink-0' : compact ? 'w-32 max-w-full sm:w-36 xl:w-48' : 'w-60';
   if (rating == null) {
     return <div className={cn(widthClass, 'text-right num text-xs text-muted-foreground')} data-testid={testId}>N/A / 5</div>;
   }

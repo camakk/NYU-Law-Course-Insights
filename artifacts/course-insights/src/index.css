@@ -447,6 +447,45 @@ body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index
 .rise { animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
 .rule-double { border-top: 3px double hsl(var(--foreground) / .7); }
 
+/* Transfer 30% of the original Course track to Top Professors without
+   changing the Recent Professors or numeric column widths. */
+@media (min-width: 768px) {
+  .course-directory-grid {
+    --top-professors-base-width: 12rem;
+    /* Original fixed tracks and five 0.75rem gaps. */
+    --original-course-width: calc(100% - 35.75rem);
+    grid-template-columns:
+      3rem
+      minmax(0, calc(var(--original-course-width) * 0.7))
+      8rem
+      calc(var(--top-professors-base-width) + var(--original-course-width) * 0.3)
+      7rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .course-directory-grid {
+    /* Six gaps, with the recent-history track retaining its original width. */
+    --course-fixed-width: 36.5rem;
+    --recent-professors-width: max(14rem, calc((100% - var(--course-fixed-width)) * 1.2 / 2.2));
+    --original-course-width: calc(100% - var(--course-fixed-width) - var(--recent-professors-width));
+    grid-template-columns:
+      3rem
+      minmax(0, calc(var(--original-course-width) * 0.7))
+      var(--recent-professors-width)
+      8rem
+      calc(var(--top-professors-base-width) + var(--original-course-width) * 0.3)
+      7rem 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .course-directory-grid {
+    --top-professors-base-width: 14rem;
+    --course-fixed-width: 38.5rem;
+  }
+}
+
 @keyframes overview-search-cue {
   0%, 100% {
     box-shadow: 0 0 0 0 hsl(var(--primary) / 0);

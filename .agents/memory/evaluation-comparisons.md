@@ -21,6 +21,12 @@ In course teaching histories, a professor's displayed score belongs to the speci
 
 **How to apply:** Apply the existing response-weighted policy to multiple sections of the same professor–course–semester; leave unavailable teaching scores as N/A rather than substituting another term's rating.
 
+Course-level top-professor comparisons summarize teaching effectiveness for that subject across semesters, unlike the semester-specific scores in Recent Professors.
+
+**Why:** The user wants the table's top-three preview to match its expanded course comparison, not to rank instructors by their latest semester or by ratings from unrelated subjects.
+
+**How to apply:** Keep the preview and expanded comparison on the same eligibility and ranking rules; do not reuse the recent-history score for this summary.
+
 Infer course categories from title keywords using this rule: titles containing “Clinic Seminar” receive both Clinic and Seminar; all other titles use this precedence: Externship, Clinic, Colloquium, Seminar, then Course.
 
 **Why:** Titles such as “Clinic Seminar” or “Externship Seminar” identify a specific program type, not just a seminar.

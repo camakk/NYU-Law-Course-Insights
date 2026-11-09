@@ -66,6 +66,97 @@ beforeEach(() => {
 });
 
 describe('Courses table expansion', () => {
+  it('previews the top three course-specific professors using the same ranking as Expand', () => {
+    const missingScore = makeRecord(8, 'Missing, Morgan', 5, 60);
+    missingScore.scores[5] = null;
+    const previewDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Doe, Alice', 4.9, 20),
+        makeRecord(2, 'Doe, Alice', 3.9, 20),
+        makeRecord(3, 'Roe, Bob', 4.8, 20),
+        makeRecord(4, 'Smith, Carol', 4.7, 30),
+        makeRecord(5, 'White, Dan', 4.5, 20),
+        makeRecord(6, 'Small, Sam', 5, 19),
+        makeRecord(7, 'Doe, Alice', 5, 500, 'Contracts'),
+        missingScore,
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: previewDataset, isLoading: false, error: null, refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    render(<CoursesPage />);
+    const preview = screen.getByTestId('course-professor-preview-evidence');
+    const links = within(preview).getAllByRole('link');
+    expect(links.map((link) => link.textContent)).toEqual([
+      '1. Bob Roe • Fall 2025',
+      '2. Carol Smith • Fall 2025',
+      '3. Dan White • Fall 2025',
+    ]);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/professors/bob-roe', '/professors/carol-smith', '/professors/dan-white',
+    ]);
+    for (const link of links) {
+      expect(link.parentElement?.classList.contains('flex')).toBe(true);
+      expect(link.parentElement?.classList.contains('items-center')).toBe(true);
+      expect(link.parentElement?.classList.contains('justify-start')).toBe(true);
+      expect(link.parentElement?.classList.contains('gap-1')).toBe(true);
+      expect(link.classList.contains('truncate')).toBe(true);
+      expect(link.classList.contains('max-w-[70%]')).toBe(true);
+      expect(link.classList.contains('flex-1')).toBe(false);
+      expect(link.getAttribute('title')).toBe(link.textContent);
+      expect(link.nextElementSibling?.classList.contains('w-[6.5rem]')).toBe(true);
+      expect(link.nextElementSibling?.querySelector('[role="meter"]')).toBeTruthy();
+    }
+    const semesterLabel = screen.getByTestId('preview-semester-evidence-bob-roe');
+    expect(semesterLabel.textContent).toBe('• Fall 2025');
+    expect(semesterLabel.classList.contains('text-[10px]')).toBe(true);
+    expect(semesterLabel.classList.contains('text-muted-foreground')).toBe(true);
+    expect(within(preview).getAllByRole('meter').map((meter) => meter.getAttribute('aria-valuenow')))
+      .toEqual(['4.8', '4.7', '4.5']);
+    for (const score of ['4.80 / 5', '4.70 / 5', '4.50 / 5']) {
+      expect(within(preview).getByText(score)).toBeTruthy();
+    }
+    expect(within(preview).queryByText('Sam Small')).toBeNull();
+    expect(within(preview).queryByText('Morgan Missing')).toBeNull();
+    expect(screen.queryByTestId('rating-course-evidence')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
+    const panel = screen.getByTestId('panel-top-professors-evidence');
+    const expandedLinks = within(panel).getAllByRole('link');
+    expect(expandedLinks.map((link) => link.textContent)).toEqual(['Bob Roe', 'Carol Smith', 'Dan White', 'Alice Doe']);
+    for (const slug of ['bob-roe', 'carol-smith', 'dan-white']) {
+      const previewBar = screen.getByTestId(`preview-rating-evidence-${slug}`).querySelector('[role="meter"]');
+      const expandedBar = screen.getByTestId(`rating-course-professor-evidence-${slug}`).querySelector('[role="meter"]');
+      expect(previewBar?.getAttribute('aria-valuenow')).toBe(expandedBar?.getAttribute('aria-valuenow'));
+      expect(previewBar?.firstElementChild?.getAttribute('style')).toBe(expandedBar?.firstElementChild?.getAttribute('style'));
+    }
+
+    fireEvent.click(links[0]);
+    expect(window.location.pathname).toBe('/professors/bob-roe');
+  });
+
+  it('shows fewer than three professors when fewer qualify and explains an empty preview', () => {
+    const noQualifiedDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Doe, Alice', 4.9, 20),
+        makeRecord(2, 'Small, Sam', 5, 19),
+        makeRecord(3, 'Small, Sam', 5, 19, 'Contracts'),
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: noQualifiedDataset, isLoading: false, error: null, refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    render(<CoursesPage />);
+    const evidence = screen.getByTestId('course-professor-preview-evidence');
+    expect(within(evidence).getAllByRole('link').map((link) => link.textContent)).toEqual(['1. Alice Doe • Fall 2025']);
+    expect(within(evidence).getAllByRole('meter')).toHaveLength(1);
+    const contracts = screen.getByTestId('course-professor-preview-contracts');
+    expect(contracts.textContent).toBe('No professors with teaching ratings and 20+ reviews for this course.');
+    expect(within(contracts).queryByRole('meter')).toBeNull();
+  });
+
   it('shows every matching course without a Load More control', () => {
     const allCoursesDataset = buildDataset({
       questions: [],
@@ -349,10 +440,12 @@ describe('Courses table expansion', () => {
       expect(group.courseLabels).toContain('1L');
       expect(group.records.every((record) => record.courseLabels.includes('1L'))).toBe(true);
       const row = screen.getByTestId(`row-courses-${group.slug}`);
-      const badge = within(row).getByText('1L');
+      const badge = within(row).getByTestId(`badge-course-1l-${group.slug}`);
       expect(badge.classList.contains('rounded-full')).toBe(true);
       expect(badge.classList.contains('bg-secondary')).toBe(true);
-      expect(badge.parentElement?.querySelector(`[data-testid="course-latest-${group.slug}"]`)).toBeTruthy();
+      expect(badge.parentElement?.querySelector('a')?.textContent).toBe(course);
+      expect(badge.parentElement?.querySelector(`[data-testid="course-latest-${group.slug}"]`)).toBeNull();
+      expect(within(row).getByTestId(`course-latest-${group.slug}`).parentElement?.querySelector(`[data-testid="badge-course-1l-${group.slug}"]`)).toBeNull();
     }
 
     fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
@@ -469,9 +562,25 @@ describe('Courses table expansion', () => {
       .find((span) => span.textContent === 'Recent Professors');
     expect(recentProfessorsHeading?.classList.contains('normal-case')).toBe(true);
     const ratingHeader = screen.getByTestId('button-sort-rating');
+    expect(ratingHeader.textContent).toContain('Top Professors');
+    expect(ratingHeader.textContent).not.toContain('Course Rating');
     expect(ratingHeader.parentElement?.classList.contains('text-center')).toBe(true);
+    const offeringsHeader = screen.getByTestId('button-sort-offerings');
+    expect(offeringsHeader.parentElement?.classList.contains('text-center')).toBe(true);
+    expect(offeringsHeader.compareDocumentPosition(ratingHeader) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(offeringsHeader.parentElement?.nextElementSibling).toBe(ratingHeader.parentElement);
     expect(screen.queryByText('Teaching')).toBeNull();
     const row = screen.getByTestId('row-courses-evidence');
+    expect(tableHeader.classList.contains('course-directory-grid')).toBe(true);
+    expect(row.firstElementChild?.classList.contains('course-directory-grid')).toBe(true);
+    const previewCell = within(row).getByTestId('course-professor-preview-evidence').parentElement!;
+    expect(previewCell.previousElementSibling?.textContent).toBe('4');
+    expect(previewCell.previousElementSibling?.classList.contains('num')).toBe(true);
+    expect(previewCell.previousElementSibling?.classList.contains('text-center')).toBe(true);
+    const expandLine = within(row).getByTestId('course-expand-line-evidence');
+    expect(expandLine.classList.contains('block')).toBe(true);
+    expect(within(expandLine).getByRole('button', { name: 'Expand top professors for Evidence' })).toBeTruthy();
+    expect(expandLine.previousElementSibling?.querySelector('button')).toBeNull();
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
     const spring2026 = within(row).getByTestId('recent-semester-evidence-compact-0');
     expect(spring2026.textContent).toBe('🌸 Spring 2026 • Alice Doe (4.90)');
@@ -480,7 +589,7 @@ describe('Courses table expansion', () => {
       expect(within(row).getByTestId(`recent-semester-evidence-${layout}-1`).classList.contains('mt-1.5')).toBe(true);
     }
     expect(spring2026.querySelector('strong')?.textContent).toBe('🌸 Spring 2026');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.90), Sam Small (5.00)');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.90), Sam Small (5.00) [...]');
     const courseLatest = within(row).getByTestId('course-latest-evidence');
     expect(courseLatest.textContent).toMatch(/^Latest (Spring|Fall|Summer) \d{4}$/);
     expect(courseLatest.textContent).not.toMatch(/🌸|🍂|☀️/);
@@ -563,7 +672,7 @@ describe('Courses table expansion', () => {
     expect(within(semester).getByRole('link', { name: 'Bob Roe (N/A)' })).toBeTruthy();
   });
 
-  it('expands every recent-professor semester and collapses back to the latest three', () => {
+  it('shows two recent-professor semesters and expands or collapses the full history', () => {
     const historyDataset = buildDataset({
       questions: [],
       sourceNotes: [],
@@ -588,17 +697,17 @@ describe('Courses table expansion', () => {
     const row = screen.getByTestId('row-courses-evidence');
     const historyToggle = () => within(row).getByTestId('button-toggle-course-history-evidence-compact');
     expect(within(row).getByTestId('recent-semester-evidence-compact-0').textContent).toBe('🌸 Spring 2026 • Alice Doe (4.80)');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.70), Bob Roe (4.60)');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('🌸 Spring 2025 • Bob Roe (4.50) [...]');
-    expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.70), Bob Roe (4.60) [...]');
+    expect(within(row).queryByTestId('recent-semester-evidence-compact-2')).toBeNull();
     expect(historyToggle().textContent).toBe('[...]');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('false');
-    expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-2'));
+    expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-1'));
 
     fireEvent.click(historyToggle());
 
     expect(historyToggle().textContent).toBe('Collapse');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('true');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('🌸 Spring 2025 • Bob Roe (4.50)');
     expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe (4.40)');
     expect(within(row).getByTestId('recent-semester-evidence-compact-3').classList.contains('mt-1.5')).toBe(true);
     expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('🌸 Spring 2024 • Bob Roe (4.30)');
@@ -609,10 +718,10 @@ describe('Courses table expansion', () => {
 
     expect(historyToggle().textContent).toBe('[...]');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('false');
-    expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
+    expect(within(row).queryByTestId('recent-semester-evidence-compact-2')).toBeNull();
   });
 
-  it('hides the history toggle when three or fewer entries cover the course history', () => {
+  it('keeps the history toggle hidden when three or fewer offerings exist', () => {
     const courseNames = [
       'Two Offering Course',
       'Three Offering Course',
@@ -643,11 +752,14 @@ describe('Courses table expansion', () => {
     } as unknown as ReturnType<typeof useDataset>);
     render(<CoursesPage />);
 
-    for (const courseName of courseNames.slice(0, 3)) {
+    for (const courseName of courseNames.slice(0, 2)) {
       const slug = compactHistoryDataset.courseSlugByName.get(courseName)!;
       expect(screen.queryByTestId(`button-toggle-course-history-${slug}-compact`)).toBeNull();
       expect(screen.queryByTestId(`button-toggle-course-history-${slug}-wide`)).toBeNull();
     }
+
+    const threeSemesterSlug = compactHistoryDataset.courseSlugByName.get(courseNames[2])!;
+    expect(screen.getByTestId(`button-toggle-course-history-${threeSemesterSlug}-compact`).textContent).toBe('[...]');
 
     const fourSemesterSlug = compactHistoryDataset.courseSlugByName.get(courseNames[3])!;
     expect(screen.getByTestId(`button-toggle-course-history-${fourSemesterSlug}-compact`).textContent).toBe('[...]');

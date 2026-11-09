@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CourseProfessorExpansion } from '@/components/course-professor-expansion';
+import { CourseProfessorPreview } from '@/components/course-professor-preview';
 
 type Kind = 'professors' | 'courses';
 type SortKey = 'rating' | 'rating-asc' | 'responses' | 'responses-asc' | 'courses' | 'courses-asc' | 'offerings' | 'offerings-asc' | 'name' | 'name-desc' | 'recent';
@@ -778,7 +779,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <div className="bg-card border rounded-xl overflow-clip" data-testid="directory-table">
             <div className={`${isProf
               ? 'hidden xl:grid xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]'
-              : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
+              : 'hidden md:grid course-directory-grid'
             } sticky ${isProf ? 'top-36' : 'top-48 md:top-[18rem] xl:top-48'} z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`} data-testid="directory-table-header">
               <span>#</span>
               {isProf
@@ -786,12 +787,15 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 : sortHeader('Course', 'course', 'name', 'name-desc', 'left', 'ascending')}
               <span className={isProf ? 'hidden xl:block normal-case tracking-normal' : 'hidden lg:block normal-case tracking-normal'}>{isProf ? 'Recent Courses' : 'Recent Professors'}</span>
               {isProf && <span className="hidden xl:block" />}
+              {!isProf && <span className="text-center">
+                {sortHeader('Times Offered', 'offerings', 'offerings', 'offerings-asc', 'center')}
+              </span>}
               <span className="text-center">{isProf
                 ? sortHeader('Teaching Grade', 'teaching', 'rating', 'rating-asc', 'center')
-                : sortHeader('Course Rating', 'rating', 'rating', 'rating-asc', 'center')}</span>
-              <span className="text-right">{isProf
-                ? sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')
-                : sortHeader('Times Offered', 'offerings', 'offerings', 'offerings-asc')}</span>
+                : sortHeader('Top Professors', 'rating', 'rating', 'rating-asc', 'center')}</span>
+              {isProf && <span className="text-right">
+                {sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')}
+              </span>}
               <span className="text-right">{isProf
                 ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')
                 : sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')}</span><span />
@@ -799,11 +803,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             {rows.map((r, i) => {
               const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
                 ? 'xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]'
-                : 'md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
+                : 'course-directory-grid'
               } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
               const recentSemestersExpanded = expandedRecentSemesters[r.g.slug] ?? false;
-              const visibleRecentEntries = isProf || recentSemestersExpanded ? r.recent : r.recent.slice(0, 3);
-              const canExpandRecentHistory = !isProf && r.offerings > 3 && r.recent.length > 3;
+              const visibleRecentEntries = isProf || recentSemestersExpanded ? r.recent : r.recent.slice(0, 2);
+              const canExpandRecentHistory = !isProf && r.offerings > 3 && r.recent.length > 2;
               const renderRecentEntries = (compact: boolean) => (
                 <>
                   {visibleRecentEntries.map((item, index) => (
@@ -843,9 +847,17 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   <span className="min-w-0">
                     <span className={`${isProf ? 'inline-block max-w-full hover:underline' : 'block'} whitespace-normal break-words font-medium group-hover:text-primary transition-colors`}>
                       {isProf ? r.g.label : (
-                        <Link href={`/courses/${r.g.slug}`} className="block whitespace-normal break-words hover:underline" onClick={saveDirectorySnapshot}>
+                        <Link href={`/courses/${r.g.slug}`} className="whitespace-normal break-words hover:underline" onClick={saveDirectorySnapshot}>
                           {r.g.label}
                         </Link>
+                      )}
+                      {!isProf && r.g.courseLabels?.includes('1L') && (
+                        <span
+                          className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground"
+                          data-testid={`badge-course-1l-${r.g.slug}`}
+                        >
+                          1L
+                        </span>
                       )}
                     </span>
                     <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -863,14 +875,18 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       {!isProf && r.g.courseCategories?.map((category) => (
                         <span key={category} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{category}</span>
                       ))}
-                      {!isProf && r.g.courseLabels?.map((label) => (
+                      {!isProf && r.g.courseLabels?.filter((label) => label !== '1L').map((label) => (
                         <span key={`label-${label}`} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
                       ))}
                       {isProf && <span className="xl:hidden num">· {r.offerings} times taught</span>}
                       <span className={isProf ? 'xl:hidden num' : 'md:hidden num'}>· {fmtInt(r.m.responses)} reviews</span>
-                      {!isProf && expandButton}
                       <SmallSample responses={r.m.responses} />
                     </span>
+                    {!isProf && (
+                      <span className="mt-1 block text-xs" data-testid={`course-expand-line-${r.g.slug}`}>
+                        {expandButton}
+                      </span>
+                    )}
                     <span className={`mt-1 block min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:hidden' : 'lg:hidden'}`}>
                        <span className={`block text-[10px] font-medium ${isProf ? 'uppercase tracking-wide' : 'normal-case tracking-normal'}`}>
                          {isProf ? 'Recent courses' : 'Recent Professors'}
@@ -889,12 +905,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       />
                     </span>
                   )}
-                  <span className={isProf ? 'xl:justify-self-end' : 'md:justify-self-end'}>
+                  {!isProf && <span className="hidden md:block text-center num text-sm">{r.offerings}</span>}
+                  <div className={isProf ? 'xl:justify-self-end' : 'col-span-2 col-start-2 min-w-0 md:col-span-1 md:col-start-auto'}>
                     {isProf
                       ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />
-                      : <RatingBar rating={r.m.avg} label={`${r.g.label} overall course rating`} compact testId={`rating-course-${r.g.slug}`} />}
-                  </span>
-                  <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{r.offerings}</span>
+                      : <CourseProfessorPreview course={r.g} dataset={ds} onNavigate={saveDirectorySnapshot} />}
+                  </div>
+                  {isProf && <span className="hidden xl:block text-right num text-sm">{r.offerings}</span>}
                   <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{fmtInt(r.m.responses)}</span>
                   <ArrowUpRight className={isProf ? 'hidden xl:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition' : 'hidden md:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition'} />
                 </>

@@ -4,7 +4,15 @@ import { Link } from 'wouter';
 import { bySemesterDesc, fmtInt, PROF_OVERALL, rankBy, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { RatingBar, SmallSample } from '@/components/kit';
 
-const MIN_PROFESSOR_COURSE_REVIEWS = 20;
+export const MIN_PROFESSOR_COURSE_REVIEWS = 20;
+
+export function getMostRecentProfessorCourseSemester(course: Group, professorName: string) {
+  return course.records
+    .filter((record) => record.professor === professorName)
+    .map((record) => record.semester)
+    .filter(Boolean)
+    .sort(bySemesterDesc)[0] || 'Semester unavailable';
+}
 
 export function getTopCourseProfessors(course: Group, dataset: Dataset) {
   const byProfessor = new Map<string, EvalRecord[]>();
@@ -34,11 +42,7 @@ function CourseTopProfessorsList({ course, professors, includeMostRecent = false
       {professors.length > 0 ? (
         <ol className="mt-2 divide-y divide-border/70">
           {professors.map(({ group, metric }, index) => {
-            const mostRecentSemester = course.records
-              .filter((record) => record.professor === group.name)
-              .map((record) => record.semester)
-              .filter(Boolean)
-              .sort(bySemesterDesc)[0] || 'Semester unavailable';
+            const mostRecentSemester = getMostRecentProfessorCourseSemester(course, group.name);
             return (
             <li key={group.slug} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2" data-testid={`course-top-professor-${course.slug}-${group.slug}`}>
               <span className="num w-3 text-xs text-muted-foreground">{index + 1}</span>
