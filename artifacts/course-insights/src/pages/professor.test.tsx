@@ -156,7 +156,7 @@ describe('Professor detail summary', () => {
     )).toBeTruthy();
   });
 
-  it('shows N/A for standing cards when a professor has fewer than 50 reviews', () => {
+  it('keeps rank N/A while grading a professor with fewer than 50 reviews', () => {
     const lowReviewDataset = buildDataset({
       questions: [],
       sourceNotes: [],
@@ -172,7 +172,7 @@ describe('Professor detail summary', () => {
     expect(screen.getByTestId('professor-standing-rank').textContent)
       .toContain('Professors with fewer than 50 reviews are not included in overall rankings');
     expect(screen.getByTestId('professor-standing-score-value').textContent).toBe('4.50 / 5.00');
-    expect(screen.getByTestId('professor-standing-grade-value').textContent).toBe('N/A');
+    expect(screen.getByTestId('professor-standing-grade-value').textContent).toBe('B-');
   });
 
   it('updates the distinct course list to the selected semester', () => {

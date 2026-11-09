@@ -314,12 +314,50 @@ export function calculateProfessorStanding(
   professors: ProfessorRankingEntry[],
   target: ProfessorRankingEntry,
 ): ProfessorStanding {
+  const ratedProfessors = professors.filter(
+    ({ score }) => score != null && Number.isFinite(score),
+  );
   const eligibleProfessors = professors.filter(
     ({ score, reviews }) =>
       reviews >= MIN_REVIEWS_FOR_PROFESSOR_RANKING && score != null && Number.isFinite(score),
   );
   const belowReviewThreshold = target.reviews < MIN_REVIEWS_FOR_PROFESSOR_RANKING;
-  if (belowReviewThreshold || target.score == null || !Number.isFinite(target.score) || eligibleProfessors.length === 0) {
+  const targetHasScore = target.score != null && Number.isFinite(target.score);
+  const rankWithin = (cohort: ProfessorRankingEntry[]) => cohort.filter(
+    ({ score, reviews }) => score! > target.score! || (score === target.score && reviews > target.reviews),
+  ).length + 1;
+  const gradeAtRank = (rank: number, total: number): ProfessorLetterGrade => {
+    const share = rank / total;
+    return share <= 0.02
+      ? 'A+'
+      : share <= 0.12
+        ? 'A'
+        : share <= 0.32
+          ? 'A-'
+          : share <= 0.62
+            ? 'B+'
+            : share <= 0.92
+              ? 'B'
+              : 'B-';
+  };
+
+  if (belowReviewThreshold) {
+    const smallSampleProfessors = ratedProfessors.filter(
+      ({ reviews }) => reviews < MIN_REVIEWS_FOR_PROFESSOR_RANKING,
+    );
+    const grade = targetHasScore && smallSampleProfessors.length > 0
+      ? gradeAtRank(rankWithin(smallSampleProfessors), smallSampleProfessors.length)
+      : null;
+    return {
+      rank: null,
+      totalRated: eligibleProfessors.length,
+      topPercent: null,
+      grade,
+      belowReviewThreshold,
+    };
+  }
+
+  if (!targetHasScore || eligibleProfessors.length === 0) {
     return {
       rank: null,
       totalRated: eligibleProfessors.length,
@@ -329,23 +367,11 @@ export function calculateProfessorStanding(
     };
   }
 
-  const rank = eligibleProfessors.filter(
-    ({ score, reviews }) => score! > target.score! || (score === target.score && reviews > target.reviews),
-  ).length + 1;
+  const rank = rankWithin(eligibleProfessors);
   const topShare = rank / eligibleProfessors.length;
   const topPercent = [0.1, 0.5, 1, 5, 10, 20, 50]
     .find((threshold) => topShare <= threshold / 100) ?? null;
-  const grade: ProfessorLetterGrade = topShare <= 0.02
-    ? 'A+'
-    : topShare <= 0.12
-      ? 'A'
-      : topShare <= 0.32
-        ? 'A-'
-        : topShare <= 0.62
-          ? 'B+'
-          : topShare <= 0.92
-            ? 'B'
-            : 'B-';
+  const grade = gradeAtRank(rank, eligibleProfessors.length);
 
   return { rank, totalRated: eligibleProfessors.length, topPercent, grade, belowReviewThreshold };
 }

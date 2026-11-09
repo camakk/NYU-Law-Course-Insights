@@ -173,7 +173,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
             {
               id: 'grade',
               label: 'Effectiveness Grade',
-              value: standing.belowReviewThreshold ? 'N/A' : standing.grade ?? '—',
+              value: standing.grade ?? (standing.belowReviewThreshold ? 'N/A' : '—'),
                 sub: '',
             },
           ].map((card) => (

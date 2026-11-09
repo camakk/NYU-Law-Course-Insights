@@ -305,9 +305,27 @@ describe('professor standing', () => {
       rank: null,
       totalRated: 2,
       topPercent: null,
-      grade: null,
+      grade: 'B-',
       belowReviewThreshold: true,
     });
+  });
+
+  it('grades below-threshold professors only against the below-50-review cohort and breaks ties by reviews', () => {
+    const professors = [
+      { score: 4, reviews: 10 },
+      { score: 4, reviews: 40 },
+      ...Array.from({ length: 48 }, (_, index) => ({ score: 3.9 - index / 100, reviews: 20 })),
+      ...Array.from({ length: 60 }, (_, index) => ({ score: 4.5 + index / 200, reviews: 50 })),
+    ];
+
+    expect(calculateProfessorStanding(professors, { score: 4, reviews: 10 })).toEqual({
+      rank: null,
+      totalRated: 60,
+      topPercent: null,
+      grade: 'A',
+      belowReviewThreshold: true,
+    });
+    expect(calculateProfessorStanding(professors, { score: 4, reviews: 40 }).grade).toBe('A+');
   });
 
   it('uses the strongest applicable top-percent group within the eligible pool', () => {
