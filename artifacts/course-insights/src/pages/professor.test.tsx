@@ -92,7 +92,7 @@ describe('Professor detail summary', () => {
       }),
     });
     const topProfessor = rankedDataset.professors.find((group) => group.name === 'Prof, Faculty 0')!;
-    renderProfessorPage(rankedDataset, topProfessor.slug);
+    const { unmount } = renderProfessorPage(rankedDataset, topProfessor.slug);
 
     expect(screen.queryByTestId('text-overall-score')).toBeNull();
     const standingCards = screen.getByTestId('professor-standing-cards');
@@ -105,7 +105,29 @@ describe('Professor detail summary', () => {
     expect(standingCards.textContent).toContain('out of 100 rated professors');
     expect(standingCards.textContent).toContain('Top 1%');
     expect(standingCards.textContent).toContain('A+');
+    expect(screen.getByTestId('professor-standing-grade-value').className).toContain('bg-emerald-100');
+    expect(screen.getByTestId('professor-standing-grade-value').className).toContain('text-4xl');
+    expect(screen.queryByText('Based on overall effectiveness percentile')).toBeNull();
     expect(screen.queryByText('Overall this professor was effective')).toBeNull();
+    unmount();
+
+    const gradeCases = [
+      { index: 2, grade: 'A', colorClass: 'bg-emerald-100' },
+      { index: 12, grade: 'A-', colorClass: 'from-lime-100' },
+      { index: 32, grade: 'B+', colorClass: 'via-yellow-100' },
+      { index: 62, grade: 'B', colorClass: 'bg-yellow-100' },
+      { index: 92, grade: 'B-', colorClass: 'to-red-200' },
+    ];
+    for (const { index, grade, colorClass } of gradeCases) {
+      const professor = rankedDataset.professors.find((group) => group.name === `Prof, Faculty ${index}`)!;
+      const { unmount: close } = renderProfessorPage(rankedDataset, professor.slug);
+      const gradeValue = screen.getByTestId('professor-standing-grade-value');
+      expect(gradeValue.textContent).toBe(grade);
+      expect(gradeValue.className).toContain(colorClass);
+      expect(gradeValue.className).toContain('text-4xl');
+      expect(screen.queryByText('Based on overall effectiveness percentile')).toBeNull();
+      close();
+    }
   });
 
   it('updates the distinct course list to the selected semester', () => {

@@ -8,6 +8,14 @@ const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
 const OTHER_QUESTION_INDEXES = Array.from({ length: 10 }, (_, index) => index)
   .filter((index) => index !== PROFESSOR_EFFECTIVE_QUESTION && index !== COURSE_EFFECTIVE_QUESTION);
+const EFFECTIVENESS_GRADE_PILL_STYLES: Record<string, string> = {
+  'A+': 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200',
+  A: 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200',
+  'A-': 'border-lime-300 bg-gradient-to-r from-lime-100 to-yellow-100 text-lime-800 dark:border-lime-700 dark:from-lime-900/60 dark:to-yellow-900/50 dark:text-lime-200',
+  'B+': 'border-lime-300 bg-gradient-to-r from-lime-100 via-yellow-100 to-yellow-200 text-amber-800 dark:border-lime-700 dark:from-lime-900/50 dark:via-yellow-900/50 dark:to-yellow-900/60 dark:text-yellow-200',
+  B: 'border-yellow-300 bg-yellow-100 text-amber-800 dark:border-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-200',
+  'B-': 'border-orange-300 bg-gradient-to-r from-yellow-100 to-red-200 text-red-800 dark:border-orange-700 dark:from-yellow-900/50 dark:to-red-900/60 dark:text-orange-200',
+};
 
 function offeringScore(record: EvalRecord, questionIndex: number): number | null {
   return usable(record, questionIndex) ? record.scores[questionIndex] : null;
@@ -97,29 +105,36 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
               id: 'grade',
               label: 'Effectiveness Grade',
               value: standing.grade ?? '—',
-              sub: standing.grade == null
-                ? 'No overall teaching score'
-                : 'Based on overall effectiveness percentile',
+                sub: '',
             },
           ].map((card) => (
-            <article
-              key={card.id}
-              className="relative isolate flex min-h-[9rem] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[1.6rem] border border-primary/15 bg-gradient-to-br from-card via-card to-primary/[0.07] p-4 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-              data-testid={`professor-standing-${card.id}`}
-            >
-              <span aria-hidden="true" className="absolute -right-4 -top-5 h-16 w-16 rounded-full bg-primary/[0.07]" />
-              <span aria-hidden="true" className="absolute -bottom-5 -left-4 h-10 w-10 rounded-full bg-accent/20" />
-              <div className="relative z-10 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                {card.label}
-              </div>
-              <div className="relative z-10 mt-2 inline-flex min-h-10 max-w-full items-center justify-center rounded-full border border-primary/10 bg-primary/10 px-4 text-lg font-semibold text-primary num sm:text-xl">
-                {card.value}
-              </div>
-              <p className="relative z-10 mt-2 max-w-full text-xs leading-relaxed text-muted-foreground">
-                {card.sub}
-              </p>
-            </article>
-          ))}
+              <article
+                key={card.id}
+                className="relative isolate flex min-h-[9rem] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[1.6rem] border border-primary/15 bg-gradient-to-br from-card via-card to-primary/[0.07] p-4 text-center shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                data-testid={`professor-standing-${card.id}`}
+              >
+                <span aria-hidden="true" className="absolute -right-4 -top-5 h-16 w-16 rounded-full bg-primary/[0.07]" />
+                <span aria-hidden="true" className="absolute -bottom-5 -left-4 h-10 w-10 rounded-full bg-accent/20" />
+                <div className="relative z-10 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  {card.label}
+                </div>
+                <div
+                  className={`relative z-10 mt-2 inline-flex max-w-full items-center justify-center rounded-full border num ${
+                    card.id === 'grade'
+                      ? `min-h-14 px-6 text-4xl font-bold leading-none shadow-sm ${EFFECTIVENESS_GRADE_PILL_STYLES[card.value] ?? 'border-primary/10 bg-primary/10 text-primary'}`
+                      : 'min-h-10 bg-primary/10 px-4 text-lg font-semibold text-primary sm:text-xl'
+                  }`}
+                  data-testid={`professor-standing-${card.id}-value`}
+                >
+                  {card.value}
+                </div>
+                {card.sub && (
+                  <p className="relative z-10 mt-2 max-w-full text-xs leading-relaxed text-muted-foreground">
+                    {card.sub}
+                  </p>
+                )}
+              </article>
+            ))}
         </div>
       </div>
       {g.profileNotes?.map((note, index) => (
