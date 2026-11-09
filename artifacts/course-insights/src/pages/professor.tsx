@@ -107,6 +107,22 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       .map(([course, semester]) => ({ course, semester: semester || 'Semester unavailable' }))
       .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.course.localeCompare(b.course));
   }, [recs]);
+  const distinctSeminarsAndColloquiums = useMemo(() => {
+    const latestSemesterByCourse = new Map<string, string>();
+    for (const record of recs) {
+      if (
+        !record.courseCategories.includes('Seminar') &&
+        !record.courseCategories.includes('Colloquium')
+      ) continue;
+      const latestSemester = latestSemesterByCourse.get(record.course);
+      if (!latestSemester || bySemesterDesc(record.semester, latestSemester) < 0) {
+        latestSemesterByCourse.set(record.course, record.semester);
+      }
+    }
+    return [...latestSemesterByCourse.entries()]
+      .map(([course, semester]) => ({ course, semester: semester || 'Semester unavailable' }))
+      .sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.course.localeCompare(b.course));
+  }, [recs]);
   const overall = useMemo(() => Array.from({ length: 10 }, (_, q) => aggregate(recs, q)), [recs]);
   const standing = useMemo(
     () => calculateProfessorStanding(
@@ -253,7 +269,35 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
             <p className="mt-2 text-xs text-muted-foreground">No courses taught{sem === 'all' ? '' : ' in this semester'}.</p>
           )}
         </div>
-        <Stat label="Offerings" value={recs.length} sub={sem === 'all' ? 'all semesters' : sem} />
+        <div className="min-w-0 rounded-xl border bg-card p-4">
+          <div
+            className="text-[11px] normal-case tracking-normal text-muted-foreground"
+            data-testid="text-professor-seminars-colloquiums-label"
+          >
+            Seminars and Colloquiums Taught - {fmtInt(distinctSeminarsAndColloquiums.length)}
+          </div>
+          {distinctSeminarsAndColloquiums.length > 0 ? (
+            <ul
+              className="mt-2 max-h-60 space-y-1 overflow-y-auto pr-2"
+              data-testid="list-professor-seminars-colloquiums"
+            >
+              {distinctSeminarsAndColloquiums.map(({ course, semester }, index) => (
+                <li
+                  key={course}
+                  className="break-words leading-relaxed"
+                  data-testid={`text-professor-seminar-history-${index}`}
+                >
+                  <span className="font-medium text-foreground">{course}</span>
+                  <span> (last taught {semester})</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              No seminars or colloquiums taught{sem === 'all' ? '' : ' in this semester'}.
+            </p>
+          )}
+        </div>
         <Stat label="Responses (offering totals)" value={fmtInt(totalResp)} sub={<SmallSample responses={overall[5].responses} />} />
       </div>
 
