@@ -233,7 +233,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
               const latest = recentCourses[0];
               const coursesId = `recent-courses-${group.slug}`;
               return (
-                <li key={group.slug} className="cursor-pointer py-3 first:border-t-0 hover:bg-secondary/60 transition-colors" data-testid={`teacher-row-${group.slug}`}>
+                <li key={group.slug} className="cursor-pointer px-2 py-3 sm:px-3 first:border-t-0 hover:bg-secondary/60 transition-colors" data-testid={`teacher-row-${group.slug}`}>
                   <div className="flex items-start gap-3">
                     <span className="num text-xs text-muted-foreground pt-1.5 w-5 shrink-0 text-right">{index + 1}</span>
                     <div className="grid min-w-0 flex-1 grid-cols-1 gap-y-2 sm:grid-cols-[minmax(0,1fr)_15rem] sm:items-start sm:gap-x-4">
