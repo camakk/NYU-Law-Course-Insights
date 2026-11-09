@@ -33,11 +33,11 @@ type DirectorySnapshot = {
 
 const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
 const PROFESSOR_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsProfessorDirectory';
-const COURSE_REVIEW_TICKS = Array.from({ length: 11 }, (_, index) => index * 50);
+const REVIEW_TICKS = Array.from({ length: 6 }, (_, index) => index * 100);
 const COURSE_CATEGORY_TOGGLES: Array<{ id: string; label: string; categories: CourseCategory[] }> = [
   { id: 'toggle-include-courses', label: 'Include Courses', categories: ['Course'] },
-  { id: 'toggle-include-seminars-colloquiums', label: 'Include Seminars/Colloquiums', categories: ['Seminar', 'Colloquium'] },
-  { id: 'toggle-include-clinics-externships', label: 'Include Clinics/Externships', categories: ['Clinic', 'Externship'] },
+  { id: 'toggle-include-seminars-colloquiums', label: 'Include Seminars', categories: ['Seminar', 'Colloquium'] },
+  { id: 'toggle-include-clinics-externships', label: 'Include Clinics', categories: ['Clinic', 'Externship'] },
 ];
 
 function readDirectorySnapshot(key: string): DirectorySnapshot | null {
@@ -191,14 +191,16 @@ function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatVal
             </output>
           </div>
           {slider}
-          {snapPoints && snapPoints.length > 0 && (
+          {tickMarks && tickMarks.length > 0 && (
             <div className="relative h-4 text-[9px] text-muted-foreground" aria-hidden="true">
-              {snapPoints.map((point) => (
+              {tickMarks.map((point) => (
                 <span
                   key={point}
-                  className="absolute -translate-x-1/2 whitespace-nowrap"
+                  data-testid={`${id}-tick-${point}`}
+                  className={`absolute whitespace-nowrap ${point === min ? '' : point === max ? '-translate-x-full' : '-translate-x-1/2'}`}
                   style={{ left: `${((point - min) / (max - min)) * 100}%` }}
                 >
+                  <span className="absolute -top-2 left-1/2 h-2 w-px bg-muted-foreground/70" />
                   {fmtInt(point)}
                 </span>
               ))}
@@ -522,7 +524,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       minLabel="No minimum"
       maxLabel={`${fmtInt(maxReviews)}+`}
       snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
-      tickMarks={isProf ? undefined : COURSE_REVIEW_TICKS}
+      tickMarks={REVIEW_TICKS.filter((point) => point <= maxReviews)}
       inline={!isProf}
     />
   );
@@ -655,21 +657,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           </div>
         )}
         {!isProf && (
-          <div
-            className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3"
-          >
-            <Switch
-              id="toggle-include-online-international-courses"
-              checked={includeOnlineInternationalCourses}
-              onCheckedChange={setIncludeOnlineInternationalCourses}
-              data-testid="toggle-include-online-international-courses"
-            />
-            <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
-              Show Online/International Courses
-            </label>
-          </div>
-        )}
-        {!isProf && (
           <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
             <Switch
               id="toggle-include-upper-level-tax-courses"
@@ -744,6 +731,17 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 <label htmlFor={id} className="cursor-pointer select-none text-sm">{label}</label>
               </div>
             ))}
+            <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+              <Switch
+                id="toggle-include-online-international-courses"
+                checked={includeOnlineInternationalCourses}
+                onCheckedChange={setIncludeOnlineInternationalCourses}
+                data-testid="toggle-include-online-international-courses"
+              />
+              <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
+                Include Online/International Courses
+              </label>
+            </div>
             <div
               className="h-11 min-w-[14rem] flex-1 rounded-lg border border-input bg-card px-3"
               data-testid="course-min-reviews-control"

@@ -188,6 +188,9 @@ describe('Professor table sorting', () => {
     const slider = screen.getByTestId('filter-min-responses-slider')
       .querySelector('[role="slider"]') as HTMLElement;
     expect(slider.getAttribute('aria-valuenow')).toBe('50');
+    expect(screen.getAllByTestId(/^filter-min-responses-tick-/).map((tick) => tick.textContent))
+      .toEqual(['0', '100', '200', '300']);
+    expect(screen.queryByTestId('filter-min-responses-tick-50')).toBeNull();
 
     fireEvent.keyDown(slider, { key: 'ArrowRight' });
 

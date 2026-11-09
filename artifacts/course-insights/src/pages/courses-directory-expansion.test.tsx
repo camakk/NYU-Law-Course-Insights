@@ -110,7 +110,7 @@ describe('Courses table expansion', () => {
     expect(courseLink.className).not.toContain('truncate');
   });
 
-  it('places online filtering in the primary row and stretches minimum reviews across the second row', () => {
+  it('places online filtering after Clinics in the bottom row and stretches minimum reviews across the remaining space', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
     const primaryRow = screen.getByTestId('directory-toolbar-primary-row-courses');
@@ -133,26 +133,26 @@ describe('Courses table expansion', () => {
     expect(include1LToggle.parentElement?.textContent).toBe('Show 1L Courses');
     expect(include1LToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('true');
-    expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Show Online/International Courses');
-    expect(includeOnlineInternationalToggle.parentElement?.parentElement).toBe(primaryRow);
-    expect(include1LToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Include Online/International Courses');
+    expect(includeOnlineInternationalToggle.parentElement?.parentElement).toBe(categoryToggleRow);
     expect(includeTaxToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeTaxToggle.parentElement?.textContent).toBe('Show Upper-Level Tax');
     expect(includeTaxToggle.parentElement?.parentElement).toBe(primaryRow);
-    expect(includeOnlineInternationalToggle.compareDocumentPosition(includeTaxToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(include1LToggle.compareDocumentPosition(includeTaxToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeTaxToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeCoursesToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeCoursesToggle.parentElement?.textContent).toBe('Include Courses');
     expect(includeSeminarsToggle.getAttribute('aria-checked')).toBe('true');
-    expect(includeSeminarsToggle.parentElement?.textContent).toBe('Include Seminars/Colloquiums');
+    expect(includeSeminarsToggle.parentElement?.textContent).toBe('Include Seminars');
     expect(includeClinicsToggle.getAttribute('aria-checked')).toBe('true');
-    expect(includeClinicsToggle.parentElement?.textContent).toBe('Include Clinics/Externships');
+    expect(includeClinicsToggle.parentElement?.textContent).toBe('Include Clinics');
     expect(toolbar.children[0]).toBe(primaryRow);
     expect(toolbar.children[1]).toBe(categoryToggleRow);
     expect(categoryToggleRow.parentElement).toBe(toolbar);
     expect(includeCoursesToggle.parentElement?.parentElement).toBe(categoryToggleRow);
     expect(includeSeminarsToggle.compareDocumentPosition(includeClinicsToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(includeClinicsToggle.compareDocumentPosition(minimumReviewsControl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeClinicsToggle.parentElement?.nextElementSibling?.contains(includeOnlineInternationalToggle)).toBe(true);
+    expect(includeOnlineInternationalToggle.compareDocumentPosition(minimumReviewsControl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(categoryToggleRow.lastElementChild?.contains(minimumReviewsControl)).toBe(true);
     expect(minimumReviewsControl.parentElement).toBe(categoryToggleRow);
     expect(minimumReviewsControl.classList.contains('flex-1')).toBe(true);
@@ -160,9 +160,10 @@ describe('Courses table expansion', () => {
     expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('500');
     expect(minimumReviewsSlider.getAttribute('aria-valuemin')).toBe('0');
     expect(screen.getByTestId('filter-min-responses-tick-0').textContent).toBe('0');
-    expect(screen.getByTestId('filter-min-responses-tick-50').textContent).toBe('50');
+    expect(screen.getByTestId('filter-min-responses-tick-100').textContent).toBe('100');
+    expect(screen.queryByTestId('filter-min-responses-tick-50')).toBeNull();
     expect(screen.getByTestId('filter-min-responses-tick-500').textContent).toBe('500');
-    expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(11);
+    expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(6);
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
     expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
     expect(within(minimumReviewsControl).queryByText('No minimum')).toBeNull();
