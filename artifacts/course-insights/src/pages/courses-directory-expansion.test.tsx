@@ -475,6 +475,10 @@ describe('Courses table expansion', () => {
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
     const spring2026 = within(row).getByTestId('recent-semester-evidence-compact-0');
     expect(spring2026.textContent).toBe('🌸 Spring 2026 • Alice Doe (4.90)');
+    expect(spring2026.classList.contains('mt-1.5')).toBe(false);
+    for (const layout of ['compact', 'wide']) {
+      expect(within(row).getByTestId(`recent-semester-evidence-${layout}-1`).classList.contains('mt-1.5')).toBe(true);
+    }
     expect(spring2026.querySelector('strong')?.textContent).toBe('🌸 Spring 2026');
     expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.90), Sam Small (5.00)');
     const courseLatest = within(row).getByTestId('course-latest-evidence');
@@ -596,6 +600,7 @@ describe('Courses table expansion', () => {
     expect(historyToggle().textContent).toBe('Collapse');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('true');
     expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe (4.40)');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-3').classList.contains('mt-1.5')).toBe(true);
     expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('🌸 Spring 2024 • Bob Roe (4.30)');
     expect(within(row).getByTestId('recent-semester-evidence-compact-5').textContent).toBe('☀️ Summer 2023 • Alice Doe (4.20) Collapse');
     expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-5'));

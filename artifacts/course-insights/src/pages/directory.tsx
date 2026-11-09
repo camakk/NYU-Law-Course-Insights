@@ -811,7 +811,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       key={item.kind === 'course'
                         ? `${item.label}-${item.semesters.join('-')}`
                         : `${item.semester}-${item.professors.map((professor) => professor.slug ?? professor.label).join('-')}`}
-                      className="block break-words"
+                      className={`block break-words${item.kind === 'semester' && index > 0 ? ' mt-1.5' : ''}`}
                       data-testid={item.kind === 'semester' ? `recent-semester-${r.g.slug}-${compact ? 'compact' : 'wide'}-${index}` : undefined}
                     >
                       <RecentEntryContent item={item} compact={compact} formatSemester={isProf ? undefined : formatSemesterForDisplay} />
