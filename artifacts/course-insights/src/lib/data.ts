@@ -122,7 +122,7 @@ export function is1LCourse(course: string): boolean {
 export function classifyCourse(course: string): CourseCategory[] {
   const title = course.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (/\blederman fellows workshop\b/.test(title)) return ['Seminar'];
-  if (/\bclinic\s+seminar\b/.test(title)) return ['Clinic', 'Seminar'];
+  if (/\bclinic\s+seminar\b/.test(title)) return ['Clinic'];
   if (/\bexternships?\b/.test(title)) return ['Externship'];
   if (/\bclinics?\b|\bclinical\b/.test(title)) return ['Clinic'];
   if (/\bcolloquium\b|\bcolloquia\b/.test(title)) return ['Colloquium'];

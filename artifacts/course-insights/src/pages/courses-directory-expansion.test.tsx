@@ -507,6 +507,11 @@ describe('Courses table expansion', () => {
     expect(screen.queryByRole('link', { name: 'Evidence Externship' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Evidence Clinic' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Clinic Seminar Evidence' })).toBeNull();
+
+    fireEvent.click(screen.getByTestId('toggle-include-seminars-colloquiums'));
+    expect(screen.getByTestId('filter-summary').textContent).toContain('2 matching');
+    expect(screen.getByRole('link', { name: 'Evidence Seminar' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Clinic Seminar Evidence' })).toBeNull();
   });
 
   it('filters course results using the minimum reviews slider in the toolbar', () => {

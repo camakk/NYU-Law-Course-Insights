@@ -1,5 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { buildDataset, calculateProfessorStanding, classifyCourseLabels, friendlyName, is1LCourse } from './data';
+import { buildDataset, calculateProfessorStanding, classifyCourse, classifyCourseLabels, friendlyName, is1LCourse } from './data';
+
+describe('course categories', () => {
+  it.each([
+    'Housing Clinic Seminar',
+    'Clinic Seminar Evidence',
+    'GLOBAL JUSTICE CLINIC SEMINAR',
+    'Housing Clinic  Seminar',
+  ])('classifies %s as Clinic only', (course) => {
+    expect(classifyCourse(course)).toEqual(['Clinic']);
+  });
+
+  it('attaches the Clinic-only category to records and course groups', () => {
+    const dataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [{
+        id: 1, course: 'Housing Clinic Seminar', professor: 'Doe, Jane',
+        semester: 'Spring 2026', enrolled: 20, responded: 15,
+        scores: Array(10).fill(4), inaccessible: false,
+      }],
+    });
+    expect(dataset.records[0].courseCategories).toEqual(['Clinic']);
+    expect(dataset.courses[0].courseCategories).toEqual(['Clinic']);
+    expect(classifyCourse('Research Seminar')).toEqual(['Seminar']);
+  });
+});
 
 describe('course audience labels', () => {
   it('adds a 1L label to titles that say for 1Ls', () => {

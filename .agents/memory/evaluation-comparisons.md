@@ -27,11 +27,11 @@ Course-level top-professor comparisons summarize teaching effectiveness for that
 
 **How to apply:** Keep the preview and expanded comparison on the same eligibility and ranking rules; do not reuse the recent-history score for this summary.
 
-Infer course categories from title keywords using this rule: titles containing “Clinic Seminar” receive both Clinic and Seminar; all other titles use this precedence: Externship, Clinic, Colloquium, Seminar, then Course.
+Titles containing “Clinic Seminar” must be classified as Clinic only, never Seminar. For other titles, retain the precedence Externship, Clinic, Colloquium, Seminar, then Course.
 
-**Why:** Titles such as “Clinic Seminar” or “Externship Seminar” identify a specific program type, not just a seminar.
+**Why:** The user explicitly replaced the earlier dual-label rule: clinic seminars belong exclusively with clinics, not with seminar filters or seminar teaching summaries.
 
-**How to apply:** Use the same classifier for each course record and its directory entry, allowing multiple labels for “Clinic Seminar”; titles with no indicator remain Course.
+**How to apply:** Apply the exclusive Clinic classification consistently to course records, directory filters, and professor summaries; titles with no indicator remain Course.
 
 Anonymous post-exam feedback is attached to a professor–course pair across terms, and uses an optional 1–5 difficulty rating independent of the written comment.
 

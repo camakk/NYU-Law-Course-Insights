@@ -282,14 +282,13 @@ describe('Professor detail summary', () => {
       'Evidence (last taught Spring 2026)',
       'Contracts (last taught Fall 2024)',
     ]);
-    expect(screen.getByText('Seminars and Colloquiums Taught - 3')).toBeTruthy();
+    expect(screen.getByText('Seminars and Colloquiums Taught - 2')).toBeTruthy();
     const seminars = within(screen.getByTestId('list-professor-seminars-colloquiums'))
       .getAllByRole('listitem')
       .map((item) => item.textContent);
     expect(seminars).toEqual([
       'Research Seminar (last taught Spring 2023)',
       'Policy Colloquium (last taught Fall 2022)',
-      'Housing Clinic Seminar (last taught Spring 2019)',
     ]);
     expect(screen.getByText('Clinics and Externships Taught - 3')).toBeTruthy();
     const clinics = within(screen.getByTestId('list-professor-clinics-externships'))
