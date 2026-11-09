@@ -492,8 +492,21 @@ describe('Professor table sorting', () => {
 
   it('toggles each sortable column and syncs the Sort selector', () => {
     const { container } = renderDirectory();
+    const sortSelect = screen.getByTestId('select-sort') as HTMLSelectElement;
     expect(selectedSort()).toBe('responses');
     expect(professorOrder(container)).toEqual(['Alice Doe', 'Bob Roe']);
+    expect(sortSelect.parentElement?.querySelector('span')?.classList.contains('sr-only')).toBe(true);
+    expect(Array.from(sortSelect.options).map((option) => option.textContent)).toEqual([
+      'Sort by: Highest rated',
+      'Sort by: Lowest rated',
+      'Sort by: Most reviews',
+      'Sort by: Fewest reviews',
+      'Sort by: Most times taught',
+      'Sort by: Fewest times taught',
+      'Sort by: Name A–Z',
+      'Sort by: Name Z–A',
+    ]);
+    expect(screen.queryByText('Sort', { selector: 'span:not(.sr-only)' })).toBeNull();
     expect(screen.queryByRole('option', { name: 'Most courses taught' })).toBeNull();
     expect(screen.queryByRole('option', { name: 'Fewest courses taught' })).toBeNull();
 

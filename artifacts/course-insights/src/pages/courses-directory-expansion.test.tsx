@@ -266,12 +266,17 @@ describe('Courses table expansion', () => {
     expect(clearFiltersButton.textContent).toBe('Clear all filters');
     expect(filterActions.parentElement).toBe(filterSummary.parentElement);
     expect(filterActions.parentElement?.className).toContain('justify-between');
-    expect(filterActions.parentElement?.previousElementSibling?.tagName).toBe('H1');
-    expect(toolbar.contains(filterActions)).toBe(false);
-    expect(toolbar.className).toContain('top-14');
+    expect(filterActions.parentElement?.className).toContain('pb-2');
+    const stickyControls = screen.getByTestId('course-sticky-controls');
+    expect(stickyControls.previousElementSibling?.querySelector('h1')?.textContent).toBe('Courses');
+    expect(stickyControls.contains(filterSummary)).toBe(true);
+    expect(stickyControls.contains(filterActions)).toBe(true);
+    expect(stickyControls.contains(toolbar)).toBe(true);
+    expect(stickyControls.className).toContain('top-14');
+    expect(stickyControls.className).toContain('bg-background');
     expect(toolbar.className).toContain('pt-0');
-    expect(toolbar.className).toContain('bg-background');
-    expect(toolbar.className).not.toContain('bg-background/90');
+    expect(toolbar.className).toContain('mb-0');
+    expect(toolbar.className).not.toContain('sticky');
     expect(setDefaultFiltersButton.parentElement).toBe(filterActions);
     expect(clearFiltersButton.parentElement).toBe(filterActions);
     expect(include1LToggle.getAttribute('aria-checked')).toBe('false');
@@ -783,7 +788,7 @@ describe('Courses table expansion', () => {
     render(<CoursesPage />);
 
     expect(screen.queryByText(/You have to take Professional Responsibility/)).toBeNull();
-    expect(screen.getByTestId('filter-summary').parentElement?.previousElementSibling?.tagName).toBe('H1');
+    expect(screen.getByTestId('course-sticky-controls').previousElementSibling?.querySelector('h1')?.textContent).toBe('Courses');
     const table = screen.getByTestId('directory-table');
     const tableHeader = screen.getByTestId('directory-table-header');
     expect(table.classList.contains('overflow-clip')).toBe(true);
@@ -847,20 +852,23 @@ describe('Courses table expansion', () => {
     expect(window.location.pathname).toBe('/courses/evidence');
   });
 
-  it('places sticky course headers flush against the measured toolbar with breathing room below navigation', () => {
+  it('keeps the course count, actions, and filters pinned above the table header', () => {
     const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
       configurable: true,
       get() {
-        return (this as HTMLElement).dataset.testid === 'directory-toolbar-courses' ? 120 : 0;
+        return (this as HTMLElement).dataset.testid === 'course-sticky-controls' ? 160 : 0;
       },
     });
     const { unmount } = render(<CoursesPage />);
     try {
-      const toolbar = screen.getByTestId('directory-toolbar-courses');
+      const controls = screen.getByTestId('course-sticky-controls');
       const tableHeader = screen.getByTestId('directory-table-header');
-      expect(toolbar.classList.contains('top-14')).toBe(true);
-      expect(tableHeader.style.top).toBe('calc(120px + 3.5rem)');
+      expect(controls.classList.contains('top-14')).toBe(true);
+      expect(controls.contains(screen.getByTestId('filter-summary'))).toBe(true);
+      expect(controls.contains(screen.getByTestId('course-filter-actions'))).toBe(true);
+      expect(controls.contains(screen.getByTestId('input-search-courses'))).toBe(true);
+      expect(tableHeader.style.top).toBe('calc(160px + 3.5rem)');
     } finally {
       unmount();
       if (originalOffsetHeight) {

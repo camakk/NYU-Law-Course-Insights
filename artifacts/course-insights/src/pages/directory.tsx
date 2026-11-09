@@ -318,20 +318,20 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   );
   const [activeOnly, setActiveOnly] = useState(() => returnSnapshot?.activeOnly ?? true);
   const [filtersOpen, setFiltersOpen] = useState(() => returnSnapshot?.filtersOpen ?? false);
-  const courseToolbarRef = useRef<HTMLDivElement>(null);
-  const [courseToolbarHeight, setCourseToolbarHeight] = useState(0);
+  const courseStickyControlsRef = useRef<HTMLDivElement>(null);
+  const [courseStickyControlsHeight, setCourseStickyControlsHeight] = useState(0);
   const [expandedRecentSemesters, setExpandedRecentSemesters] = useState<Record<string, boolean>>(
     () => Object.fromEntries((returnSnapshot?.expandedRecentSemesterSlugs ?? []).map((slug) => [slug, true])),
   );
   const lastHeaderSort = useRef<string | null>(returnSnapshot?.lastHeaderSort ?? null);
   useLayoutEffect(() => {
     if (kind !== 'courses') return;
-    const toolbar = courseToolbarRef.current;
-    if (!toolbar) return;
-    const measureToolbar = () => setCourseToolbarHeight(toolbar.offsetHeight);
-    measureToolbar();
-    const observer = new ResizeObserver(measureToolbar);
-    observer.observe(toolbar);
+    const controls = courseStickyControlsRef.current;
+    if (!controls) return;
+    const measureControls = () => setCourseStickyControlsHeight(controls.offsetHeight);
+    measureControls();
+    const observer = new ResizeObserver(measureControls);
+    observer.observe(controls);
     return () => observer.disconnect();
   }, [kind]);
   useEffect(() => {
@@ -650,21 +650,31 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       <div className={isProf ? 'mb-2' : 'mb-0'}>
         <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Directory</div>
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
-        <div className={isProf ? '' : 'mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2'}>
-          <p className={`text-xs text-muted-foreground ${isProf ? 'mt-3' : ''}`} role="status" aria-live="polite" data-testid="filter-summary">
+        {isProf && (
+          <p className="mt-3 text-xs text-muted-foreground" role="status" aria-live="polite" data-testid="filter-summary">
             {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
           </p>
-          {!isProf && (
-            <div className="flex items-center gap-3" data-testid="course-filter-actions">
-              {filterActionButtons}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       <div
-        ref={courseToolbarRef}
-        className={`mb-6 sticky ${isProf ? 'top-14 py-3 bg-background/90' : 'top-14 pt-0 pb-3 bg-background'} z-30 backdrop-blur -mx-1 px-1`}
+        ref={!isProf ? courseStickyControlsRef : undefined}
+        className={!isProf ? 'mb-6 sticky top-14 z-30 -mx-1 bg-background px-1 pt-2' : ''}
+        data-testid={!isProf ? 'course-sticky-controls' : undefined}
+      >
+        {!isProf && (
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2">
+            <p className="text-xs text-muted-foreground" role="status" aria-live="polite" data-testid="filter-summary">
+              {fmtInt(total)} total courses in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
+            </p>
+            <div className="flex items-center gap-3" data-testid="course-filter-actions">
+              {filterActionButtons}
+            </div>
+          </div>
+        )}
+
+      <div
+        className={`mb-6 ${isProf ? 'sticky top-14 py-3 bg-background/90 -mx-1 px-1' : 'mb-0 pt-0 pb-3'} z-30 backdrop-blur`}
         data-testid={`directory-toolbar-${kind}`}
       >
         <div className="flex flex-wrap items-end gap-3" data-testid={`directory-toolbar-primary-row-${kind}`}>
@@ -767,18 +777,18 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           </span>
           <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
         </button>}
-        <NativeSelect label={isProf ? 'Sort' : 'Sort by'} hideLabel={!isProf} value={sort} onChange={(v) => {
+        <NativeSelect label="Sort by" hideLabel value={sort} onChange={(v) => {
           lastHeaderSort.current = null;
           setSort(v as SortKey);
         }} testId="select-sort">
-          <option value="rating">{isProf ? 'Highest rated' : 'Sort by: Highest rated'}</option>
-          <option value="rating-asc">{isProf ? 'Lowest rated' : 'Sort by: Lowest rated'}</option>
-          <option value="responses">{isProf ? 'Most reviews' : 'Sort by: Most reviews'}</option>
-          <option value="responses-asc">{isProf ? 'Fewest reviews' : 'Sort by: Fewest reviews'}</option>
-          <option value="offerings">{isProf ? 'Most times taught' : 'Sort by: Most offerings'}</option>
-          <option value="offerings-asc">{isProf ? 'Fewest times taught' : 'Sort by: Fewest offerings'}</option>
-          <option value="name">{isProf ? 'Name A–Z' : 'Sort by: Name A–Z'}</option>
-          <option value="name-desc">{isProf ? 'Name Z–A' : 'Sort by: Name Z–A'}</option>
+          <option value="rating">Sort by: Highest rated</option>
+          <option value="rating-asc">Sort by: Lowest rated</option>
+          <option value="responses">Sort by: Most reviews</option>
+          <option value="responses-asc">Sort by: Fewest reviews</option>
+          <option value="offerings">{isProf ? 'Sort by: Most times taught' : 'Sort by: Most offerings'}</option>
+          <option value="offerings-asc">{isProf ? 'Sort by: Fewest times taught' : 'Sort by: Fewest offerings'}</option>
+          <option value="name">Sort by: Name A–Z</option>
+          <option value="name-desc">Sort by: Name Z–A</option>
         </NativeSelect>
         </div>
         {!isProf && (
@@ -851,6 +861,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           </div>
         )}
       </div>
+      </div>
 
       {isProf && <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0" hidden={!filtersOpen}>
         <legend className="sr-only">Filters</legend>
@@ -868,7 +879,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               ? 'hidden xl:grid xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]'
               : 'hidden md:grid course-directory-grid'
             } sticky ${isProf ? 'top-36' : ''} z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`}
-              style={!isProf ? { top: `calc(3.5rem + ${courseToolbarHeight}px)` } : undefined}
+              style={!isProf ? { top: `calc(3.5rem + ${courseStickyControlsHeight}px)` } : undefined}
               data-testid="directory-table-header">
               <span>#</span>
               {isProf
