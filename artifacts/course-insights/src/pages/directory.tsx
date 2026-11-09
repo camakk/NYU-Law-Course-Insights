@@ -239,10 +239,10 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     : Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
   const maxReviews = kind === 'professors' ? 300 : 500;
   const hasFilters = q !== '' || (kind === 'courses' && (!include1LCourses || !includeOnlineInternationalCourses)) ||
-    (minOfferings !== '' && Number(minOfferings) > 1) ||
+    (kind === 'professors' && minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||
-    (minScore !== '' && Number(minScore) > 0) ||
-    (maxScore !== '' && Number(maxScore) < 5) ||
+    (kind === 'professors' && minScore !== '' && Number(minScore) > 0) ||
+    (kind === 'professors' && maxScore !== '' && Number(maxScore) < 5) ||
     (kind === 'courses' && includedCategories.length !== COURSE_CATEGORIES.length);
   const updateMinimum = (setValue: (value: string) => void) => (value: string) => {
     setValue(value);
@@ -382,10 +382,10 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         return { g, m, teach, offerings: recs.length, partners, latest: recs[0]?.semester ?? '', recent };
       })
       .filter((r) =>
-        r.offerings >= Number(minOfferings) &&
+        (kind !== 'professors' || r.offerings >= Number(minOfferings)) &&
         r.m.responses >= Number(minResponses) &&
-        (Number(minScore) === 0 || (r.m.avg !== null && r.m.avg >= Number(minScore))) &&
-        (maxScore === '' || Number(maxScore) >= 5 || (r.m.avg !== null && r.m.avg <= Number(maxScore)))
+        (kind !== 'professors' || Number(minScore) === 0 || (r.m.avg !== null && r.m.avg >= Number(minScore))) &&
+        (kind !== 'professors' || maxScore === '' || Number(maxScore) >= 5 || (r.m.avg !== null && r.m.avg <= Number(maxScore)))
       );
     const byAvg = (a: number | null, b: number | null, dir: 1 | -1) => (a == null && b == null ? 0 : a == null ? 1 : b == null ? -1 : dir * (b - a));
     out.sort((a, b) => {
@@ -453,43 +453,46 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       </button>
     );
   };
+  const minimumReviewsFilter = (
+    <RangeFilter
+      label="Minimum reviews"
+      value={minResponses}
+      onChange={updateMinimum(setMinResponses)}
+      min={0}
+      max={maxReviews}
+      step={isProf ? 10 : 1}
+      id="filter-min-responses"
+      formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
+      minLabel="No minimum"
+      maxLabel={`${fmtInt(maxReviews)}+`}
+      snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
+    />
+  );
   const filterPanelContent = (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
+      {isProf && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
         <RangeFilter
-          label={isProf ? 'Minimum times taught' : 'Minimum class offerings'}
+          label="Minimum times taught"
           value={minOfferings}
           onChange={updateMinimum(setMinOfferings)}
           min={1}
           max={maxOfferings}
           id="filter-min-offerings"
           formatValue={(value) => `${fmtInt(value)}+`}
-          maxLabel={isProf ? '30+' : undefined}
+          maxLabel="30+"
         />
-        <RangeFilter
-          label="Minimum reviews"
-          value={minResponses}
-          onChange={updateMinimum(setMinResponses)}
-          min={0}
-          max={maxReviews}
-          step={isProf ? 10 : 1}
-          id="filter-min-responses"
-          formatValue={(value) => value === 0 ? 'No minimum' : `${fmtInt(value)}+`}
-          minLabel="No minimum"
-          maxLabel={`${fmtInt(maxReviews)}+`}
-          snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
-        />
+        {minimumReviewsFilter}
         <RangeBandFilter
-          label={isProf ? 'Teaching score' : 'Average Course Rating'}
+          label="Teaching score"
           minValue={minScore === '' ? 0 : Number(minScore)}
           maxValue={maxScore === '' ? 5 : Number(maxScore)}
           onChange={([minimum, maximum]) => {
             setMinScore(minimum === 0 ? '' : minimum.toFixed(1));
             setMaxScore(maximum === 5 ? '' : maximum.toFixed(1));
           }}
-          id={isProf ? 'filter-score-range' : 'filter-course-rating-range'}
+          id="filter-score-range"
         />
-      </div>
+      </div>}
       {!isProf && (
         <div className="mt-4 border-t pt-4">
           <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
@@ -620,7 +623,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               data-testid="toggle-include-1l-courses"
             />
             <label htmlFor="toggle-include-1l-courses" className="cursor-pointer select-none text-sm">
-              Include 1L Courses
+              1L Courses
             </label>
           </div>
         )}
@@ -633,8 +636,16 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               data-testid="toggle-include-online-international-courses"
             />
             <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
-              Include Online/International Courses
+              Online/International Courses
             </label>
+          </div>
+        )}
+        {!isProf && (
+          <div
+            className="w-48 shrink-0 rounded-lg border border-input bg-card px-3 py-2.5"
+            data-testid="course-min-reviews-control"
+          >
+            {minimumReviewsFilter}
           </div>
         )}
         <button

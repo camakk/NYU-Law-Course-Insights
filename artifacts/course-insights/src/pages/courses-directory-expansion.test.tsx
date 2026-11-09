@@ -104,11 +104,14 @@ describe('Courses table expansion', () => {
     expect(courseLink.className).not.toContain('truncate');
   });
 
-  it('places the 1L toggle between search and Filters, with no Semester selector', () => {
+  it('keeps course toggles and minimum reviews in the toolbar before Filters', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
     const include1LToggle = screen.getByTestId('toggle-include-1l-courses');
     const includeOnlineInternationalToggle = screen.getByTestId('toggle-include-online-international-courses');
+    const minimumReviewsControl = screen.getByTestId('course-min-reviews-control');
+    const minimumReviewsSlider = screen.getByTestId('filter-min-responses-slider')
+      .querySelector('[role="slider"]') as HTMLElement;
     const filtersButton = screen.getByTestId('button-toggle-course-filters');
     const sortSelect = screen.getByTestId('select-sort');
     const controlsPanel = document.getElementById('directory-filter-controls');
@@ -116,12 +119,17 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('select-semester')).toBeNull();
     expect(screen.queryByTestId('button-set-default-filters')).toBeNull();
     expect(include1LToggle.getAttribute('aria-checked')).toBe('true');
-    expect(include1LToggle.parentElement?.textContent).toContain('Include 1L Courses');
+    expect(include1LToggle.parentElement?.textContent).toBe('1L Courses');
     expect(include1LToggle.parentElement?.parentElement).toBe(toolbar);
     expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('true');
-    expect(includeOnlineInternationalToggle.parentElement?.textContent).toContain('Include Online/International Courses');
+    expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Online/International Courses');
     expect(include1LToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(includeOnlineInternationalToggle.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeOnlineInternationalToggle.compareDocumentPosition(minimumReviewsControl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(minimumReviewsControl.parentElement).toBe(toolbar);
+    expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('50');
+    expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('500');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
+    expect(minimumReviewsControl.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(filtersButton.parentElement).toBe(toolbar);
     expect(include1LToggle.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(filtersButton.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -132,6 +140,41 @@ describe('Courses table expansion', () => {
 
     expect(filtersButton.getAttribute('aria-expanded')).toBe('true');
     expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(false);
+    expect(controlsPanel?.contains(minimumReviewsControl)).toBe(false);
+    expect(screen.queryByTestId('filter-min-offerings-slider')).toBeNull();
+    expect(screen.queryByTestId('filter-course-rating-range-slider')).toBeNull();
+    expect(screen.queryByText('Minimum class offerings')).toBeNull();
+    expect(screen.queryByText('Average Course Rating')).toBeNull();
+  });
+
+  it('filters course results using the minimum reviews slider in the toolbar', () => {
+    const reviewDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Doe, Alice', 4.5, 50, 'Evidence'),
+        makeRecord(2, 'Roe, Bob', 4.5, 51, 'Torts'),
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: reviewDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+
+    render(<CoursesPage />);
+
+    expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
+    const reviewsSlider = screen.getByTestId('filter-min-responses-slider')
+      .querySelector('[role="slider"]') as HTMLElement;
+    reviewsSlider.focus();
+    fireEvent.keyDown(reviewsSlider, { key: 'ArrowRight' });
+
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('51+');
+    expect(screen.queryByTestId('row-courses-evidence')).toBeNull();
+    expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
   });
 
   it('shows 1L courses by default and hides only those courses when the toggle is off', () => {
