@@ -93,10 +93,10 @@ describe('Professor detail summary', () => {
       'offering-other-question-1-9',
     ]);
     expect(screen.getAllByTestId(/^header-professor-question-/)).toHaveLength(8);
-    expect(screen.getByTestId('header-professor-question-0').textContent).toBe('Q1');
+    expect(screen.getByTestId('header-professor-question-0').textContent).toBe('Prepared');
     expect(screen.queryByTestId('header-professor-question-5')).toBeNull();
     expect(Array.from(headerCells.children).map((cell) => cell.textContent?.trim())).toEqual([
-      'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Course overall', 'Q7', 'Q8', 'Q10',
+      'Prepared', 'Communication', 'Independent Thought', 'Respectful', 'Accessible', 'Course overall', 'Q7', 'Q8', 'Q10',
     ]);
     expect(screen.getByTestId('offering-professor-score-1').className).toContain('w-[6.5rem]');
     expect(screen.getByTestId('offering-course-score-1').className).toContain('w-[6.5rem]');

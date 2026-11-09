@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
+const TEACHING_QUESTION_LABELS = ['Prepared', 'Communication', 'Independent Thought', 'Respectful', 'Accessible'];
 const OTHER_QUESTION_INDEXES = Array.from({ length: 10 }, (_, index) => index)
   .filter((index) => index !== PROFESSOR_EFFECTIVE_QUESTION && index !== COURSE_EFFECTIVE_QUESTION);
 const COURSE_COLOR_BLUE = '#2563EB';
@@ -359,11 +360,11 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 {OTHER_QUESTION_INDEXES.slice(0, 5).map((index) => (
                   <span
                     key={index}
-                    className="min-w-0 text-center"
+                    className="min-w-0 self-center whitespace-normal text-center text-[9px] leading-tight tracking-normal normal-case"
                     title={qs[index] ?? `Question ${index + 1}`}
                     data-testid={`header-professor-question-${index}`}
                   >
-                    Q{index + 1}
+                    {TEACHING_QUESTION_LABELS[index]}
                   </span>
                 ))}
                 <span className="min-w-0 text-center" data-testid="header-course-overall">
@@ -436,8 +437,8 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                             title={question}
                             data-testid={`offering-other-question-${record.id}-${index}`}
                           >
-                            <span className="text-[9px] font-medium text-muted-foreground md:hidden">
-                              Q{index + 1}
+                            <span className="text-center text-[9px] font-medium leading-tight text-muted-foreground md:hidden">
+                              {TEACHING_QUESTION_LABELS[index]}
                             </span>
                             <Score
                               v={score}
