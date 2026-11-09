@@ -12,6 +12,7 @@ interface ParsedName {
 
 // Explicitly verified source alias; automatic matching stays conservative when initials conflict.
 const EXPLICIT_IDENTITY_OVERRIDES = [
+  ["Bauer, Robert", "Bauer, Bob"],
   ["Cox, Adam", "Cox, Adam B."],
   ["Cox, Adam M.", "Cox, Adam B."],
   ["Hemphill, Christopher", "Hemphill, Scott"],

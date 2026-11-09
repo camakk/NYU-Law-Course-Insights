@@ -141,7 +141,9 @@ describe('Professor table sorting', () => {
     const header = screen.getByTestId('directory-table-header');
     const headerLabels = Array.from(header.children).map((child) => child.textContent?.trim() ?? '');
     const recentIndex = headerLabels.indexOf('Recent Courses');
-    const gradeIndex = headerLabels.indexOf('Grade');
+    const gradeIndex = recentIndex + 1;
+    expect(headerLabels[gradeIndex]).toBe('');
+    expect(headerLabels).not.toContain('Grade');
     const teachingIndex = headerLabels.findIndex((label) => label.includes('Teaching'));
     expect(recentIndex).toBeLessThan(gradeIndex);
     expect(gradeIndex).toBeLessThan(teachingIndex);
@@ -471,7 +473,7 @@ describe('Professor table sorting', () => {
     expect(selectedSort()).toBe('name-desc');
     expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);
 
-    expect(screen.getByText('Teaching').className).toContain('text-center');
+    expect(screen.getByText('Teaching Grade').className).toContain('text-center');
     expect(screen.getByTestId('button-sort-teaching').className).toContain('justify-center');
     expect(screen.getByTestId('button-sort-teaching').querySelector('svg')?.classList.contains('absolute')).toBe(true);
     fireEvent.click(screen.getByTestId('button-sort-teaching'));

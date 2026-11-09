@@ -96,6 +96,31 @@ describe('course audience labels', () => {
 });
 
 describe('professor identity aliases', () => {
+  it('groups Robert and Bob Bauer under Bob Bauer without changing the source records', () => {
+    const sourceRecords = [
+      {
+        id: 1, course: 'Election Law', professor: 'Bauer, Robert', semester: 'Spring 2024',
+        enrolled: 40, responded: 20, scores: Array(10).fill(4), inaccessible: false,
+      },
+      {
+        id: 2, course: 'Political Reform', professor: 'Bauer, Bob', semester: 'Spring 2026',
+        enrolled: 40, responded: 30, scores: Array(10).fill(5), inaccessible: false,
+      },
+    ];
+    const originalRecords = structuredClone(sourceRecords);
+    const dataset = buildDataset({ questions: [], sourceNotes: [], records: sourceRecords });
+    expect(dataset.professors).toHaveLength(1);
+    const professor = dataset.professors[0];
+    expect(professor.label).toBe('Bob Bauer');
+    expect(professor.records.map((record) => record.id)).toEqual([2, 1]);
+    expect(professor.metrics[5].responses).toBe(50);
+    expect(professor.metrics[5].avg).toBeCloseTo(4.6);
+    expect(dataset.profSlugByName.get('Bauer, Robert')).toBe(professor.slug);
+    expect(dataset.profSlugByName.get('Bauer, Bob')).toBe(professor.slug);
+    expect(dataset.courses.every((group) => group.records.every((record) => record.professor === 'Bauer, Bob'))).toBe(true);
+    expect(sourceRecords).toEqual(originalRecords);
+  });
+
   it('adds periods after middle initials in display names without changing source names', () => {
     expect(friendlyName('Pildes, Richard H')).toBe('Richard H. Pildes');
     expect(friendlyName('Brooks, Richard R. W.')).toBe('Richard R. W. Brooks');
