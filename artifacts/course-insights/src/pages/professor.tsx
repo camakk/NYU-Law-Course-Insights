@@ -349,15 +349,27 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
           <Empty title="No course offerings" hint="There are no offerings for this semester." />
         ) : (
           <div className="overflow-hidden rounded-xl border bg-card">
-            <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_10rem_10rem] xl:grid-cols-[minmax(14rem,1fr)_12rem_12rem_repeat(8,minmax(3.25rem,1fr))] gap-4 border-b bg-muted/40 px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_8rem] xl:grid-cols-[minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] gap-4 border-b bg-muted/40 px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground">
               <span>Course offering</span>
               <span>Professor teaching</span>
-              <span>Course overall</span>
               <div
-                className="col-span-3 grid grid-cols-8 gap-2 xl:contents"
-                data-testid="header-professor-other-question-scores"
+                className="col-span-2 grid grid-cols-9 gap-2 xl:contents"
+                data-testid="header-professor-score-columns"
               >
-                {OTHER_QUESTION_INDEXES.map((index) => (
+                {OTHER_QUESTION_INDEXES.slice(0, 5).map((index) => (
+                  <span
+                    key={index}
+                    className="min-w-0 text-center"
+                    title={qs[index] ?? `Question ${index + 1}`}
+                    data-testid={`header-professor-question-${index}`}
+                  >
+                    Q{index + 1}
+                  </span>
+                ))}
+                <span className="min-w-0 text-center" data-testid="header-course-overall">
+                  Course overall
+                </span>
+                {OTHER_QUESTION_INDEXES.slice(5).map((index) => (
                   <span
                     key={index}
                     className="min-w-0 text-center"
@@ -376,7 +388,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 return (
                   <li
                     key={record.id}
-                    className="relative grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[minmax(0,1fr)_10rem_10rem] xl:grid-cols-[minmax(14rem,1fr)_12rem_12rem_repeat(8,minmax(3.25rem,1fr))] xl:items-center"
+                    className="relative grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[minmax(0,1fr)_8rem] xl:grid-cols-[minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] xl:items-center"
                     data-testid={`row-offering-${record.id}`}
                   >
                     <span
@@ -400,29 +412,57 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                         {record.inaccessible && <span>· inaccessible in source</span>}
                       </p>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 md:justify-self-end">
                       <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Professor teaching</p>
                       <RatingBar
                         rating={professorScore}
                         label={`${g.label} overall teaching score for ${record.course}, ${record.semester}`}
                         compact
+                        condensed
                         testId={`offering-professor-score-${record.id}`}
                       />
                     </div>
-                    <div className="min-w-0">
-                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Course overall</p>
-                      <RatingBar
-                        rating={courseScore}
-                        label={`${record.course} overall course score, taught by ${g.label} in ${record.semester}`}
-                        compact
-                        testId={`offering-course-score-${record.id}`}
-                      />
-                    </div>
                     <div
-                      className="grid grid-cols-4 gap-2 md:col-span-3 md:grid-cols-8 xl:contents"
-                      data-testid={`offering-other-scores-${record.id}`}
+                      className="grid grid-cols-4 gap-2 md:col-span-2 md:grid-cols-9 xl:contents"
+                      data-testid={`offering-score-columns-${record.id}`}
                     >
-                      {OTHER_QUESTION_INDEXES.map((index) => {
+                      {OTHER_QUESTION_INDEXES.slice(0, 5).map((index) => {
+                        const question = qs[index] ?? `Question ${index + 1}`;
+                        const score = offeringScore(record, index);
+                        return (
+                          <div
+                            key={index}
+                            className="flex min-w-0 flex-col items-center gap-1"
+                            title={question}
+                            data-testid={`offering-other-question-${record.id}-${index}`}
+                          >
+                            <span className="text-[9px] font-medium text-muted-foreground md:hidden">
+                              Q{index + 1}
+                            </span>
+                            <Score
+                              v={score}
+                              size="sm"
+                              testId={`offering-other-score-${record.id}-${index}`}
+                            />
+                          </div>
+                        );
+                      })}
+                      <div
+                        className="flex min-w-0 flex-col items-center gap-1 md:items-end"
+                        data-testid={`offering-course-overall-column-${record.id}`}
+                      >
+                        <span className="text-[9px] font-medium text-muted-foreground md:hidden">
+                          Course overall
+                        </span>
+                        <RatingBar
+                          rating={courseScore}
+                          label={`${record.course} overall course score, taught by ${g.label} in ${record.semester}`}
+                          compact
+                          condensed
+                          testId={`offering-course-score-${record.id}`}
+                        />
+                      </div>
+                      {OTHER_QUESTION_INDEXES.slice(5).map((index) => {
                         const question = qs[index] ?? `Question ${index + 1}`;
                         const score = offeringScore(record, index);
                         return (

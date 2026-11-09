@@ -72,18 +72,34 @@ describe('Professor detail summary', () => {
   it('uses the course detail score-chip format for other question scores', () => {
     renderProfessorPage();
     const scoreChip = screen.getByTestId('offering-other-score-1-0');
-    const scoreCells = screen.getByTestId('offering-other-scores-1');
+    const scoreCells = screen.getByTestId('offering-score-columns-1');
+    const headerCells = screen.getByTestId('header-professor-score-columns');
 
     expect(scoreChip.textContent).toBe('4.50');
     expect(scoreChip.classList.contains('num')).toBe(true);
     expect(scoreChip.classList.contains('tone-4')).toBe(true);
     expect(scoreChip.classList.contains('rounded')).toBe(true);
-    expect(scoreCells.className).toContain('md:grid-cols-8');
+    expect(scoreCells.className).toContain('md:grid-cols-9');
     expect(scoreCells.className).toContain('xl:contents');
-    expect(within(scoreCells).getAllByTestId(/^offering-other-question-1-/)).toHaveLength(8);
+    expect(Array.from(scoreCells.children).map((cell) => cell.getAttribute('data-testid'))).toEqual([
+      'offering-other-question-1-0',
+      'offering-other-question-1-1',
+      'offering-other-question-1-2',
+      'offering-other-question-1-3',
+      'offering-other-question-1-4',
+      'offering-course-overall-column-1',
+      'offering-other-question-1-6',
+      'offering-other-question-1-7',
+      'offering-other-question-1-9',
+    ]);
     expect(screen.getAllByTestId(/^header-professor-question-/)).toHaveLength(8);
     expect(screen.getByTestId('header-professor-question-0').textContent).toBe('Q1');
     expect(screen.queryByTestId('header-professor-question-5')).toBeNull();
+    expect(Array.from(headerCells.children).map((cell) => cell.textContent?.trim())).toEqual([
+      'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Course overall', 'Q7', 'Q8', 'Q10',
+    ]);
+    expect(screen.getByTestId('offering-professor-score-1').className).toContain('w-[6.5rem]');
+    expect(screen.getByTestId('offering-course-score-1').className).toContain('w-[6.5rem]');
   });
 
   it('replaces the Course Effective card with a full-width three-card summary and course history', () => {
