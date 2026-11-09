@@ -271,7 +271,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                             type="button"
                             aria-label="Overall rank information"
                             data-testid="button-professor-rank-info"
-                            className="inline-flex shrink-0 cursor-help rounded-full transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="inline-flex shrink-0 cursor-default rounded-full transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             <Info aria-hidden="true" className="h-3.5 w-3.5" />
                           </button>

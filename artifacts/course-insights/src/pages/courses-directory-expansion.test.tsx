@@ -67,6 +67,30 @@ beforeEach(() => {
 });
 
 describe('Courses table expansion', () => {
+  it.each([
+    ['Evidence', 'Course', '#E1EBE2', '#3F6248'],
+    ['Legal Theory Seminar', 'Seminar', '#DAE4EF', '#34516F'],
+    ['Legal Theory Colloquium', 'Colloquium', '#DAE4EF', '#34516F'],
+    ['Advocacy Clinic', 'Clinic', '#E9DFEF', '#6B4F7A'],
+    ['Advocacy Externship', 'Externship', '#E9DFEF', '#6B4F7A'],
+    ['Advocacy Clinic Seminar', 'Clinic', '#E9DFEF', '#6B4F7A'],
+  ])('uses the muted category palette for %s', (title, category, background, foreground) => {
+    const categoryDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [makeRecord(1, 'Doe, Alice', 4.6, 60, title)],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: categoryDataset, isLoading: false, error: null, refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    render(<CoursesPage />);
+    const row = screen.getByTestId(`row-courses-${categoryDataset.courses[0].slug}`);
+    const badge = within(row).getByText(category, { selector: 'span' });
+    expect(badge.classList.contains(`bg-[${background}]`)).toBe(true);
+    expect(badge.classList.contains(`text-[${foreground}]`)).toBe(true);
+    expect(badge.classList.contains('rounded-full')).toBe(true);
+    expect(badge.classList.contains('bg-secondary')).toBe(false);
+  });
+
   it('previews the top three course-specific professors and expands them only within Top Professors', () => {
     const missingScore = makeRecord(8, 'Missing, Morgan', 5, 60);
     missingScore.scores[5] = null;

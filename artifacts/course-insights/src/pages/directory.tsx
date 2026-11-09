@@ -35,6 +35,13 @@ type DirectorySnapshot = {
 const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
 const PROFESSOR_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsProfessorDirectory';
 const REVIEW_TICKS = Array.from({ length: 4 }, (_, index) => index * 100);
+const COURSE_CATEGORY_BADGE_COLORS: Record<CourseCategory, string> = {
+  Course: 'bg-[#E1EBE2] text-[#3F6248]',
+  Seminar: 'bg-[#DAE4EF] text-[#34516F]',
+  Colloquium: 'bg-[#DAE4EF] text-[#34516F]',
+  Clinic: 'bg-[#E9DFEF] text-[#6B4F7A]',
+  Externship: 'bg-[#E9DFEF] text-[#6B4F7A]',
+};
 const COURSE_CATEGORY_TOGGLES: Array<{ id: string; label: string; categories: CourseCategory[]; description: string }> = [
   {
     id: 'toggle-include-courses',
@@ -865,7 +872,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                         type="button"
                         aria-label="About teaching grades"
                         data-testid="button-teaching-grade-info"
-                        className="absolute left-[calc(100%-4.5rem+0.25rem)] top-1/2 -translate-y-1/2 cursor-help rounded-full text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="absolute left-[calc(100%-4.5rem+0.25rem)] top-1/2 -translate-y-1/2 cursor-default rounded-full text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         <Info className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
@@ -960,7 +967,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                         </span>
                       )}
                       {!isProf && r.g.courseCategories?.map((category) => (
-                        <span key={category} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">{category}</span>
+                        <span
+                          key={category}
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${COURSE_CATEGORY_BADGE_COLORS[category]}`}
+                        >
+                          {category}
+                        </span>
                       ))}
                       {!isProf && r.g.courseLabels?.filter((label) => label !== '1L').map((label) => (
                         <span key={`label-${label}`} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>

@@ -282,6 +282,8 @@ describe('Professor table sorting', () => {
   it('explains the teaching grade distribution without changing the table sort', async () => {
     renderDirectory();
     const infoButton = screen.getByRole('button', { name: 'About teaching grades' });
+    expect(infoButton.classList.contains('cursor-default')).toBe(true);
+    expect(infoButton.classList.contains('cursor-help')).toBe(false);
     const initialSort = selectedSort();
     expect(infoButton.parentElement).toBe(screen.getByTestId('button-sort-teaching').parentElement);
     expect(screen.getByTestId('button-sort-teaching').contains(infoButton)).toBe(false);
