@@ -82,16 +82,20 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('button-load-more')).toBeNull();
   });
 
-  it('places Filters between Semester and Sort in the search toolbar', () => {
+  it('places the 1L toggle between search and Filters, with no Semester selector', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
-    const semesterSelect = screen.getByTestId('select-semester');
+    const include1LToggle = screen.getByTestId('toggle-include-1l-courses');
     const filtersButton = screen.getByTestId('button-toggle-course-filters');
     const sortSelect = screen.getByTestId('select-sort');
     const controlsPanel = document.getElementById('directory-filter-controls');
 
+    expect(screen.queryByTestId('select-semester')).toBeNull();
+    expect(include1LToggle.getAttribute('aria-checked')).toBe('true');
+    expect(include1LToggle.parentElement?.textContent).toContain('Include 1L Courses');
+    expect(include1LToggle.parentElement?.parentElement).toBe(toolbar);
     expect(filtersButton.parentElement).toBe(toolbar);
-    expect(semesterSelect.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(include1LToggle.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(filtersButton.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(toolbar.lastElementChild?.contains(sortSelect)).toBe(true);
     expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(true);
@@ -100,6 +104,40 @@ describe('Courses table expansion', () => {
 
     expect(filtersButton.getAttribute('aria-expanded')).toBe('true');
     expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('shows 1L courses by default and hides only those courses when the toggle is off', () => {
+    const audienceDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Doe, Alice', 4.9, 60, 'Torts'),
+        makeRecord(2, 'Roe, Bob', 4.6, 60, 'Constitutional Law (for 1Ls)'),
+        makeRecord(3, 'Smith, Sam', 4.5, 60, 'Evidence'),
+        makeRecord(4, 'Lee, Lee', 4.4, 60, 'Contracts (for LL.M. Students)'),
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: audienceDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+
+    render(<CoursesPage />);
+
+    expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-constitutional-law-for-1ls')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-contracts-for-ll-m-students')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
+
+    expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
+    expect(screen.queryByTestId('row-courses-torts')).toBeNull();
+    expect(screen.queryByTestId('row-courses-constitutional-law-for-1ls')).toBeNull();
+    expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-contracts-for-ll-m-students')).toBeTruthy();
   });
 
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
@@ -195,6 +233,7 @@ describe('Courses table expansion', () => {
         { ...makeRecord(1, 'Doe, Alice', 4.9, 30, 'Evidence', 4.8), semester: 'Spring 2026' },
         { ...makeRecord(2, 'Roe, Bob', 4.6, 25, 'Evidence', 4.2), semester: 'Spring 2026' },
         makeRecord(3, 'Roe, Bob', 5, 60, 'Contracts', 4.6),
+        makeRecord(4, 'Doe, Alice', 4.5, 60, 'Evidence (for 1Ls)', 4.5),
       ],
     });
     vi.mocked(useDataset).mockReturnValue({
@@ -211,7 +250,7 @@ describe('Courses table expansion', () => {
     try {
       const { unmount } = render(<CoursesPage />);
       fireEvent.change(screen.getByTestId('input-search-courses'), { target: { value: 'Evidence' } });
-      fireEvent.change(screen.getByTestId('select-semester'), { target: { value: 'Spring 2026' } });
+      fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
       fireEvent.change(screen.getByTestId('select-sort'), { target: { value: 'rating-asc' } });
       fireEvent.click(screen.getByTestId('button-toggle-course-filters'));
       fireEvent.click(screen.getByTestId('filter-category-seminar'));
@@ -232,13 +271,14 @@ describe('Courses table expansion', () => {
 
       render(<CoursesPage />);
       expect((screen.getByTestId('input-search-courses') as HTMLInputElement).value).toBe('Evidence');
-      expect((screen.getByTestId('select-semester') as HTMLSelectElement).value).toBe('Spring 2026');
+      expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
       expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('rating-asc');
       expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(false);
       expect(screen.getByTestId('button-toggle-course-filters').getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
+      expect(screen.queryByTestId('row-courses-evidence-for-1ls')).toBeNull();
       await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 640));
     } finally {
       scrollTo.mockRestore();

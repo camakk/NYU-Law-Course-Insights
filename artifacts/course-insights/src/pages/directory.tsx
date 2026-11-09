@@ -13,8 +13,8 @@ type SortKey = 'rating' | 'rating-asc' | 'responses' | 'responses-asc' | 'course
 type CourseDirectorySnapshot = {
   version: 1;
   q: string;
-  sem: string;
   sort: SortKey;
+  include1LCourses?: boolean;
   minOfferings: string;
   minResponses: string;
   minScore: string;
@@ -187,8 +187,8 @@ function RangeBandFilter({ label, minValue, maxValue, onChange, id }: {
 function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [returnSnapshot] = useState(() => kind === 'courses' ? readCourseDirectorySnapshot() : null);
   const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
-  const [sem, setSem] = useState(() => returnSnapshot?.sem ?? 'all');
   const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'name'));
+  const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? true);
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
   const [minResponses, setMinResponses] = useState(() => returnSnapshot?.minResponses ?? '50');
   const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
@@ -210,7 +210,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     ? 30
     : Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
   const maxReviews = kind === 'professors' ? 300 : 500;
-  const hasFilters = q !== '' || sem !== 'all' ||
+  const hasFilters = q !== '' || (kind === 'courses' && !include1LCourses) ||
     (minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||
     (minScore !== '' && Number(minScore) > 0) ||
@@ -221,7 +221,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   };
   const clearFilters = () => {
     setQ('');
-    setSem('all');
+    setInclude1LCourses(true);
     setMinOfferings('1');
     setMinResponses('');
     setMinScore('');
@@ -242,8 +242,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     const snapshot: CourseDirectorySnapshot = {
       version: 1,
       q,
-      sem,
       sort,
+      include1LCourses,
       minOfferings,
       minResponses,
       minScore,
@@ -277,11 +277,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       .filter(({ g, categoryRecords }) =>
         categoryRecords.length > 0 &&
         (kind !== 'professors' || !activeOnly || g.professorStatus !== 'Inactive') &&
-        (sem === 'all' || categoryRecords.some((record) => record.semester === sem)) &&
+        (kind !== 'courses' || include1LCourses || !categoryRecords.some((record) => record.is1LCourse)) &&
         matches(g, terms, kind, categoryRecords)
       )
       .map(({ g, categoryRecords }) => {
-        const recs = sem === 'all' ? categoryRecords : categoryRecords.filter((r) => r.semester === sem);
+        const recs = categoryRecords;
         const m = aggregate(recs, metricIdx);
         const teach = kind === 'courses' ? aggregate(recs, 5) : null;
         const partners = new Set(recs.map((r) => (kind === 'professors' ? r.course : r.professor))).size;
@@ -346,7 +346,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       }
     });
     return out;
-  }, [ds, kind, q, sem, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories, activeOnly]);
+  }, [ds, kind, q, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories, activeOnly, include1LCourses]);
 
   const isProf = kind === 'professors';
   const total = isProf ? ds.professors.length : ds.courses.length;
@@ -516,10 +516,17 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           </div>
         )}
         {!isProf && (
-          <NativeSelect label="Semester" value={sem} onChange={setSem} testId="select-semester">
-            <option value="all">All semesters</option>
-            {ds.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
-          </NativeSelect>
+          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+            <Switch
+              id="toggle-include-1l-courses"
+              checked={include1LCourses}
+              onCheckedChange={setInclude1LCourses}
+              data-testid="toggle-include-1l-courses"
+            />
+            <label htmlFor="toggle-include-1l-courses" className="cursor-pointer select-none text-sm">
+              Include 1L Courses
+            </label>
+          </div>
         )}
         <button
           type="button"
