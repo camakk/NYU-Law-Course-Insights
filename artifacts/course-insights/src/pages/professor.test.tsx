@@ -57,9 +57,15 @@ function renderProfessorPage(data = dataset, professorSlug = data.professors[0].
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 });
 
 describe('Professor detail summary', () => {
+  it('starts the detail page at the top', () => {
+    renderProfessorPage();
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
   it('replaces the Course Effective card with a full-width three-card summary and course history', () => {
     const { container } = renderProfessorPage();
     const summary = screen.getByTestId('professor-summary-cards');

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft } from 'lucide-react';
 import { aggregate, bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
@@ -78,6 +78,9 @@ function buildCourseOfferingColors(courseNames: string[]): Map<string, string> {
 function Profile({ ds, g }: { ds: Dataset; g: Group }) {
   useTitle(g.label);
   const [sem, setSem] = useState('all');
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [g.slug]);
 
   const recs = useMemo(() => (sem === 'all' ? g.records : g.records.filter((r) => r.semester === sem)), [g, sem]);
   const offerings = useMemo(() => {
