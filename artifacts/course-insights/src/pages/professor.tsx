@@ -97,6 +97,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
   const distinctCourses = useMemo(() => {
     const latestSemesterByCourse = new Map<string, string>();
     for (const record of recs) {
+      if (!record.courseCategories.includes('Course')) continue;
       const latestSemester = latestSemesterByCourse.get(record.course);
       if (!latestSemester || bySemesterDesc(record.semester, latestSemester) < 0) {
         latestSemesterByCourse.set(record.course, record.semester);
@@ -136,7 +137,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
           <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Professor</div>
           <h1 className="font-display text-4xl md:text-6xl font-semibold mt-2" data-testid="text-professor-name">{g.label}</h1>
           {g.label !== g.name && <p className="text-xs text-muted-foreground mt-1">Listed in source as "{g.name}"</p>}
-          <p className="text-sm text-muted-foreground mt-2">Taught {g.semesters[g.semesters.length - 1]} – {g.semesters[0]}</p>
+          <p className="text-sm text-muted-foreground mt-2">Taught {fmtInt(g.records.length)} Offerings from {g.semesters[g.semesters.length - 1]} - {g.semesters[0]}</p>
         </div>
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3 xl:w-full xl:justify-self-end" data-testid="professor-standing-cards">
           {[
@@ -237,7 +238,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
             className="text-[11px] normal-case tracking-normal text-muted-foreground"
             data-testid="text-professor-distinct-courses-label"
           >
-            Distinct Courses - {distinctCourses.length}
+            Courses Taught - {fmtInt(distinctCourses.length)}
           </div>
           {distinctCourses.length > 0 ? (
             <ul className="mt-2 max-h-60 space-y-1 overflow-y-auto pr-2" data-testid="list-professor-distinct-courses">
@@ -249,7 +250,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-xs text-muted-foreground">No courses taught in this semester.</p>
+            <p className="mt-2 text-xs text-muted-foreground">No courses taught{sem === 'all' ? '' : ' in this semester'}.</p>
           )}
         </div>
         <Stat label="Offerings" value={recs.length} sub={sem === 'all' ? 'all semesters' : sem} />

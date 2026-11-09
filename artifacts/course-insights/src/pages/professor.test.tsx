@@ -75,7 +75,7 @@ describe('Professor detail summary', () => {
     expect(summary.className).toContain('md:grid-cols-3');
     expect(summary.children).toHaveLength(3);
     expect(screen.queryByText('Course effective')).toBeNull();
-    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Distinct Courses - 3');
+    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 3');
     expect(summary.children[0].querySelector('[data-testid="list-professor-distinct-courses"]')).toBeTruthy();
     expect(summary.children[1].textContent).toContain('Offerings');
     expect(summary.children[1].textContent).toContain('5');
@@ -209,7 +209,39 @@ describe('Professor detail summary', () => {
     expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
       'Torts (last taught Fall 2024)',
     ]);
-    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Distinct Courses - 1');
+    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 1');
+  });
+
+  it('counts only distinct Course-labeled titles but includes every offering in the header', () => {
+    const mixedDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Evidence', 'Spring 2026'),
+        makeRecord(2, 'Evidence', 'Fall 2025'),
+        makeRecord(3, 'Contracts', 'Fall 2024'),
+        makeRecord(4, 'Research Seminar', 'Spring 2023'),
+        makeRecord(5, 'Policy Colloquium', 'Fall 2022'),
+        makeRecord(6, 'Housing Clinic', 'Spring 2021'),
+        makeRecord(7, 'Judicial Externship', 'Fall 2020'),
+        makeRecord(8, 'Housing Clinic Seminar', 'Spring 2019'),
+      ],
+    });
+    renderProfessorPage(mixedDataset);
+    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 2');
+    const courseList = within(screen.getByTestId('list-professor-distinct-courses')).getAllByRole('listitem');
+    expect(courseList.map((item) => item.textContent)).toEqual([
+      'Evidence (last taught Spring 2026)',
+      'Contracts (last taught Fall 2024)',
+    ]);
+    expect(screen.getByText('Taught 8 Offerings from Spring 2019 - Spring 2026')).toBeTruthy();
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(8);
+
+    fireEvent.change(screen.getByTestId('select-semester'), { target: { value: 'Spring 2023' } });
+    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 0');
+    expect(screen.queryByTestId('list-professor-distinct-courses')).toBeNull();
+    expect(screen.getByText('No courses taught in this semester.')).toBeTruthy();
+    expect(screen.getByTestId('list-professor-offerings').textContent).toContain('Research Seminar');
+    expect(screen.getByText('Taught 8 Offerings from Spring 2019 - Spring 2026')).toBeTruthy();
   });
 
   it('shows a reusable name-variation note on Scott Hemphill’s profile', () => {
