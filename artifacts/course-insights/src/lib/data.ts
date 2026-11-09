@@ -61,7 +61,7 @@ export interface Dataset {
 
 export const COURSE_CATEGORIES = ['Course', 'Seminar', 'Clinic', 'Colloquium', 'Externship'] as const;
 export type CourseCategory = typeof COURSE_CATEGORIES[number];
-export type CourseLabel = '1L' | 'LLM' | 'International' | 'Online';
+export type CourseLabel = '1L' | 'LLM' | 'International' | 'Online' | 'Tax';
 
 const ACTIVE_PROFESSOR_SEMESTERS = new Set([
   'Fall 2023',
@@ -99,7 +99,20 @@ export function classifyCourseLabels(course: string): CourseLabel[] {
   if (/\bllms?\b/.test(title)) labels.push('LLM');
   if (/\b(?:buenos\s+aires|paris)\b/.test(title)) labels.push('International');
   if (/\[online\]/.test(title)) labels.push('Online');
+  if (/\btax(?:ation)?\b/.test(title)) labels.push('Tax');
   return labels;
+}
+
+const CORE_TAX_COURSE_TITLES = new Set([
+  'Federal Income Taxation',
+  'Federal Income Tax',
+  'Income Taxation',
+  'Income Tax',
+  'Income Taxation (for 1Ls)',
+].map((title) => title.toLowerCase().replace(/\s+/g, ' ').trim()));
+
+export function isCoreTaxCourse(course: string): boolean {
+  return CORE_TAX_COURSE_TITLES.has(course.toLowerCase().replace(/\s+/g, ' ').trim());
 }
 
 export function is1LCourse(course: string): boolean {

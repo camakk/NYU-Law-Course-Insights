@@ -114,6 +114,7 @@ describe('Courses table expansion', () => {
     const includeSeminarsToggle = screen.getByTestId('toggle-include-seminars-colloquiums');
     const includeClinicsToggle = screen.getByTestId('toggle-include-clinics-externships');
     const includeOnlineInternationalToggle = screen.getByTestId('toggle-include-online-international-courses');
+    const includeTaxToggle = screen.getByTestId('toggle-include-upper-level-tax-courses');
     const minimumReviewsControl = screen.getByTestId('course-min-reviews-control');
     const minimumReviewsSlider = screen.getByTestId('filter-min-responses-slider')
       .querySelector('[role="slider"]') as HTMLElement;
@@ -123,13 +124,17 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('select-semester')).toBeNull();
     expect(screen.queryByTestId('button-set-default-filters')).toBeNull();
     expect(include1LToggle.getAttribute('aria-checked')).toBe('true');
-    expect(include1LToggle.parentElement?.textContent).toBe('1L Courses');
+    expect(include1LToggle.parentElement?.textContent).toBe('Show 1L Courses');
     expect(include1LToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Show Online/International Courses');
     expect(includeOnlineInternationalToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(include1LToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(includeOnlineInternationalToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeTaxToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeTaxToggle.parentElement?.textContent).toBe('Show Upper-Level Tax Courses');
+    expect(includeTaxToggle.parentElement?.parentElement).toBe(primaryRow);
+    expect(includeOnlineInternationalToggle.compareDocumentPosition(includeTaxToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeTaxToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeCoursesToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeCoursesToggle.parentElement?.textContent).toBe('Include Courses');
     expect(includeSeminarsToggle.getAttribute('aria-checked')).toBe('true');
@@ -315,6 +320,53 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId(`row-courses-${classifiedDataset.courseSlugByName.get(courseNames[1])}`)).toBeNull();
     expect(screen.queryByTestId(`row-courses-${classifiedDataset.courseSlugByName.get(courseNames[2])}`)).toBeNull();
     expect(rowFor(courseNames[3])).toBeTruthy();
+  });
+
+  it('labels tax courses and preserves the specified income-tax courses when upper-level tax is hidden', () => {
+    const exemptTaxCourses = [
+      'Federal Income Taxation',
+      'Federal Income Tax',
+      'Income Taxation',
+      'Income Tax',
+      'Income Taxation (for 1Ls)',
+    ];
+    const upperLevelTaxCourses = [
+      'Corporate Tax',
+      'Tax Policy Workshop',
+      'Taxation of Corporations',
+    ];
+    const courseNames = [...exemptTaxCourses, ...upperLevelTaxCourses, 'Taxonomy Workshop'];
+    const taxDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: courseNames.map((course, index) =>
+        makeRecord(index + 1, 'Doe, Alice', 4.6, 60, course, 4.4),
+      ),
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: taxDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+
+    for (const course of [...exemptTaxCourses, ...upperLevelTaxCourses]) {
+      expect(taxDataset.courses.find((group) => group.name === course)?.courseLabels).toContain('Tax');
+    }
+    expect(taxDataset.courses.find((group) => group.name === 'Taxonomy Workshop')?.courseLabels).not.toContain('Tax');
+
+    render(<CoursesPage />);
+    const rowFor = (course: string) => screen.getByTestId(`row-courses-${taxDataset.courseSlugByName.get(course)}`);
+    for (const course of courseNames) expect(rowFor(course)).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('toggle-include-upper-level-tax-courses'));
+
+    expect(screen.getByTestId('toggle-include-upper-level-tax-courses').getAttribute('aria-checked')).toBe('false');
+    for (const course of exemptTaxCourses) expect(rowFor(course)).toBeTruthy();
+    for (const course of upperLevelTaxCourses) {
+      expect(screen.queryByTestId(`row-courses-${taxDataset.courseSlugByName.get(course)}`)).toBeNull();
+    }
+    expect(rowFor('Taxonomy Workshop')).toBeTruthy();
   });
 
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
@@ -528,6 +580,7 @@ describe('Courses table expansion', () => {
       fireEvent.change(screen.getByTestId('input-search-courses'), { target: { value: 'Evidence' } });
       fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
       fireEvent.click(screen.getByTestId('toggle-include-online-international-courses'));
+      fireEvent.click(screen.getByTestId('toggle-include-upper-level-tax-courses'));
       fireEvent.change(screen.getByTestId('select-sort'), { target: { value: 'rating-asc' } });
       fireEvent.click(screen.getByTestId('toggle-include-seminars-colloquiums'));
       fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
@@ -550,6 +603,7 @@ describe('Courses table expansion', () => {
       expect((screen.getByTestId('input-search-courses') as HTMLInputElement).value).toBe('Evidence');
       expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
       expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByTestId('toggle-include-upper-level-tax-courses').getAttribute('aria-checked')).toBe('false');
       expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('rating-asc');
       expect(screen.getByTestId('toggle-include-seminars-colloquiums').getAttribute('aria-checked')).toBe('false');
       expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();

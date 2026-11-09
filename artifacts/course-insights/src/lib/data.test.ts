@@ -18,7 +18,7 @@ describe('course audience labels', () => {
   it('labels Paris and Buenos Aires courses as International and [ONLINE] courses as Online', () => {
     expect(classifyCourseLabels('International Arbitration (Paris)')).toEqual(['International']);
     expect(classifyCourseLabels('Human Rights Seminar in Buenos Aires')).toEqual(['International']);
-    expect(classifyCourseLabels('Tax Law [ONLINE]')).toEqual(['Online']);
+    expect(classifyCourseLabels('Tax Law [ONLINE]')).toEqual(['Online', 'Tax']);
     expect(classifyCourseLabels('Evidence')).toEqual([]);
 
     const dataset = buildDataset({
@@ -43,12 +43,12 @@ describe('course audience labels', () => {
     expect(dataset.records.map((record) => record.courseLabels)).toEqual([
       ['International'],
       ['International'],
-      ['Online'],
+      ['Online', 'Tax'],
     ]);
     expect(dataset.courses.map((course) => course.courseLabels)).toEqual([
       ['International'],
       ['International'],
-      ['Online'],
+      ['Online', 'Tax'],
     ]);
   });
 

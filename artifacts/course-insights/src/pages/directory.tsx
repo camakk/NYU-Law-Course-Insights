@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, Info, SlidersHorizontal } from 'lucide-react';
-import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
+import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIES, fmtInt, friendlyName, isCoreTaxCourse, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Switch } from '@/components/ui/switch';
@@ -17,6 +17,7 @@ type DirectorySnapshot = {
   sort: SortKey;
   include1LCourses?: boolean;
   includeOnlineInternationalCourses?: boolean;
+  includeUpperLevelTaxCourses?: boolean;
   minOfferings: string;
   minResponses: string;
   minScore: string;
@@ -260,6 +261,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [includeOnlineInternationalCourses, setIncludeOnlineInternationalCourses] = useState(
     () => returnSnapshot?.includeOnlineInternationalCourses ?? true,
   );
+  const [includeUpperLevelTaxCourses, setIncludeUpperLevelTaxCourses] = useState(
+    () => returnSnapshot?.includeUpperLevelTaxCourses ?? true,
+  );
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
   const [minResponses, setMinResponses] = useState(() => returnSnapshot?.minResponses ?? '50');
   const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
@@ -284,7 +288,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     ? 30
     : Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
   const maxReviews = kind === 'professors' ? 300 : 500;
-  const hasFilters = q !== '' || (kind === 'courses' && (!include1LCourses || !includeOnlineInternationalCourses)) ||
+  const hasFilters = q !== '' || (kind === 'courses' && (!include1LCourses || !includeOnlineInternationalCourses || !includeUpperLevelTaxCourses)) ||
     (kind === 'professors' && minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||
     (kind === 'professors' && minScore !== '' && Number(minScore) > 0) ||
@@ -297,6 +301,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setQ('');
     setInclude1LCourses(true);
     setIncludeOnlineInternationalCourses(true);
+    setIncludeUpperLevelTaxCourses(true);
     setMinOfferings('1');
     setMinResponses('');
     setMinScore('');
@@ -344,6 +349,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       sort,
       include1LCourses,
       includeOnlineInternationalCourses,
+      includeUpperLevelTaxCourses,
       minOfferings,
       minResponses,
       minScore,
@@ -386,6 +392,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         (kind !== 'courses' || includeOnlineInternationalCourses || !categoryRecords.some((record) =>
           record.courseLabels.includes('Online') || record.courseLabels.includes('International'),
         )) &&
+        (kind !== 'courses' || includeUpperLevelTaxCourses || !g.courseLabels?.includes('Tax') || isCoreTaxCourse(g.name)) &&
         matches(g, terms, kind, categoryRecords)
       )
       .map(({ g, categoryRecords }) => {
@@ -453,7 +460,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       }
     });
     return out;
-  }, [ds, kind, q, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories, activeOnly, include1LCourses, includeOnlineInternationalCourses]);
+  }, [ds, kind, q, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories, activeOnly, include1LCourses, includeOnlineInternationalCourses, includeUpperLevelTaxCourses]);
 
   const isProf = kind === 'professors';
   const total = isProf ? ds.professors.length : ds.courses.length;
@@ -643,7 +650,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               data-testid="toggle-include-1l-courses"
             />
             <label htmlFor="toggle-include-1l-courses" className="cursor-pointer select-none text-sm">
-              1L Courses
+              Show 1L Courses
             </label>
           </div>
         )}
@@ -659,6 +666,19 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             />
             <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
               Show Online/International Courses
+            </label>
+          </div>
+        )}
+        {!isProf && (
+          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+            <Switch
+              id="toggle-include-upper-level-tax-courses"
+              checked={includeUpperLevelTaxCourses}
+              onCheckedChange={setIncludeUpperLevelTaxCourses}
+              data-testid="toggle-include-upper-level-tax-courses"
+            />
+            <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
+              Show Upper-Level Tax Courses
             </label>
           </div>
         )}
