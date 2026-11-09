@@ -37,6 +37,13 @@ function offeringScore(record: EvalRecord, questionIndex: number): number | null
   return usable(record, questionIndex) ? record.scores[questionIndex] : null;
 }
 
+function shortSemester(semester: string): string {
+  const match = /^(Spring|Fall|Summer|Winter)\s+(\d{4})$/i.exec(semester.trim());
+  if (!match) return semester;
+  const seasons: Record<string, string> = { spring: 'S', fall: 'F', summer: 'Su', winter: 'W' };
+  return `${seasons[match[1].toLowerCase()]} '${match[2].slice(-2)}`;
+}
+
 function extraCourseColor(index: number): string {
   const hue = EXTRA_COURSE_COLOR_HUES[index % EXTRA_COURSE_COLOR_HUES.length];
   const shade = Math.floor(index / EXTRA_COURSE_COLOR_HUES.length);
@@ -404,11 +411,12 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
           />
         ) : (
           <div className="overflow-hidden rounded-xl border bg-card">
-            <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_8rem] xl:grid-cols-[minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] gap-4 border-b bg-muted/40 px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="hidden md:grid md:grid-cols-[5rem_minmax(0,1fr)_8rem] xl:grid-cols-[5rem_minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] gap-4 border-b bg-muted/40 px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span className="text-center normal-case" data-testid="header-offering-semester">Semester</span>
               <span>Course offering</span>
               <span className="w-[6.5rem] justify-self-end text-center normal-case" data-testid="header-teaching-overall">Teaching Overall</span>
               <div
-                className="col-span-2 grid grid-cols-9 gap-2 xl:contents"
+                className="col-span-3 grid grid-cols-9 gap-2 xl:contents"
                 data-testid="header-professor-score-columns"
               >
                 {OTHER_QUESTION_INDEXES.slice(0, 5).map((index) => (
@@ -443,7 +451,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 return (
                   <li
                     key={record.id}
-                    className="relative grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[minmax(0,1fr)_8rem] xl:grid-cols-[minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] xl:items-center"
+                    className="relative grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[5rem_minmax(0,1fr)_8rem] xl:grid-cols-[5rem_minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] md:items-center"
                     data-testid={`row-offering-${record.id}`}
                   >
                     <span
@@ -452,6 +460,14 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                       style={{ backgroundColor: courseColors.get(record.course) ?? COURSE_COLOR_BLUE }}
                       data-testid={`course-color-block-${record.id}`}
                     />
+                    <div
+                      className="whitespace-nowrap font-sans text-2xl font-semibold tabular-nums text-primary/80 md:text-center"
+                      title={record.semester}
+                      aria-label={record.semester}
+                      data-testid={`offering-semester-${record.id}`}
+                    >
+                      {shortSemester(record.semester)}
+                    </div>
                     <div className="min-w-0">
                       <Link
                         href={`/courses/${ds.courseSlugByName.get(record.course)!}`}
@@ -461,9 +477,8 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                         {record.course}
                       </Link>
                       <p className="mt-1 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-                        <span>{record.semester}</span>
-                        {section != null && <span>· Section {section}</span>}
-                        <span>· {record.responded == null ? 'N/A responses' : `${fmtInt(record.responded)} responses`}</span>
+                        {section != null && <span>Section {section} ·</span>}
+                        <span>{record.responded == null ? 'N/A responses' : `${fmtInt(record.responded)} responses`}</span>
                         {record.inaccessible && <span>· inaccessible in source</span>}
                       </p>
                     </div>
@@ -478,7 +493,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                       />
                     </div>
                     <div
-                      className="grid grid-cols-4 gap-2 md:col-span-2 md:grid-cols-9 xl:contents"
+                      className="grid grid-cols-4 gap-2 md:col-span-3 md:grid-cols-9 xl:contents"
                       data-testid={`offering-score-columns-${record.id}`}
                     >
                       {OTHER_QUESTION_INDEXES.slice(0, 5).map((index) => {

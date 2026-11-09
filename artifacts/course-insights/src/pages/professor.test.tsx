@@ -64,6 +64,31 @@ beforeEach(() => {
 });
 
 describe('Professor detail summary', () => {
+  it.each([
+    ['Spring 2026', "S '26"],
+    ['Fall 2025', "F '25"],
+    ['Summer 2024', "Su '24"],
+    ['Winter 2023', "W '23"],
+    ['Unspecified term', 'Unspecified term'],
+  ])('shows %s in a dedicated semester column as %s', (semester, shortLabel) => {
+    const semesterDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [makeRecord(1, 'Evidence', semester)],
+    });
+    renderProfessorPage(semesterDataset);
+    const cell = screen.getByTestId('offering-semester-1');
+    expect(cell.textContent).toBe(shortLabel);
+    expect(cell.getAttribute('title')).toBe(semester);
+    expect(cell.getAttribute('aria-label')).toBe(semester);
+    expect(cell.className).toContain('text-2xl');
+    expect(cell.className).toContain('font-sans');
+    expect(cell.className).not.toContain('font-display');
+    expect(cell.previousElementSibling?.getAttribute('data-testid')).toBe('course-color-block-1');
+    expect(cell.nextElementSibling?.querySelector('[data-testid="link-offering-course-1"]')).toBeTruthy();
+    expect(screen.getByTestId('header-offering-semester').textContent).toBe('Semester');
+    expect(screen.getByTestId('header-offering-semester').nextElementSibling?.textContent).toBe('Course offering');
+  });
+
   it('falls back to the Professors page when a profile is opened directly', () => {
     renderProfessorPage();
     expect(window.history.state).toBeNull();
