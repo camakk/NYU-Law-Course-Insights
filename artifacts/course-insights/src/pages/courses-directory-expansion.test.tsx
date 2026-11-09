@@ -2,6 +2,7 @@ import { act, fireEvent, render as renderPage, screen, waitFor, within } from '@
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, useDataset, type RawData } from '@/lib/data';
+import { recentProfessorScoreColor } from '@/lib/rating-color';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { CoursesPage } from './directory';
 
@@ -99,11 +100,10 @@ describe('Courses table expansion', () => {
     for (const link of links) {
       expect(link.parentElement?.classList.contains('flex')).toBe(true);
       expect(link.parentElement?.classList.contains('items-center')).toBe(true);
-      expect(link.parentElement?.classList.contains('justify-start')).toBe(true);
-      expect(link.parentElement?.classList.contains('gap-1')).toBe(true);
+      expect(link.parentElement?.classList.contains('justify-between')).toBe(true);
+      expect(link.parentElement?.classList.contains('gap-2')).toBe(true);
       expect(link.classList.contains('truncate')).toBe(true);
-      expect(link.classList.contains('max-w-[70%]')).toBe(true);
-      expect(link.classList.contains('flex-1')).toBe(false);
+      expect(link.classList.contains('flex-1')).toBe(true);
       expect(link.getAttribute('title')).toBe(link.textContent);
       expect(link.nextElementSibling?.classList.contains('w-[6.5rem]')).toBe(true);
       expect(link.nextElementSibling?.querySelector('[role="meter"]')).toBeTruthy();
@@ -149,6 +149,7 @@ describe('Courses table expansion', () => {
       data: noQualifiedDataset, isLoading: false, error: null, refetch: vi.fn(),
     } as unknown as ReturnType<typeof useDataset>);
     render(<CoursesPage />);
+    fireEvent.click(screen.getByTestId('button-clear-filters'));
     const evidence = screen.getByTestId('course-professor-preview-evidence');
     expect(within(evidence).getAllByRole('link').map((link) => link.textContent)).toEqual(['1. Alice Doe • Fall 2025']);
     expect(within(evidence).getAllByRole('meter')).toHaveLength(1);
@@ -199,9 +200,12 @@ describe('Courses table expansion', () => {
     expect(courseLink.className).toContain('whitespace-normal');
     expect(courseLink.className).toContain('break-words');
     expect(courseLink.className).not.toContain('truncate');
+    expect(courseLink.parentElement?.className).toContain('text-[17px]');
+    expect(courseLink.parentElement?.className).toContain('font-semibold');
+    expect(courseLink.parentElement?.nextElementSibling?.classList.contains('mt-1.5')).toBe(true);
   });
 
-  it('places online filtering after Clinics in the bottom row and stretches minimum reviews across the remaining space', () => {
+  it('places the online toggle in the upper row and the tax toggle after Clinics', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
     const primaryRow = screen.getByTestId('directory-toolbar-primary-row-courses');
@@ -215,22 +219,31 @@ describe('Courses table expansion', () => {
     const minimumReviewsControl = screen.getByTestId('course-min-reviews-control');
     const minimumReviewsSlider = screen.getByTestId('filter-min-responses-slider')
       .querySelector('[role="slider"]') as HTMLElement;
+    const filterActions = screen.getByTestId('course-filter-actions');
+    const setDefaultFiltersButton = screen.getByTestId('button-set-default-filters');
+    const clearFiltersButton = screen.getByTestId('button-clear-filters');
     const sortSelect = screen.getByTestId('select-sort');
     const controlsPanel = document.getElementById('directory-filter-controls');
 
     expect(screen.queryByTestId('select-semester')).toBeNull();
-    expect(screen.queryByTestId('button-set-default-filters')).toBeNull();
-    expect(include1LToggle.getAttribute('aria-checked')).toBe('true');
+    expect(setDefaultFiltersButton.textContent).toBe('Set default filters');
+    expect(clearFiltersButton.textContent).toBe('Clear all filters');
+    expect(filterActions.parentElement).toBe(toolbar);
+    expect(toolbar.children[2]).toBe(filterActions);
+    expect(filterActions.className).toContain('justify-end');
+    expect(setDefaultFiltersButton.parentElement).toBe(filterActions);
+    expect(clearFiltersButton.parentElement).toBe(filterActions);
+    expect(include1LToggle.getAttribute('aria-checked')).toBe('false');
     expect(include1LToggle.parentElement?.textContent).toBe('Include 1L Courses');
     expect(include1LToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('false');
     expect(includeOnlineInternationalToggle.parentElement?.textContent).toBe('Include Online/International Courses');
-    expect(includeOnlineInternationalToggle.parentElement?.parentElement).toBe(categoryToggleRow);
+    expect(includeOnlineInternationalToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(includeTaxToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeTaxToggle.parentElement?.textContent).toBe('Include Upper-Level Tax Courses');
-    expect(includeTaxToggle.parentElement?.parentElement).toBe(primaryRow);
-    expect(include1LToggle.compareDocumentPosition(includeTaxToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(includeTaxToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeTaxToggle.parentElement?.parentElement).toBe(categoryToggleRow);
+    expect(include1LToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeOnlineInternationalToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeCoursesToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeCoursesToggle.getAttribute('role')).toBe('checkbox');
     expect(includeCoursesToggle.parentElement?.textContent).toBe('Include Courses');
@@ -247,12 +260,14 @@ describe('Courses table expansion', () => {
     expect(categoryToggleRow.parentElement).toBe(toolbar);
     expect(includeCoursesToggle.parentElement?.parentElement).toBe(categoryToggleRow);
     expect(includeSeminarsToggle.compareDocumentPosition(includeClinicsToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(includeClinicsToggle.parentElement?.nextElementSibling?.contains(includeOnlineInternationalToggle)).toBe(true);
+    expect(includeClinicsToggle.parentElement?.nextElementSibling?.contains(includeTaxToggle)).toBe(true);
+    expect(includeOnlineInternationalToggle.compareDocumentPosition(includeTaxToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeTaxToggle.compareDocumentPosition(minimumReviewsControl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeOnlineInternationalToggle.compareDocumentPosition(minimumReviewsControl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(categoryToggleRow.lastElementChild?.contains(minimumReviewsControl)).toBe(true);
     expect(minimumReviewsControl.parentElement).toBe(categoryToggleRow);
     expect(minimumReviewsControl.classList.contains('flex-1')).toBe(true);
-    expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('0');
+    expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('50');
     expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('200');
     expect(minimumReviewsSlider.getAttribute('aria-valuemin')).toBe('0');
     expect(screen.getByTestId('filter-min-responses-tick-0').textContent).toBe('0');
@@ -261,9 +276,9 @@ describe('Courses table expansion', () => {
     expect(screen.getByTestId('filter-min-responses-tick-200').textContent).toBe('200');
     expect(screen.queryByTestId('filter-min-responses-tick-300')).toBeNull();
     expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(3);
-    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('No minimum');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
     expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
-    expect(within(minimumReviewsControl).getAllByText('No minimum')).toHaveLength(1);
+    expect(within(minimumReviewsControl).queryByText('No minimum')).toBeNull();
     expect(within(minimumReviewsControl).queryByText('500+')).toBeNull();
     expect(sortSelect.parentElement?.parentElement).toBe(primaryRow);
     expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();
@@ -272,6 +287,55 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('filter-course-rating-range-slider')).toBeNull();
     expect(screen.queryByText('Minimum class offerings')).toBeNull();
     expect(screen.queryByText('Average Course Rating')).toBeNull();
+  });
+
+  it('resets course filters to their defaults or clears their restrictions', () => {
+    render(<CoursesPage />);
+    const include1L = screen.getByTestId('toggle-include-1l-courses');
+    const includeOnlineInternational = screen.getByTestId('toggle-include-online-international-courses');
+    const includeTax = screen.getByTestId('toggle-include-upper-level-tax-courses');
+    const includeCourses = screen.getByTestId('toggle-include-courses');
+    const includeSeminars = screen.getByTestId('toggle-include-seminars-colloquiums');
+    const minimumReviewsThumb = screen.getByTestId('filter-min-responses-slider')
+      .querySelector('[role="slider"]') as HTMLElement;
+    const search = screen.getByTestId('input-search-courses') as HTMLInputElement;
+    const clearFiltersButton = screen.getByTestId('button-clear-filters');
+
+    fireEvent.change(search, { target: { value: 'Evidence' } });
+    fireEvent.click(include1L);
+    fireEvent.click(includeOnlineInternational);
+    fireEvent.click(includeTax);
+    fireEvent.click(includeCourses);
+    fireEvent.click(includeSeminars);
+    fireEvent.keyDown(minimumReviewsThumb, { key: 'ArrowRight' });
+
+    fireEvent.click(screen.getByTestId('button-set-default-filters'));
+
+    expect(include1L.getAttribute('aria-checked')).toBe('false');
+    expect(includeOnlineInternational.getAttribute('aria-checked')).toBe('false');
+    expect(includeTax.getAttribute('aria-checked')).toBe('true');
+    expect(includeCourses.getAttribute('aria-checked')).toBe('true');
+    expect(includeSeminars.getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByTestId('filter-min-responses-slider').querySelector('[role="slider"]')?.getAttribute('aria-valuenow')).toBe('50');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
+    expect(search.value).toBe('Evidence');
+
+    fireEvent.click(clearFiltersButton);
+
+    expect(include1L.getAttribute('aria-checked')).toBe('true');
+    expect(includeOnlineInternational.getAttribute('aria-checked')).toBe('true');
+    expect(includeTax.getAttribute('aria-checked')).toBe('true');
+    expect(includeCourses.getAttribute('aria-checked')).toBe('true');
+    expect(includeSeminars.getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('No minimum');
+    expect(screen.getByTestId('filter-min-responses-slider').querySelector('[role="slider"]')?.getAttribute('aria-valuenow')).toBe('0');
+    expect(search.value).toBe('');
+    expect(screen.getByTestId('button-clear-filters')).toBe(clearFiltersButton);
+
+    const clearedSummary = screen.getByTestId('filter-summary').textContent;
+    fireEvent.click(clearFiltersButton);
+    expect(screen.getByTestId('filter-summary').textContent).toBe(clearedSummary);
+    expect(includeOnlineInternational.getAttribute('aria-checked')).toBe('true');
   });
 
   it('explains the upper-level tax filter on hover without changing the toggle', async () => {
@@ -287,6 +351,98 @@ describe('Courses table expansion', () => {
       { timeout: 3000 },
     )).toBeTruthy();
     expect(toggle.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('explains the course category checkboxes on hover without changing their values', async () => {
+    render(<CoursesPage />);
+    const categories = [
+      {
+        id: 'toggle-include-courses',
+        description: 'Check this box to include Courses and Simulation Courses in the results',
+      },
+      {
+        id: 'toggle-include-seminars-colloquiums',
+        description: 'Check this box to include Seminars and Colloquiums in the results.',
+      },
+      {
+        id: 'toggle-include-clinics-externships',
+        description: 'Check this box to include Clinics and Externships in the results.',
+      },
+    ];
+
+    for (const { id, description } of categories) {
+      fireEvent.pointerMove(screen.getByTestId(`button-course-category-info-${id}`), {
+        pointerType: 'mouse', clientX: 0, clientY: 0,
+      });
+      expect(await screen.findByText(description, {}, { timeout: 3000 })).toBeTruthy();
+      expect(screen.getByTestId(id).getAttribute('aria-checked')).toBe('true');
+    }
+  });
+
+  it('expands all rated professors and recent semesters together from either column', () => {
+    const historyDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        { ...makeRecord(1, 'Doe, Alice', 4.9, 25), semester: 'Spring 2026' },
+        { ...makeRecord(2, 'Roe, Bob', 4.8, 25), semester: 'Fall 2025' },
+        { ...makeRecord(3, 'Smith, Carol', 4.7, 25), semester: 'Spring 2025' },
+        { ...makeRecord(4, 'White, Dan', 4.6, 25), semester: 'Fall 2024' },
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: historyDataset, isLoading: false, error: null, refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    render(<CoursesPage />);
+
+    const row = screen.getByTestId('row-courses-evidence');
+    const topToggle = within(row).getByTestId('button-toggle-course-top-professors-evidence');
+    const recentToggle = within(row).getByTestId('button-toggle-course-history-evidence-compact');
+    const topPreview = within(row).getByTestId('course-professor-preview-evidence');
+    const topEntries = () => within(topPreview).getAllByTestId(/^preview-professor-evidence-/);
+
+    expect(topToggle.className).toContain('font-sans');
+    expect(topToggle.className).toContain('text-[10px]');
+    expect(topToggle.className).toContain('text-muted-foreground');
+    expect(topToggle.className).toContain('mt-0.5');
+    expect(topToggle.className).toContain('hover:text-foreground');
+    expect(topToggle.className).toContain('hover:underline');
+    expect(topEntries()).toHaveLength(3);
+    expect(topToggle.textContent).toBe('[...]');
+    expect(topToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(recentToggle.textContent).toBe('[...]');
+    expect(recentToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(within(row).queryByTestId('recent-semester-evidence-compact-2')).toBeNull();
+
+    fireEvent.click(topToggle);
+
+    expect(topEntries()).toHaveLength(4);
+    expect(topToggle.textContent).toBe('Collapse');
+    expect(topToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(recentToggle.textContent).toBe('Collapse');
+    expect(recentToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-2')).toBeTruthy();
+    expect(within(row).getByTestId('recent-semester-evidence-compact-3')).toBeTruthy();
+
+    fireEvent.click(recentToggle);
+
+    expect(topEntries()).toHaveLength(3);
+    expect(topToggle.textContent).toBe('[...]');
+    expect(topToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(recentToggle.textContent).toBe('[...]');
+    expect(recentToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(within(row).queryByTestId('recent-semester-evidence-compact-2')).toBeNull();
+
+    fireEvent.click(recentToggle);
+    expect(topEntries()).toHaveLength(4);
+    expect(topToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(recentToggle.getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.click(topToggle);
+    expect(topEntries()).toHaveLength(3);
+    expect(topToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(recentToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(within(row).queryByTestId('recent-semester-evidence-compact-2')).toBeNull();
   });
 
   it('filters course category groups independently', () => {
@@ -352,15 +508,19 @@ describe('Courses table expansion', () => {
     } as unknown as ReturnType<typeof useDataset>);
 
     render(<CoursesPage />);
+    fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
 
     expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
     expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
     expect(screen.getByTestId('row-courses-contracts')).toBeTruthy();
-    expect(screen.getByTestId('row-courses-small-course')).toBeTruthy();
+    expect(screen.queryByTestId('row-courses-small-course')).toBeNull();
     const reviewsSlider = screen.getByTestId('filter-min-responses-slider')
       .querySelector('[role="slider"]') as HTMLElement;
     reviewsSlider.focus();
+    expect(reviewsSlider.getAttribute('aria-valuenow')).toBe('50');
+    fireEvent.click(screen.getByTestId('button-clear-filters'));
     expect(reviewsSlider.getAttribute('aria-valuenow')).toBe('0');
+    expect(screen.getByTestId('row-courses-small-course')).toBeTruthy();
     for (let step = 0; step < 6; step++) {
       fireEvent.keyDown(reviewsSlider, { key: 'ArrowRight' });
     }
@@ -386,7 +546,7 @@ describe('Courses table expansion', () => {
     expect(screen.getByTestId('row-courses-above-threshold')).toBeTruthy();
   });
 
-  it('shows 1L courses by default and hides only those courses when the toggle is off', () => {
+  it('hides 1L courses by default and includes them when the toggle is on', () => {
     const audienceDataset = buildDataset({
       questions: [],
       sourceNotes: [],
@@ -406,16 +566,17 @@ describe('Courses table expansion', () => {
 
     render(<CoursesPage />);
 
-    expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
-    expect(screen.getByTestId('row-courses-constitutional-law-for-1ls')).toBeTruthy();
+    expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
+    expect(screen.queryByTestId('row-courses-torts')).toBeNull();
+    expect(screen.queryByTestId('row-courses-constitutional-law-for-1ls')).toBeNull();
     expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
     expect(screen.getByTestId('row-courses-contracts-for-ll-m-students')).toBeTruthy();
 
     fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
 
-    expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
-    expect(screen.queryByTestId('row-courses-torts')).toBeNull();
-    expect(screen.queryByTestId('row-courses-constitutional-law-for-1ls')).toBeNull();
+    expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-constitutional-law-for-1ls')).toBeTruthy();
     expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
     expect(screen.getByTestId('row-courses-contracts-for-ll-m-students')).toBeTruthy();
   });
@@ -435,12 +596,14 @@ describe('Courses table expansion', () => {
     } as unknown as ReturnType<typeof useDataset>);
 
     render(<CoursesPage />);
+    fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
     for (const course of courseNames) {
       const group = firstYearDataset.courses.find((entry) => entry.name === course)!;
       expect(group.courseLabels).toContain('1L');
       expect(group.records.every((record) => record.courseLabels.includes('1L'))).toBe(true);
       const row = screen.getByTestId(`row-courses-${group.slug}`);
       const badge = within(row).getByTestId(`badge-course-1l-${group.slug}`);
+      expect(badge.classList.contains('ml-1')).toBe(true);
       expect(badge.classList.contains('rounded-full')).toBe(true);
       expect(badge.classList.contains('bg-secondary')).toBe(true);
       expect(badge.parentElement?.querySelector('a')?.textContent).toBe(course);
@@ -533,6 +696,7 @@ describe('Courses table expansion', () => {
     expect(taxDataset.courses.find((group) => group.name === 'Taxonomy Workshop')?.courseLabels).not.toContain('Tax');
 
     render(<CoursesPage />);
+    fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
     const rowFor = (course: string) => screen.getByTestId(`row-courses-${taxDataset.courseSlugByName.get(course)}`);
     for (const course of courseNames) expect(rowFor(course)).toBeTruthy();
 
@@ -567,16 +731,20 @@ describe('Courses table expansion', () => {
     expect(ratingHeader.parentElement?.classList.contains('text-center')).toBe(true);
     const offeringsHeader = screen.getByTestId('button-sort-offerings');
     expect(offeringsHeader.parentElement?.classList.contains('text-center')).toBe(true);
-    expect(offeringsHeader.compareDocumentPosition(ratingHeader) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(offeringsHeader.parentElement?.nextElementSibling).toBe(ratingHeader.parentElement);
+    const reviewsHeader = screen.getByTestId('button-sort-reviews');
+    expect(offeringsHeader.compareDocumentPosition(reviewsHeader) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(reviewsHeader.compareDocumentPosition(ratingHeader) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(offeringsHeader.parentElement?.nextElementSibling).toBe(reviewsHeader.parentElement);
+    expect(reviewsHeader.parentElement?.nextElementSibling).toBe(ratingHeader.parentElement);
     expect(screen.queryByText('Teaching')).toBeNull();
     const row = screen.getByTestId('row-courses-evidence');
     expect(tableHeader.classList.contains('course-directory-grid')).toBe(true);
     expect(row.firstElementChild?.classList.contains('course-directory-grid')).toBe(true);
     const previewCell = within(row).getByTestId('course-professor-preview-evidence').parentElement!;
-    expect(previewCell.previousElementSibling?.textContent).toBe('4');
     expect(previewCell.previousElementSibling?.classList.contains('num')).toBe(true);
     expect(previewCell.previousElementSibling?.classList.contains('text-center')).toBe(true);
+    expect(previewCell.previousElementSibling?.previousElementSibling?.textContent).toBe('4');
+    expect(previewCell.previousElementSibling?.previousElementSibling?.classList.contains('text-center')).toBe(true);
     const expandLine = within(row).getByTestId('course-expand-line-evidence');
     expect(expandLine.classList.contains('block')).toBe(true);
     expect(within(expandLine).getByRole('button', { name: 'Expand top professors for Evidence' })).toBeTruthy();
@@ -589,7 +757,7 @@ describe('Courses table expansion', () => {
       expect(within(row).getByTestId(`recent-semester-evidence-${layout}-1`).classList.contains('mt-1.5')).toBe(true);
     }
     expect(spring2026.querySelector('strong')?.textContent).toBe('🌸 Spring 2026');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.90), Sam Small (5.00) [...]');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.90), Sam Small (5.00)');
     const courseLatest = within(row).getByTestId('course-latest-evidence');
     expect(courseLatest.textContent).toMatch(/^Latest (Spring|Fall|Summer) \d{4}$/);
     expect(courseLatest.textContent).not.toMatch(/🌸|🍂|☀️/);
@@ -634,6 +802,7 @@ describe('Courses table expansion', () => {
       data: termDataset, isLoading: false, error: null, refetch: vi.fn(),
     } as unknown as ReturnType<typeof useDataset>);
     render(<CoursesPage />);
+    fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
 
     for (const layout of ['compact', 'wide']) {
       const semester = screen.getByTestId(`recent-semester-torts-${layout}-0`);
@@ -646,10 +815,24 @@ describe('Courses table expansion', () => {
         const link = within(semester).getByRole('link', { name: `${name} (${score})` });
         expect(link.getAttribute('href')).toBe(`/professors/${slug}`);
         expect(link.classList.contains('underline')).toBe(true);
+        const coloredScore = within(link).getByText(score);
+        expect(coloredScore.textContent).toBe(score);
+        const expectedStyle = document.createElement('span');
+        expectedStyle.style.color = recentProfessorScoreColor(Number(score));
+        expect((coloredScore as HTMLElement).style.color).toBe(expectedStyle.style.color);
+        expect(link.textContent).toContain(`(${score})`);
       }
       const previousSemester = screen.getByTestId(`recent-semester-torts-${layout}-1`);
       expect(within(previousSemester).getByRole('link', { name: 'Barry E. Adler (5.00)' })).toBeTruthy();
     }
+  });
+
+  it('uses very light purple below 4.00 and preserves the other score color thresholds', () => {
+    expect(recentProfessorScoreColor(4.5)).toBe('hsl(276 70% 30%)');
+    expect(recentProfessorScoreColor(4.49)).toBe('hsl(276 50% 52%)');
+    expect(recentProfessorScoreColor(4)).toBe('hsl(276 50% 52%)');
+    expect(recentProfessorScoreColor(4.01)).toBe('hsl(276 50% 52%)');
+    expect(recentProfessorScoreColor(3.99)).toBe('hsl(276 55% 78%)');
   });
 
   it('weights sections within a semester and shows N/A for unavailable teaching scores', () => {
@@ -697,11 +880,14 @@ describe('Courses table expansion', () => {
     const row = screen.getByTestId('row-courses-evidence');
     const historyToggle = () => within(row).getByTestId('button-toggle-course-history-evidence-compact');
     expect(within(row).getByTestId('recent-semester-evidence-compact-0').textContent).toBe('🌸 Spring 2026 • Alice Doe (4.80)');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.70), Bob Roe (4.60) [...]');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.70), Bob Roe (4.60)');
     expect(within(row).queryByTestId('recent-semester-evidence-compact-2')).toBeNull();
     expect(historyToggle().textContent).toBe('[...]');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('false');
-    expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-1'));
+    const toggleLine = within(row).getByTestId('course-history-toggle-line-evidence-compact');
+    expect(toggleLine.classList.contains('block')).toBe(true);
+    expect(toggleLine.previousElementSibling).toBe(within(row).getByTestId('recent-semester-evidence-compact-1'));
+    expect(historyToggle().parentElement).toBe(toggleLine);
 
     fireEvent.click(historyToggle());
 
@@ -711,8 +897,8 @@ describe('Courses table expansion', () => {
     expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe (4.40)');
     expect(within(row).getByTestId('recent-semester-evidence-compact-3').classList.contains('mt-1.5')).toBe(true);
     expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('🌸 Spring 2024 • Bob Roe (4.30)');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-5').textContent).toBe('☀️ Summer 2023 • Alice Doe (4.20) Collapse');
-    expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-5'));
+    expect(within(row).getByTestId('recent-semester-evidence-compact-5').textContent).toBe('☀️ Summer 2023 • Alice Doe (4.20)');
+    expect(historyToggle().parentElement).toBe(toggleLine);
 
     fireEvent.click(historyToggle());
 
@@ -767,6 +953,7 @@ describe('Courses table expansion', () => {
 
   it('sorts course rows from their column headers and keeps the Sort control in sync', () => {
     render(<CoursesPage />);
+    fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
     const sortControl = screen.getByTestId('select-sort') as HTMLSelectElement;
     const sortedCourseSlugs = () => screen.getAllByTestId(/^row-courses-/)
       .map((row) => row.getAttribute('data-testid')!.replace('row-courses-', ''));
@@ -854,7 +1041,7 @@ describe('Courses table expansion', () => {
 
       render(<CoursesPage />);
       expect((screen.getByTestId('input-search-courses') as HTMLInputElement).value).toBe('Evidence');
-      expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('true');
       expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('true');
       expect(screen.getByTestId('toggle-include-upper-level-tax-courses').getAttribute('aria-checked')).toBe('false');
       expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('rating-asc');
@@ -862,10 +1049,10 @@ describe('Courses table expansion', () => {
       expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();
       expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('button-toggle-course-history-evidence-compact').getAttribute('aria-expanded')).toBe('true');
-      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe (4.50) Collapse');
+      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe (4.50)');
       expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
-      expect(screen.queryByTestId('row-courses-evidence-for-1ls')).toBeNull();
+      expect(screen.getByTestId('row-courses-evidence-for-1ls')).toBeTruthy();
       expect(screen.getByTestId('row-courses-evidence-online')).toBeTruthy();
       await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 640));
     } finally {

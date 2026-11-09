@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, Info, Slide
 import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIES, fmt, fmtInt, friendlyName, isCoreTaxCourse, useDataset, type CourseCategory, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
+import { recentProfessorScoreColor } from '@/lib/rating-color';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
@@ -36,10 +37,25 @@ type DirectorySnapshot = {
 const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
 const PROFESSOR_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsProfessorDirectory';
 const REVIEW_TICKS = Array.from({ length: 4 }, (_, index) => index * 100);
-const COURSE_CATEGORY_TOGGLES: Array<{ id: string; label: string; categories: CourseCategory[] }> = [
-  { id: 'toggle-include-courses', label: 'Include Courses', categories: ['Course'] },
-  { id: 'toggle-include-seminars-colloquiums', label: 'Include Seminars', categories: ['Seminar', 'Colloquium'] },
-  { id: 'toggle-include-clinics-externships', label: 'Include Clinics', categories: ['Clinic', 'Externship'] },
+const COURSE_CATEGORY_TOGGLES: Array<{ id: string; label: string; categories: CourseCategory[]; description: string }> = [
+  {
+    id: 'toggle-include-courses',
+    label: 'Include Courses',
+    categories: ['Course'],
+    description: 'Check this box to include Courses and Simulation Courses in the results',
+  },
+  {
+    id: 'toggle-include-seminars-colloquiums',
+    label: 'Include Seminars',
+    categories: ['Seminar', 'Colloquium'],
+    description: 'Check this box to include Seminars and Colloquiums in the results.',
+  },
+  {
+    id: 'toggle-include-clinics-externships',
+    label: 'Include Clinics',
+    categories: ['Clinic', 'Externship'],
+    description: 'Check this box to include Clinics and Externships in the results.',
+  },
 ];
 
 function readDirectorySnapshot(key: string): DirectorySnapshot | null {
@@ -88,8 +104,20 @@ function RecentEntryContent({
         <span key={professor.slug ?? professor.label}>
           {index > 0 ? ', ' : ''}
           {professor.slug
-            ? <Link href={`/professors/${professor.slug}`} className="font-medium text-foreground/80 underline underline-offset-2 hover:text-primary">{professor.label} ({fmt(professor.score)})</Link>
-            : <>{professor.label} ({fmt(professor.score)})</>}
+            ? (
+              <Link href={`/professors/${professor.slug}`} className="font-medium text-foreground/80 underline underline-offset-2 hover:text-primary">
+                {professor.label} ({professor.score == null
+                  ? fmt(professor.score)
+                  : <span style={{ color: recentProfessorScoreColor(professor.score) }}>{fmt(professor.score)}</span>})
+              </Link>
+            )
+            : (
+              <>
+                {professor.label} ({professor.score == null
+                  ? fmt(professor.score)
+                  : <span style={{ color: recentProfessorScoreColor(professor.score) }}>{fmt(professor.score)}</span>})
+              </>
+            )}
         </span>
       ))}
     </>
@@ -266,7 +294,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       ? 'rating'
       : returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'),
   );
-  const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? true);
+  const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? false);
   const [includeOnlineInternationalCourses, setIncludeOnlineInternationalCourses] = useState(
     () => returnSnapshot?.includeOnlineInternationalCourses ?? false,
   );
@@ -276,7 +304,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
   const [minResponses, setMinResponses] = useState(() => {
     const savedValue = returnSnapshot?.minResponses;
-    return savedValue ? String(Math.min(Number(savedValue), maxReviews)) : savedValue ?? (kind === 'courses' ? '0' : '50');
+    return savedValue ? String(Math.min(Number(savedValue), maxReviews)) : savedValue ?? '50';
   });
   const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
   const [maxScore, setMaxScore] = useState(() => returnSnapshot?.maxScore ?? '');
@@ -309,12 +337,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setValue(value);
   };
   const clearFilters = () => {
+    if (!hasFilters) return;
     setQ('');
     setInclude1LCourses(true);
     setIncludeOnlineInternationalCourses(true);
     setIncludeUpperLevelTaxCourses(true);
     setMinOfferings('1');
-    setMinResponses('');
+    setMinResponses(kind === 'courses' ? '0' : '');
     setMinScore('');
     setMaxScore('');
     setIncludedCategories([...COURSE_CATEGORIES]);
@@ -325,6 +354,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setMinResponses('50');
     setMinScore('');
     setMaxScore('');
+    if (kind === 'courses') {
+      setInclude1LCourses(false);
+      setIncludeOnlineInternationalCourses(false);
+      setIncludeUpperLevelTaxCourses(true);
+      setIncludedCategories([...COURSE_CATEGORIES]);
+      return;
+    }
     setActiveOnly(true);
   };
   const professorGradeBySlug = useMemo(() => {
@@ -540,6 +576,26 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       inline={!isProf}
     />
   );
+  const filterActionButtons = (
+    <>
+      <button
+        type="button"
+        onClick={setDefaultFilters}
+        className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline"
+        data-testid="button-set-default-filters"
+      >
+        Set default filters
+      </button>
+      <button
+        type="button"
+        onClick={clearFilters}
+        className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline"
+        data-testid="button-clear-filters"
+      >
+        Clear all filters
+      </button>
+    </>
+  );
   const filterPanelContent = (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-1">
@@ -566,17 +622,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         />
       </div>
       <div className="flex items-center justify-end gap-3 mt-3">
-        <button
-          type="button"
-          onClick={setDefaultFilters}
-          className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline"
-          data-testid="button-set-default-filters"
-        >
-          Set default filters
-        </button>
-        {hasFilters && (
-          <button type="button" onClick={clearFilters} className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
-        )}
+        {filterActionButtons}
       </div>
     </>
   );
@@ -671,29 +717,14 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         {!isProf && (
           <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
             <Switch
-              id="toggle-include-upper-level-tax-courses"
-              checked={includeUpperLevelTaxCourses}
-              onCheckedChange={setIncludeUpperLevelTaxCourses}
-              data-testid="toggle-include-upper-level-tax-courses"
+              id="toggle-include-online-international-courses"
+              checked={includeOnlineInternationalCourses}
+              onCheckedChange={setIncludeOnlineInternationalCourses}
+              data-testid="toggle-include-online-international-courses"
             />
-            <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
-              Include Upper-Level Tax Courses
+            <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
+              Include Online/International Courses
             </label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Upper-level tax courses information"
-                  data-testid="button-upper-level-tax-info"
-                  className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Info aria-hidden="true" className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="center" className="max-w-xs text-center">
-                Excludes all tax classes except for Income Taxation
-              </TooltipContent>
-            </Tooltip>
           </div>
         )}
         {isProf && <button
@@ -732,7 +763,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             aria-label="Course category and delivery filters"
             data-testid="course-toggle-filter-row"
           >
-            {COURSE_CATEGORY_TOGGLES.map(({ id, label, categories }) => (
+            {COURSE_CATEGORY_TOGGLES.map(({ id, label, categories, description }) => (
               <div key={id} className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
                 <Checkbox
                   id={id}
@@ -742,18 +773,48 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   className="h-5 w-5 cursor-pointer rounded-md transition-colors"
                 />
                 <label htmlFor={id} className="cursor-pointer select-none text-sm">{label}</label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={`${label} information`}
+                      data-testid={`button-course-category-info-${id}`}
+                      className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Info aria-hidden="true" className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                    {description}
+                  </TooltipContent>
+                </Tooltip>
               </div>
             ))}
             <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
               <Switch
-                id="toggle-include-online-international-courses"
-                checked={includeOnlineInternationalCourses}
-                onCheckedChange={setIncludeOnlineInternationalCourses}
-                data-testid="toggle-include-online-international-courses"
+                id="toggle-include-upper-level-tax-courses"
+                checked={includeUpperLevelTaxCourses}
+                onCheckedChange={setIncludeUpperLevelTaxCourses}
+                data-testid="toggle-include-upper-level-tax-courses"
               />
-              <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
-                Include Online/International Courses
+              <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
+                Include Upper-Level Tax Courses
               </label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Upper-level tax courses information"
+                    data-testid="button-upper-level-tax-info"
+                    className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Info aria-hidden="true" className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                  Excludes all tax classes except for Income Taxation
+                </TooltipContent>
+              </Tooltip>
             </div>
             <div
               className="h-11 min-w-[14rem] flex-1 rounded-lg border border-input bg-card px-3"
@@ -761,6 +822,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             >
               {minimumReviewsFilter}
             </div>
+          </div>
+        )}
+        {!isProf && (
+          <div className="mt-3 flex justify-end gap-3" data-testid="course-filter-actions">
+            {filterActionButtons}
           </div>
         )}
       </div>
@@ -790,15 +856,19 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               {!isProf && <span className="text-center">
                 {sortHeader('Times Offered', 'offerings', 'offerings', 'offerings-asc', 'center')}
               </span>}
+              {!isProf && <span className="text-right">
+                {sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')}
+              </span>}
               <span className="text-center">{isProf
                 ? sortHeader('Teaching Grade', 'teaching', 'rating', 'rating-asc', 'center')
                 : sortHeader('Top Professors', 'rating', 'rating', 'rating-asc', 'center')}</span>
               {isProf && <span className="text-right">
                 {sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')}
               </span>}
-              <span className="text-right">{isProf
-                ? sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')
-                : sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')}</span><span />
+              {isProf && <span className="text-right">
+                {sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')}
+              </span>}
+              <span />
             </div>
             {rows.map((r, i) => {
               const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
@@ -808,6 +878,10 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               const recentSemestersExpanded = expandedRecentSemesters[r.g.slug] ?? false;
               const visibleRecentEntries = isProf || recentSemestersExpanded ? r.recent : r.recent.slice(0, 2);
               const canExpandRecentHistory = !isProf && r.offerings > 3 && r.recent.length > 2;
+              const toggleCourseExpansion = () => setExpandedRecentSemesters((current) => ({
+                ...current,
+                [r.g.slug]: !(current[r.g.slug] ?? false),
+              }));
               const renderRecentEntries = (compact: boolean) => (
                 <>
                   {visibleRecentEntries.map((item, index) => (
@@ -819,33 +893,32 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       data-testid={item.kind === 'semester' ? `recent-semester-${r.g.slug}-${compact ? 'compact' : 'wide'}-${index}` : undefined}
                     >
                       <RecentEntryContent item={item} compact={compact} formatSemester={isProf ? undefined : formatSemesterForDisplay} />
-                      {canExpandRecentHistory && index === visibleRecentEntries.length - 1 && (
-                        <>
-                          {' '}
-                          <button
-                            type="button"
-                            aria-expanded={recentSemestersExpanded}
-                            aria-label={`${recentSemestersExpanded ? 'Collapse' : 'Expand'} all semesters for ${r.g.label}`}
-                            onClick={() => setExpandedRecentSemesters((current) => ({
-                              ...current,
-                              [r.g.slug]: !recentSemestersExpanded,
-                            }))}
-                            className="inline-flex cursor-pointer items-center rounded-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                            data-testid={`button-toggle-course-history-${r.g.slug}-${compact ? 'compact' : 'wide'}`}
-                          >
-                            {recentSemestersExpanded ? 'Collapse' : '[...]'}
-                          </button>
-                        </>
-                      )}
                     </span>
                   ))}
+                  {canExpandRecentHistory && (
+                    <span className="mt-1 block" data-testid={`course-history-toggle-line-${r.g.slug}-${compact ? 'compact' : 'wide'}`}>
+                      <button
+                        type="button"
+                        aria-expanded={recentSemestersExpanded}
+                        aria-label={`${recentSemestersExpanded ? 'Collapse' : 'Expand'} all semesters for ${r.g.label}`}
+                        onClick={toggleCourseExpansion}
+                        className="inline-flex cursor-pointer items-center rounded-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        data-testid={`button-toggle-course-history-${r.g.slug}-${compact ? 'compact' : 'wide'}`}
+                      >
+                        {recentSemestersExpanded ? 'Collapse' : '[...]'}
+                      </button>
+                    </span>
+                  )}
                 </>
               );
               const renderCells = (expandButton: ReactNode = null) => (
                 <>
                   <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
                   <span className="min-w-0">
-                    <span className={`${isProf ? 'inline-block max-w-full hover:underline' : 'block'} whitespace-normal break-words font-medium group-hover:text-primary transition-colors`}>
+                    <span className={`${isProf
+                      ? 'inline-block max-w-full font-medium hover:underline'
+                      : 'block text-[17px] font-semibold leading-snug'
+                    } whitespace-normal break-words transition-colors group-hover:text-primary`}>
                       {isProf ? r.g.label : (
                         <Link href={`/courses/${r.g.slug}`} className="whitespace-normal break-words hover:underline" onClick={saveDirectorySnapshot}>
                           {r.g.label}
@@ -853,14 +926,14 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       )}
                       {!isProf && r.g.courseLabels?.includes('1L') && (
                         <span
-                          className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground"
+                          className="ml-1 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground"
                           data-testid={`badge-course-1l-${r.g.slug}`}
                         >
                           1L
                         </span>
                       )}
                     </span>
-                    <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className={`flex flex-wrap items-center gap-2 text-xs text-muted-foreground ${isProf ? '' : 'mt-1.5'}`}>
                       <span data-testid={!isProf ? `course-latest-${r.g.slug}` : undefined}>
                         {isProf ? 'Last Taught' : 'Latest'} {r.latest}
                       </span>
@@ -906,13 +979,20 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                     </span>
                   )}
                   {!isProf && <span className="hidden md:block text-center num text-sm">{r.offerings}</span>}
+                  {!isProf && <span className="hidden md:block text-center num text-sm">{fmtInt(r.m.responses)}</span>}
                   <div className={isProf ? 'xl:justify-self-end' : 'col-span-2 col-start-2 min-w-0 md:col-span-1 md:col-start-auto'}>
                     {isProf
                       ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />
-                      : <CourseProfessorPreview course={r.g} dataset={ds} onNavigate={saveDirectorySnapshot} />}
+                      : <CourseProfessorPreview
+                        course={r.g}
+                        dataset={ds}
+                        onNavigate={saveDirectorySnapshot}
+                        expanded={recentSemestersExpanded}
+                        onToggleExpanded={toggleCourseExpansion}
+                      />}
                   </div>
                   {isProf && <span className="hidden xl:block text-right num text-sm">{r.offerings}</span>}
-                  <span className={isProf ? 'hidden xl:block text-right num text-sm' : 'hidden md:block text-right num text-sm'}>{fmtInt(r.m.responses)}</span>
+                  {isProf && <span className="hidden xl:block text-right num text-sm">{fmtInt(r.m.responses)}</span>}
                   <ArrowUpRight className={isProf ? 'hidden xl:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition' : 'hidden md:block h-4 w-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition'} />
                 </>
               );

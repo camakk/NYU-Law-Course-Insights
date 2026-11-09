@@ -447,8 +447,8 @@ body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index
 .rise { animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
 .rule-double { border-top: 3px double hsl(var(--foreground) / .7); }
 
-/* Transfer 30% of the original Course track to Top Professors without
-   changing the Recent Professors or numeric column widths. */
+/* Transfer 30% of the original Course track to Top Professors while
+   preserving the Recent Professors and numeric column widths. */
 @media (min-width: 768px) {
   .course-directory-grid {
     --top-professors-base-width: 12rem;
@@ -458,24 +458,28 @@ body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index
       3rem
       minmax(0, calc(var(--original-course-width) * 0.7))
       8rem
+      7rem
       calc(var(--top-professors-base-width) + var(--original-course-width) * 0.3)
-      7rem 2rem;
+      2rem;
   }
 }
 
 @media (min-width: 1024px) {
   .course-directory-grid {
-    /* Six gaps, with the recent-history track retaining its original width. */
+    /* Widen Course by 15%, funded by the same width reduction in Recent Professors. */
     --course-fixed-width: 36.5rem;
-    --recent-professors-width: max(14rem, calc((100% - var(--course-fixed-width)) * 1.2 / 2.2));
-    --original-course-width: calc(100% - var(--course-fixed-width) - var(--recent-professors-width));
+    --base-recent-professors-width: max(14rem, calc((100% - var(--course-fixed-width)) * 1.2 / 2.2));
+    --original-course-width: calc(100% - var(--course-fixed-width) - var(--base-recent-professors-width));
+    --course-width-increase: calc(var(--original-course-width) * 0.105);
+    --recent-professors-width: calc(var(--base-recent-professors-width) - var(--course-width-increase));
     grid-template-columns:
       3rem
-      minmax(0, calc(var(--original-course-width) * 0.7))
+      minmax(0, calc(var(--original-course-width) * 0.805))
       var(--recent-professors-width)
       8rem
+      7rem
       calc(var(--top-professors-base-width) + var(--original-course-width) * 0.3)
-      7rem 2rem;
+      2rem;
   }
 }
 

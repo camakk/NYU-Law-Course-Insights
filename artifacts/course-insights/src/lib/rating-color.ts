@@ -18,6 +18,13 @@ export function ratingBarColor(rating: number): string {
   return '#22c55e';
 }
 
+export function recentProfessorScoreColor(rating: number): string {
+  if (rating < 4) return 'hsl(276 55% 78%)';
+  if (!Number.isFinite(rating)) return '#ef4444';
+  if (rating < 4.5) return 'hsl(276 50% 52%)';
+  return 'hsl(276 70% 30%)';
+}
+
 export function ratingBarFillPercent(rating: number): number {
   if (!Number.isFinite(rating)) return 10;
   return Math.min(100, Math.max(10, ((rating - 3) / 2) * 100));
