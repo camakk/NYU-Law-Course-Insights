@@ -75,13 +75,23 @@ describe('course audience labels', () => {
     expect(dataset.courses[0].courseLabels).toEqual(['1L', 'LLM']);
   });
 
-  it('attaches neither audience label when the title has no marker', () => {
+  it('attaches neither audience label to other titles without an audience marker', () => {
     expect(classifyCourseLabels('Advanced Constitutional Law')).toEqual([]);
     expect(is1LCourse('Advanced Constitutional Law')).toBe(false);
+  });
 
-    // Existing first-year course classification remains intact without an explicit title marker.
-    expect(classifyCourseLabels('Torts')).toEqual([]);
-    expect(is1LCourse('Torts')).toBe(true);
+  it.each([
+    'Torts',
+    'Procedure',
+    'Criminal Law',
+    'Contracts',
+    'Legislation and the Regulatory State',
+    'Lawyering',
+  ])('attaches the 1L label to the core first-year course %s', (course) => {
+    expect(classifyCourseLabels(course)).toEqual(['1L']);
+    expect(is1LCourse(course)).toBe(true);
+    expect(classifyCourseLabels(`${course} (for LL.M. Students)`)).toEqual(['LLM']);
+    expect(is1LCourse(`${course} (for LL.M. Students)`)).toBe(false);
   });
 });
 

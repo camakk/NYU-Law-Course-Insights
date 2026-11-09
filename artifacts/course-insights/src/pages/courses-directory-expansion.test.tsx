@@ -329,6 +329,36 @@ describe('Courses table expansion', () => {
     expect(screen.getByTestId('row-courses-contracts-for-ll-m-students')).toBeTruthy();
   });
 
+  it('displays purple 1L badges in the Course column for all five core courses', () => {
+    const courseNames = ['Torts', 'Procedure', 'Criminal Law', 'Contracts', 'Legislation and the Regulatory State'];
+    const firstYearDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: courseNames.map((course, index) => makeRecord(index + 1, 'Doe, Alice', 4.5, 60, course)),
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: firstYearDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+
+    render(<CoursesPage />);
+    for (const course of courseNames) {
+      const group = firstYearDataset.courses.find((entry) => entry.name === course)!;
+      expect(group.courseLabels).toContain('1L');
+      expect(group.records.every((record) => record.courseLabels.includes('1L'))).toBe(true);
+      const row = screen.getByTestId(`row-courses-${group.slug}`);
+      const badge = within(row).getByText('1L');
+      expect(badge.classList.contains('rounded-full')).toBe(true);
+      expect(badge.classList.contains('bg-secondary')).toBe(true);
+      expect(badge.parentElement?.querySelector(`[data-testid="course-latest-${group.slug}"]`)).toBeTruthy();
+    }
+
+    fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
+    expect(screen.getByTestId('filter-summary').textContent).toContain('0 matching');
+  });
+
   it('hides online and international courses by default and shows both when enabled', () => {
     const courseNames = [
       'International Arbitration (Paris)',

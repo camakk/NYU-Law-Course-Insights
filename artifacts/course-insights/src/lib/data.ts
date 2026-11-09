@@ -95,7 +95,7 @@ export function classifyCourseLabels(course: string): CourseLabel[] {
     .toLowerCase()
     .replace(/[.'’]/g, '');
   const labels: CourseLabel[] = [];
-  if (/\bfor\s+1ls\b/.test(title)) labels.push('1L');
+  if (FIRST_YEAR_COURSE_NAMES.has(course) || /\bfor\s+1ls\b/.test(title)) labels.push('1L');
   if (/\bllms?\b/.test(title)) labels.push('LLM');
   if (/\b(?:buenos\s+aires|paris)\b/.test(title)) labels.push('International');
   if (/\[online\]/.test(title)) labels.push('Online');
@@ -116,10 +116,7 @@ export function isCoreTaxCourse(course: string): boolean {
 }
 
 export function is1LCourse(course: string): boolean {
-  const labels = classifyCourseLabels(course);
-  if (labels.includes('1L')) return true;
-  if (labels.includes('LLM')) return false;
-  return FIRST_YEAR_COURSE_NAMES.has(course);
+  return classifyCourseLabels(course).includes('1L');
 }
 
 export function classifyCourse(course: string): CourseCategory[] {
