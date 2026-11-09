@@ -65,6 +65,29 @@ beforeEach(() => {
 
 describe('Professor detail summary', () => {
   it.each([
+    [7, '• 7 responses'],
+    [0, '• 0 responses'],
+    [null, '• N/A responses'],
+  ])('shows the offering response count %s inline after its course name', (responded, label) => {
+    const responseDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        { ...makeRecord(1, 'Evidence', 'Spring 2026'), responded },
+        makeRecord(2, 'Evidence', 'Fall 2025', 'Cox, Adam B.', 90),
+      ],
+    });
+    renderProfessorPage(responseDataset);
+    const link = screen.getByTestId('link-offering-course-1');
+    const count = screen.getByTestId('offering-response-count-1');
+    expect(count.textContent).toBe(label);
+    expect(link.nextElementSibling).toBe(count);
+    expect(link.className).not.toContain('block');
+    expect(count.className).toContain('text-[11px]');
+    expect(count.className).toContain('text-muted-foreground/80');
+    expect(screen.getByTestId('offering-response-count-2').textContent).toBe('• 90 responses');
+  });
+
+  it.each([
     ['Spring 2026', "S '26"],
     ['Fall 2025', "F '25"],
     ['Summer 2024', "Su '24"],

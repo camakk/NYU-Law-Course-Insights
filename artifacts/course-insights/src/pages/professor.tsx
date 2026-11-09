@@ -447,7 +447,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 return (
                   <li
                     key={record.id}
-                    className="relative grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[5rem_minmax(0,1fr)_8rem] xl:grid-cols-[5rem_minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] md:items-center"
+                    className="relative grid grid-cols-1 gap-x-4 gap-y-2 px-4 py-3 md:grid-cols-[5rem_minmax(0,1fr)_8rem] xl:grid-cols-[5rem_minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] md:items-center"
                     data-testid={`row-offering-${record.id}`}
                   >
                     <span
@@ -467,16 +467,23 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                     <div className="min-w-0">
                       <Link
                         href={`/courses/${ds.courseSlugByName.get(record.course)!}`}
-                        className="block whitespace-normal break-words font-medium hover:text-primary hover:underline underline-offset-4"
+                        className="whitespace-normal break-words font-medium hover:text-primary hover:underline underline-offset-4"
                         data-testid={`link-offering-course-${record.id}`}
                       >
                         {record.course}
-                      </Link>
-                      <p className="mt-1 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-                        {section != null && <span>Section {section} ·</span>}
-                        <span>{record.responded == null ? 'N/A responses' : `${fmtInt(record.responded)} responses`}</span>
-                        {record.inaccessible && <span>· inaccessible in source</span>}
-                      </p>
+                      </Link>{' '}
+                      <span
+                        className="whitespace-nowrap text-[11px] font-normal text-muted-foreground/80"
+                        data-testid={`offering-response-count-${record.id}`}
+                      >
+                        • {record.responded == null ? 'N/A responses' : `${fmtInt(record.responded)} responses`}
+                      </span>
+                      {(section != null || record.inaccessible) && (
+                        <p className="mt-1 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+                          {section != null && <span>Section {section}</span>}
+                          {record.inaccessible && <span>{section != null ? '· ' : ''}inaccessible in source</span>}
+                        </p>
+                      )}
                     </div>
                     <div className="min-w-0 md:justify-self-end">
                       <p className="mb-1 text-[10px] font-semibold tracking-wide text-muted-foreground md:hidden">Teaching Overall</p>
