@@ -198,8 +198,8 @@ describe('Professor table sorting', () => {
 
   it('toggles each sortable column and syncs the Sort selector', () => {
     const { container } = renderDirectory();
-    expect(selectedSort()).toBe('name');
-    expect(professorOrder(container)).toEqual(['Alice Doe', 'Bob Roe']);
+    expect(selectedSort()).toBe('rating');
+    expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);
     expect(screen.queryByRole('option', { name: 'Most courses taught' })).toBeNull();
     expect(screen.queryByRole('option', { name: 'Fewest courses taught' })).toBeNull();
 

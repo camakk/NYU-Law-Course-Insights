@@ -187,7 +187,7 @@ function RangeBandFilter({ label, minValue, maxValue, onChange, id }: {
 function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [returnSnapshot] = useState(() => kind === 'courses' ? readCourseDirectorySnapshot() : null);
   const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
-  const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'name'));
+  const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'));
   const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? true);
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
   const [minResponses, setMinResponses] = useState(() => returnSnapshot?.minResponses ?? '50');
