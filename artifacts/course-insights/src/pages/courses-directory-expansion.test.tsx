@@ -129,6 +129,9 @@ describe('Courses table expansion', () => {
     expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('50');
     expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('500');
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
+    expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
+    expect(within(minimumReviewsControl).queryByText('No minimum')).toBeNull();
+    expect(within(minimumReviewsControl).queryByText('500+')).toBeNull();
     expect(minimumReviewsControl.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(filtersButton.parentElement).toBe(toolbar);
     expect(include1LToggle.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

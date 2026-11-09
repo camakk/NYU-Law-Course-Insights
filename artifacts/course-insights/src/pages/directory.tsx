@@ -100,7 +100,7 @@ function matches(g: Group, terms: string[], kind: Kind, records = g.records) {
   return terms.every((t) => hay.includes(t) || other.includes(t));
 }
 
-function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatValue, minLabel, maxLabel, snapPoints, snapRange = 1 }: {
+function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatValue, minLabel, maxLabel, snapPoints, snapRange = 1, inline = false }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -113,6 +113,7 @@ function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatVal
   maxLabel?: string;
   snapPoints?: number[];
   snapRange?: number;
+  inline?: boolean;
 }) {
   const numericValue = value === '' ? min : Number(value);
   const labelId = `${id}-label`;
@@ -124,45 +125,60 @@ function RangeFilter({ label, value, onChange, min, max, step = 1, id, formatVal
     );
     return Math.abs(nearest - nextValue) <= snapRange ? nearest : nextValue;
   };
+  const slider = (
+    <Slider
+      id={`${id}-slider`}
+      aria-labelledby={labelId}
+      data-testid={`${id}-slider`}
+      value={[numericValue]}
+      min={min}
+      max={max}
+      step={step}
+      onPointerDown={() => { pointerActive.current = true; }}
+      onPointerUp={() => { pointerActive.current = false; }}
+      onPointerCancel={() => { pointerActive.current = false; }}
+      onValueChange={([nextValue]) => onChange(String(snapValue(nextValue)))}
+      className={inline ? 'w-auto min-w-0 flex-1 cursor-pointer py-1.5' : 'cursor-pointer py-1.5'}
+    />
+  );
   return (
-    <div className="flex min-w-0 flex-col gap-2" data-testid={id}>
-      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span id={labelId}>{label}</span>
-        <output className="shrink-0 font-medium text-foreground" data-testid={`${id}-value`}>
-          {formatValue(numericValue)}
-        </output>
-      </div>
-      <Slider
-        id={`${id}-slider`}
-        aria-labelledby={labelId}
-        data-testid={`${id}-slider`}
-        value={[numericValue]}
-        min={min}
-        max={max}
-        step={step}
-        onPointerDown={() => { pointerActive.current = true; }}
-        onPointerUp={() => { pointerActive.current = false; }}
-        onPointerCancel={() => { pointerActive.current = false; }}
-        onValueChange={([nextValue]) => onChange(String(snapValue(nextValue)))}
-        className="cursor-pointer py-1.5"
-      />
-      {snapPoints && snapPoints.length > 0 && (
-        <div className="relative h-4 text-[9px] text-muted-foreground" aria-hidden="true">
-          {snapPoints.map((point) => (
-            <span
-              key={point}
-              className="absolute -translate-x-1/2 whitespace-nowrap"
-              style={{ left: `${((point - min) / (max - min)) * 100}%` }}
-            >
-              {fmtInt(point)}
-            </span>
-          ))}
+    <div className={inline ? 'min-w-0' : 'flex min-w-0 flex-col gap-2'} data-testid={id}>
+      {inline ? (
+        <div className="flex h-11 min-w-0 items-center gap-2 text-xs">
+          <span id={labelId} className="shrink-0 whitespace-nowrap text-muted-foreground">{label}</span>
+          {slider}
+          <output className="shrink-0 font-medium text-foreground" data-testid={`${id}-value`}>
+            {formatValue(numericValue)}
+          </output>
         </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span id={labelId}>{label}</span>
+            <output className="shrink-0 font-medium text-foreground" data-testid={`${id}-value`}>
+              {formatValue(numericValue)}
+            </output>
+          </div>
+          {slider}
+          {snapPoints && snapPoints.length > 0 && (
+            <div className="relative h-4 text-[9px] text-muted-foreground" aria-hidden="true">
+              {snapPoints.map((point) => (
+                <span
+                  key={point}
+                  className="absolute -translate-x-1/2 whitespace-nowrap"
+                  style={{ left: `${((point - min) / (max - min)) * 100}%` }}
+                >
+                  {fmtInt(point)}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>{minLabel ?? min}</span>
+            <span>{maxLabel ?? max}</span>
+          </div>
+        </>
       )}
-      <div className="flex justify-between text-[10px] text-muted-foreground">
-        <span>{minLabel ?? min}</span>
-        <span>{maxLabel ?? max}</span>
-      </div>
     </div>
   );
 }
@@ -466,6 +482,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       minLabel="No minimum"
       maxLabel={`${fmtInt(maxReviews)}+`}
       snapPoints={isProf ? [50, 100, 150, 200, 250] : undefined}
+      inline={!isProf}
     />
   );
   const filterPanelContent = (
@@ -642,7 +659,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         )}
         {!isProf && (
           <div
-            className="w-48 shrink-0 rounded-lg border border-input bg-card px-3 py-2.5"
+            className="h-11 w-56 shrink-0 rounded-lg border border-input bg-card px-3"
             data-testid="course-min-reviews-control"
           >
             {minimumReviewsFilter}
