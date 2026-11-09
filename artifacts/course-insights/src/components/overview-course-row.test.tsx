@@ -19,6 +19,37 @@ function renderCourse(records: RawData['records']) {
 beforeEach(() => window.history.replaceState(null, '', '/'));
 
 describe('Overview course expansion', () => {
+  it.each(['Income Taxation', 'Income Taxation (for LL.M. Students)'])('shows the Tax tag inline with %s, separated from its title', (name) => {
+    const dataset = buildDataset({
+      records: [record(1, 'Beta, Beth', 4.6, 40, name)], questions: [], sourceNotes: [],
+    });
+    const course = dataset.courses[0];
+    render(<ul><OverviewCourseRow course={course} dataset={dataset} rank={1} testIdPrefix="upperclassman-" /></ul>);
+    const title = screen.getByRole('link', { name });
+    const tag = screen.getByText('Tax', { exact: true });
+    expect(tag.parentElement).toBe(title.parentElement);
+    expect(title.parentElement?.classList.contains('gap-2')).toBe(true);
+    expect(tag.classList.contains('rounded-full')).toBe(true);
+    expect(tag.classList.contains('bg-secondary')).toBe(true);
+    expect(screen.getAllByText('Tax', { exact: true })).toHaveLength(1);
+    if (name.includes('LL.M.')) expect(screen.getByText('LLM').parentElement).toBe(title.parentElement);
+  });
+
+  it('insets the expanded background on both sides and keeps long professor names within the panel', () => {
+    renderCourse([record(1, 'Worcester-Fitzgerald, Alexandria Catherine-Montgomery', 4.6, 40)]);
+    fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
+    const panel = screen.getByTestId('panel-top-professors-evidence');
+    expect(panel.classList.contains('mx-4')).toBe(true);
+    expect(panel.classList.contains('sm:mr-5')).toBe(true);
+    expect(panel.classList.contains('mb-3')).toBe(true);
+    expect(panel.classList.contains('min-w-0')).toBe(true);
+    const row = within(panel).getByRole('listitem');
+    expect(row.classList.contains('grid-cols-[1rem_minmax(0,1fr)]')).toBe(true);
+    expect(row.classList.contains('sm:grid-cols-[1rem_minmax(0,1fr)_auto]')).toBe(true);
+    expect(within(row).getByRole('link').classList.contains('break-words')).toBe(true);
+    expect(within(row).getByRole('meter').closest('[data-testid^="rating-course-professor-"]')?.parentElement?.classList.contains('max-w-full')).toBe(true);
+  });
+
   it('shows all eligible course-specific, response-weighted teaching ratings and collapses without navigation', () => {
     renderCourse([
       record(1, 'Alpha, Alice', 5, 4),

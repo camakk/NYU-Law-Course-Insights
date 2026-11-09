@@ -64,7 +64,7 @@ function ReviewedCoursesPanel({
   onShowMore: () => void;
 }) {
   return (
-    <div className="bg-card border rounded-xl overflow-hidden self-start">
+    <div className="min-w-0 bg-card border rounded-xl overflow-hidden self-start">
       <div className="p-5 pb-3 flex items-baseline justify-between gap-4">
         <h2 className="font-display text-2xl">{title}</h2>
       </div>
@@ -220,7 +220,7 @@ function OverviewInner({ ds }: { ds: Dataset }) {
         )}
       </section>
 
-      <section className="grid lg:grid-cols-[1.3fr_1fr] gap-6">
+      <section className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-6">
         <div className="bg-card border rounded-xl overflow-hidden p-5">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="font-display text-2xl">Most effective teachers</h2>

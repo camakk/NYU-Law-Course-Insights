@@ -10,7 +10,8 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
   testIdPrefix: string;
 }) {
   const courseLabels = course.courseLabels ?? [];
-  const nonLlmLabels = courseLabels.filter((label) => label !== 'LLM');
+  const inlineLabels = courseLabels.filter((label) => label === 'LLM' || label === 'Tax');
+  const otherLabels = courseLabels.filter((label) => label !== 'LLM' && label !== 'Tax');
 
   return (
     <CourseProfessorExpansion course={course} dataset={dataset}>
@@ -28,13 +29,13 @@ export function OverviewCourseRow({ course, dataset, rank, testIdPrefix }: {
                 >
                   {course.label}
                 </Link>
-                {courseLabels.includes('LLM') && (
-                  <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">LLM</span>
-                )}
+                {inlineLabels.map((label) => (
+                  <span key={label} className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
+                ))}
               </div>
-              {nonLlmLabels.length > 0 && (
+              {otherLabels.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
-                  {nonLlmLabels.map((label) => (
+                  {otherLabels.map((label) => (
                     <span key={label} className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-foreground">{label}</span>
                   ))}
                 </div>

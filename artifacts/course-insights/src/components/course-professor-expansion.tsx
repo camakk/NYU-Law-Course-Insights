@@ -40,14 +40,14 @@ function CourseTopProfessorsList({ course, professors, includeMostRecent = false
     <>
       <h3 className="text-xs font-semibold">Professors for this course</h3>
       {professors.length > 0 ? (
-        <ol className="mt-2 divide-y divide-border/70">
+        <ol className="mt-2 min-w-0 divide-y divide-border/70">
           {professors.map(({ group, metric }, index) => {
             const mostRecentSemester = getMostRecentProfessorCourseSemester(course, group.name);
             return (
-            <li key={group.slug} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2" data-testid={`course-top-professor-${course.slug}-${group.slug}`}>
+            <li key={group.slug} className="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] items-center gap-x-2 gap-y-1 py-2.5 sm:grid-cols-[1rem_minmax(0,1fr)_auto]" data-testid={`course-top-professor-${course.slug}-${group.slug}`}>
               <span className="num w-3 text-xs text-muted-foreground">{index + 1}</span>
               <div className="min-w-0 flex-1">
-                <Link href={`/professors/${group.slug}`} className="text-sm font-medium hover:text-primary hover:underline" data-testid={`link-course-top-professor-${course.slug}-${group.slug}`}>
+                <Link href={`/professors/${group.slug}`} className="break-words text-sm font-medium hover:text-primary hover:underline" data-testid={`link-course-top-professor-${course.slug}-${group.slug}`}>
                   {group.label}
                 </Link>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -58,7 +58,7 @@ function CourseTopProfessorsList({ course, professors, includeMostRecent = false
                   <SmallSample responses={metric.responses} />
                 </div>
               </div>
-              <div className="ml-auto">
+              <div className="col-start-2 min-w-0 max-w-full justify-self-end sm:col-start-3 sm:row-start-1">
                 <RatingBar rating={metric.avg} compact label={`${group.label} overall teaching rating for ${course.label}`} testId={`rating-course-professor-${course.slug}-${group.slug}`} />
               </div>
             </li>
@@ -104,7 +104,7 @@ export function CourseProfessorExpansion({ course, dataset, children, includeMos
     <div
       id={panelId}
       hidden={!expanded}
-      className="ml-8 mt-3 rounded-lg bg-secondary/40 px-3 py-2.5"
+      className="mx-4 mb-3 mt-1 min-w-0 rounded-lg border border-primary/10 bg-secondary/40 px-3 py-3 sm:ml-8 sm:mr-5"
       data-testid={`panel-top-professors-${course.slug}`}
     >
       <CourseTopProfessorsList
