@@ -349,7 +349,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       </div>
 
       <section className="mb-10" aria-labelledby="offering-chart-title">
-        <h2 id="offering-chart-title" className="font-display text-2xl mb-1">Every offering, newest to oldest</h2>
+        <h2 id="offering-chart-title" className="font-display text-2xl mb-1">{`Professor ${g.label}'s Teaching History`}</h2>
         <p className="text-sm text-muted-foreground mb-3">Each row is one course offering. Overall teaching and course scores are emphasized; each of the other eight question scores has its own column.</p>
         {offerings.length === 0 ? (
           <Empty title="No course offerings" hint="There are no offerings for this semester." />

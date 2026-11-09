@@ -67,6 +67,9 @@ describe('Professor detail summary', () => {
   it('starts the detail page at the top', () => {
     renderProfessorPage();
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(screen.getByRole('heading', {
+      name: `Professor ${dataset.professors[0].label}'s Teaching History`,
+    })).toBeTruthy();
   });
 
   it('uses the course detail score-chip format for other question scores', () => {
