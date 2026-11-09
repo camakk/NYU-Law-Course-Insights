@@ -126,6 +126,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
   );
   const qs = ds.questions;
   const totalResp = recs.reduce((s, r) => s + (!r.inaccessible && r.responded ? r.responded : 0), 0);
+  const effectivenessScore = g.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.avg ?? null;
   const courseColors = useMemo(
     () => buildCourseOfferingColors(g.records.map((record) => record.course)),
     [g.records],
@@ -158,22 +159,12 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                   : `out of ${fmtInt(standing.totalRated)} professors with ${MIN_REVIEWS_FOR_PROFESSOR_RANKING}+ reviews`,
             },
             {
-              id: 'percentile',
-              label: 'Percentile Standing',
-              value: standing.belowReviewThreshold
+              id: 'score',
+              label: 'Effectiveness Score',
+              value: effectivenessScore == null
                 ? 'N/A'
-                : standing.rank == null
-                  ? 'Not ranked'
-                : standing.topPercent == null
-                  ? 'Below top 50%'
-                  : `Top ${standing.topPercent}%`,
-              sub: standing.belowReviewThreshold
-                ? ''
-                : standing.rank == null
-                  ? 'No score to compare'
-                : standing.topPercent == null
-                  ? 'Outside the listed percentile groups'
-                  : 'Highest applicable percentile group',
+                : `${effectivenessScore.toFixed(2)} / 5.00`,
+              sub: '',
             },
             {
               id: 'grade',

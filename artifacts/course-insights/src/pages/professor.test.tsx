@@ -104,7 +104,9 @@ describe('Professor detail summary', () => {
     expect(screen.getByTestId('professor-standing-rank').className).toContain('rounded-[1.6rem]');
     expect(standingCards.textContent).toContain('Rank #1');
     expect(standingCards.textContent).toContain('out of 100 professors with 50+ reviews');
-    expect(standingCards.textContent).toContain('Top 1%');
+    expect(standingCards.textContent).toContain('Effectiveness Score');
+    expect(screen.getByTestId('professor-standing-score-value').textContent).toBe('5.00 / 5.00');
+    expect(screen.queryByText('Percentile Standing')).toBeNull();
     expect(standingCards.textContent).toContain('A+');
     expect(screen.getByTestId('professor-standing-grade-value').className).toContain('bg-emerald-100');
     expect(screen.getByTestId('professor-standing-grade-value').className).toContain('text-4xl');
@@ -146,7 +148,7 @@ describe('Professor detail summary', () => {
     expect(screen.getByTestId('professor-standing-rank-value').textContent).toBe('N/A');
     expect(screen.getByTestId('professor-standing-rank').textContent)
       .toContain('Professors with fewer than 50 reviews are not included in overall rankings');
-    expect(screen.getByTestId('professor-standing-percentile-value').textContent).toBe('N/A');
+    expect(screen.getByTestId('professor-standing-score-value').textContent).toBe('4.50 / 5.00');
     expect(screen.getByTestId('professor-standing-grade-value').textContent).toBe('N/A');
   });
 
