@@ -15,6 +15,43 @@ describe('course audience labels', () => {
     expect(is1LCourse('Contracts (For LL.M. Students)')).toBe(false);
   });
 
+  it('labels Paris and Buenos Aires courses as International and [ONLINE] courses as Online', () => {
+    expect(classifyCourseLabels('International Arbitration (Paris)')).toEqual(['International']);
+    expect(classifyCourseLabels('Human Rights Seminar in Buenos Aires')).toEqual(['International']);
+    expect(classifyCourseLabels('Tax Law [ONLINE]')).toEqual(['Online']);
+    expect(classifyCourseLabels('Evidence')).toEqual([]);
+
+    const dataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        'International Arbitration (Paris)',
+        'Human Rights Seminar in Buenos Aires',
+        'Tax Law [ONLINE]',
+      ].map((course, index) => ({
+        id: index + 1,
+        course,
+        professor: 'Doe, Jane',
+        semester: 'Fall 2025',
+        enrolled: 20,
+        responded: 10,
+        scores: Array(10).fill(4),
+        inaccessible: false,
+      })),
+    });
+
+    expect(dataset.records.map((record) => record.courseLabels)).toEqual([
+      ['International'],
+      ['International'],
+      ['Online'],
+    ]);
+    expect(dataset.courses.map((course) => course.courseLabels)).toEqual([
+      ['International'],
+      ['International'],
+      ['Online'],
+    ]);
+  });
+
   it('allows both labels and attaches them to records and course groups', () => {
     const course = 'International Law (for 1Ls) - for LL.M.s';
     const dataset = buildDataset({

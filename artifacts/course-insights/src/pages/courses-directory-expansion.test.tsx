@@ -108,6 +108,7 @@ describe('Courses table expansion', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
     const include1LToggle = screen.getByTestId('toggle-include-1l-courses');
+    const includeOnlineInternationalToggle = screen.getByTestId('toggle-include-online-international-courses');
     const filtersButton = screen.getByTestId('button-toggle-course-filters');
     const sortSelect = screen.getByTestId('select-sort');
     const controlsPanel = document.getElementById('directory-filter-controls');
@@ -116,6 +117,10 @@ describe('Courses table expansion', () => {
     expect(include1LToggle.getAttribute('aria-checked')).toBe('true');
     expect(include1LToggle.parentElement?.textContent).toContain('Include 1L Courses');
     expect(include1LToggle.parentElement?.parentElement).toBe(toolbar);
+    expect(includeOnlineInternationalToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeOnlineInternationalToggle.parentElement?.textContent).toContain('Include Online/International Courses');
+    expect(include1LToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(includeOnlineInternationalToggle.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(filtersButton.parentElement).toBe(toolbar);
     expect(include1LToggle.compareDocumentPosition(filtersButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(filtersButton.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -160,6 +165,44 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('row-courses-constitutional-law-for-1ls')).toBeNull();
     expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
     expect(screen.getByTestId('row-courses-contracts-for-ll-m-students')).toBeTruthy();
+  });
+
+  it('shows online and international courses by default and hides both when disabled', () => {
+    const courseNames = [
+      'International Arbitration (Paris)',
+      'Human Rights Seminar in Buenos Aires',
+      'Tax Law [ONLINE]',
+      'Evidence',
+    ];
+    const classifiedDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: courseNames.map((course, index) =>
+        makeRecord(index + 1, 'Doe, Alice', 4.6, 60, course, 4.4),
+      ),
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: classifiedDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+
+    render(<CoursesPage />);
+
+    const rowFor = (course: string) => screen.getByTestId(`row-courses-${classifiedDataset.courseSlugByName.get(course)}`);
+    expect(rowFor(courseNames[0]).textContent).toContain('International');
+    expect(rowFor(courseNames[1]).textContent).toContain('International');
+    expect(rowFor(courseNames[2]).textContent).toContain('Online');
+    expect(rowFor(courseNames[3])).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('toggle-include-online-international-courses'));
+
+    expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('false');
+    expect(screen.queryByTestId(`row-courses-${classifiedDataset.courseSlugByName.get(courseNames[0])}`)).toBeNull();
+    expect(screen.queryByTestId(`row-courses-${classifiedDataset.courseSlugByName.get(courseNames[1])}`)).toBeNull();
+    expect(screen.queryByTestId(`row-courses-${classifiedDataset.courseSlugByName.get(courseNames[2])}`)).toBeNull();
+    expect(rowFor(courseNames[3])).toBeTruthy();
   });
 
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
@@ -256,6 +299,7 @@ describe('Courses table expansion', () => {
         { ...makeRecord(2, 'Roe, Bob', 4.6, 25, 'Evidence', 4.2), semester: 'Spring 2026' },
         makeRecord(3, 'Roe, Bob', 5, 60, 'Contracts', 4.6),
         makeRecord(4, 'Doe, Alice', 4.5, 60, 'Evidence (for 1Ls)', 4.5),
+        makeRecord(5, 'Doe, Alice', 4.5, 60, 'Evidence [ONLINE]', 4.5),
       ],
     });
     vi.mocked(useDataset).mockReturnValue({
@@ -273,6 +317,7 @@ describe('Courses table expansion', () => {
       const { unmount } = render(<CoursesPage />);
       fireEvent.change(screen.getByTestId('input-search-courses'), { target: { value: 'Evidence' } });
       fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
+      fireEvent.click(screen.getByTestId('toggle-include-online-international-courses'));
       fireEvent.change(screen.getByTestId('select-sort'), { target: { value: 'rating-asc' } });
       fireEvent.click(screen.getByTestId('button-toggle-course-filters'));
       fireEvent.click(screen.getByTestId('filter-category-seminar'));
@@ -294,6 +339,7 @@ describe('Courses table expansion', () => {
       render(<CoursesPage />);
       expect((screen.getByTestId('input-search-courses') as HTMLInputElement).value).toBe('Evidence');
       expect(screen.getByTestId('toggle-include-1l-courses').getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByTestId('toggle-include-online-international-courses').getAttribute('aria-checked')).toBe('false');
       expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('rating-asc');
       expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(false);
       expect(screen.getByTestId('button-toggle-course-filters').getAttribute('aria-expanded')).toBe('true');
@@ -301,6 +347,7 @@ describe('Courses table expansion', () => {
       expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
       expect(screen.queryByTestId('row-courses-evidence-for-1ls')).toBeNull();
+      expect(screen.queryByTestId('row-courses-evidence-online')).toBeNull();
       await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 640));
     } finally {
       scrollTo.mockRestore();

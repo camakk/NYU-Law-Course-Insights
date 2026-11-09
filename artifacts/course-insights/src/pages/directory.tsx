@@ -15,6 +15,7 @@ type CourseDirectorySnapshot = {
   q: string;
   sort: SortKey;
   include1LCourses?: boolean;
+  includeOnlineInternationalCourses?: boolean;
   minOfferings: string;
   minResponses: string;
   minScore: string;
@@ -189,6 +190,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
   const [sort, setSort] = useState<SortKey>(() => returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'));
   const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? true);
+  const [includeOnlineInternationalCourses, setIncludeOnlineInternationalCourses] = useState(
+    () => returnSnapshot?.includeOnlineInternationalCourses ?? true,
+  );
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
   const [minResponses, setMinResponses] = useState(() => returnSnapshot?.minResponses ?? '50');
   const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
@@ -210,7 +214,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     ? 30
     : Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
   const maxReviews = kind === 'professors' ? 300 : 500;
-  const hasFilters = q !== '' || (kind === 'courses' && !include1LCourses) ||
+  const hasFilters = q !== '' || (kind === 'courses' && (!include1LCourses || !includeOnlineInternationalCourses)) ||
     (minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||
     (minScore !== '' && Number(minScore) > 0) ||
@@ -222,6 +226,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const clearFilters = () => {
     setQ('');
     setInclude1LCourses(true);
+    setIncludeOnlineInternationalCourses(true);
     setMinOfferings('1');
     setMinResponses('');
     setMinScore('');
@@ -244,6 +249,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       q,
       sort,
       include1LCourses,
+      includeOnlineInternationalCourses,
       minOfferings,
       minResponses,
       minScore,
@@ -278,6 +284,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         categoryRecords.length > 0 &&
         (kind !== 'professors' || !activeOnly || g.professorStatus !== 'Inactive') &&
         (kind !== 'courses' || include1LCourses || !categoryRecords.some((record) => record.is1LCourse)) &&
+        (kind !== 'courses' || includeOnlineInternationalCourses || !categoryRecords.some((record) =>
+          record.courseLabels.includes('Online') || record.courseLabels.includes('International'),
+        )) &&
         matches(g, terms, kind, categoryRecords)
       )
       .map(({ g, categoryRecords }) => {
@@ -346,7 +355,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       }
     });
     return out;
-  }, [ds, kind, q, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories, activeOnly, include1LCourses]);
+  }, [ds, kind, q, sort, metricIdx, minOfferings, minResponses, minScore, maxScore, includedCategories, activeOnly, include1LCourses, includeOnlineInternationalCourses]);
 
   const isProf = kind === 'professors';
   const total = isProf ? ds.professors.length : ds.courses.length;
@@ -525,6 +534,19 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             />
             <label htmlFor="toggle-include-1l-courses" className="cursor-pointer select-none text-sm">
               Include 1L Courses
+            </label>
+          </div>
+        )}
+        {!isProf && (
+          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+            <Switch
+              id="toggle-include-online-international-courses"
+              checked={includeOnlineInternationalCourses}
+              onCheckedChange={setIncludeOnlineInternationalCourses}
+              data-testid="toggle-include-online-international-courses"
+            />
+            <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
+              Include Online/International Courses
             </label>
           </div>
         )}

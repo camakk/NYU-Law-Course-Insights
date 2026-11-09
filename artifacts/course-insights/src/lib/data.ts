@@ -61,7 +61,7 @@ export interface Dataset {
 
 export const COURSE_CATEGORIES = ['Course', 'Seminar', 'Clinic', 'Colloquium', 'Externship'] as const;
 export type CourseCategory = typeof COURSE_CATEGORIES[number];
-export type CourseLabel = '1L' | 'LLM';
+export type CourseLabel = '1L' | 'LLM' | 'International' | 'Online';
 
 const ACTIVE_PROFESSOR_SEMESTERS = new Set([
   'Fall 2023',
@@ -97,6 +97,8 @@ export function classifyCourseLabels(course: string): CourseLabel[] {
   const labels: CourseLabel[] = [];
   if (/\bfor\s+1ls\b/.test(title)) labels.push('1L');
   if (/\bllms?\b/.test(title)) labels.push('LLM');
+  if (/\b(?:buenos\s+aires|paris)\b/.test(title)) labels.push('International');
+  if (/\[online\]/.test(title)) labels.push('Online');
   return labels;
 }
 
