@@ -119,6 +119,7 @@ describe('Professor detail summary', () => {
     expect(standingCards.textContent).not.toContain('with 50+ reviews');
     expect(standingCards.textContent).toContain('Effectiveness Score');
     expect(screen.getByTestId('professor-standing-score-value').textContent).toBe('5.00 / 5.00');
+    expect(within(screen.getByTestId('professor-standing-score')).getByText('based on 50 reviews')).toBeTruthy();
     expect(screen.queryByText('Percentile Standing')).toBeNull();
     expect(standingCards.textContent).toContain('A+');
     expect(screen.getByTestId('professor-standing-grade-value').className).toContain('bg-emerald-100');
@@ -144,6 +145,26 @@ describe('Professor detail summary', () => {
       expect(screen.queryByText('Based on overall effectiveness percentile')).toBeNull();
       close();
     }
+  });
+
+  it('shows all-time response totals beneath the effectiveness score even when filtering semesters', () => {
+    const missingTeachingScore = makeRecord(2, 'Contracts', 'Spring 2026', 'Cox, Adam B.', 30);
+    missingTeachingScore.scores[5] = null;
+    const reviewDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Evidence', 'Fall 2025', 'Cox, Adam B.', 20),
+        missingTeachingScore,
+        makeRecord(3, 'Evidence', 'Fall 2025', 'Doe, Jane', 1000),
+      ],
+    });
+    const professor = reviewDataset.professors.find((group) => group.name === 'Cox, Adam B.')!;
+    renderProfessorPage(reviewDataset, professor.slug);
+    const scoreCard = screen.getByTestId('professor-standing-score');
+    expect(within(scoreCard).getByText('based on 50 reviews')).toBeTruthy();
+    fireEvent.change(screen.getByTestId('select-semester'), { target: { value: 'Fall 2025' } });
+    expect(within(scoreCard).getByText('based on 50 reviews')).toBeTruthy();
+    expect(screen.getByTestId('professor-standing-score-value').textContent).toBe('4.50 / 5.00');
   });
 
   it('explains the 50-review threshold for professor rankings', async () => {

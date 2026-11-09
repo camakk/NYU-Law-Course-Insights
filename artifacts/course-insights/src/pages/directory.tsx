@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, Info, SlidersHorizontal } from 'lucide-react';
-import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIES, fmtInt, friendlyName, isCoreTaxCourse, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
+import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIES, fmt, fmtInt, friendlyName, isCoreTaxCourse, useDataset, type CourseCategory, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Switch } from '@/components/ui/switch';
@@ -52,7 +52,7 @@ function readDirectorySnapshot(key: string): DirectorySnapshot | null {
 
 type RecentEntry =
   | { kind: 'course'; label: string; semesters: string[] }
-  | { kind: 'semester'; semester: string; professors: Array<{ label: string; slug?: string }> };
+  | { kind: 'semester'; semester: string; professors: Array<{ label: string; slug?: string; score: number | null }> };
 
 function formatSemesterForDisplay(semester: string) {
   return semester.replace(/\b(Spring|Fall|Summer)\b/g, (season) => {
@@ -87,8 +87,8 @@ function RecentEntryContent({
         <span key={professor.slug ?? professor.label}>
           {index > 0 ? ', ' : ''}
           {professor.slug
-            ? <Link href={`/professors/${professor.slug}`} className="font-medium text-foreground/80 hover:text-primary hover:underline">{professor.label}</Link>
-            : professor.label}
+            ? <Link href={`/professors/${professor.slug}`} className="font-medium text-foreground/80 underline underline-offset-2 hover:text-primary">{professor.label} ({fmt(professor.score)})</Link>
+            : <>{professor.label} ({fmt(professor.score)})</>}
         </span>
       ))}
     </>
@@ -427,21 +427,24 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             .sort((a, b) => bySemesterDesc(a.semesters[0] ?? '', b.semesters[0] ?? '') || a.label.localeCompare(b.label))
             .slice(0, 3);
         } else {
-          const professorsBySemester = new Map<string, Map<string, { label: string; slug?: string }>>();
+          const professorsBySemester = new Map<string, Map<string, EvalRecord[]>>();
           for (const record of recs) {
             const semester = record.semester || 'Semester unavailable';
-            const professors = professorsBySemester.get(semester) ?? new Map<string, { label: string; slug?: string }>();
-            professors.set(record.professor, {
-              label: friendlyName(record.professor),
-              slug: ds.profSlugByName.get(record.professor),
-            });
+            const professors = professorsBySemester.get(semester) ?? new Map<string, EvalRecord[]>();
+            const offerings = professors.get(record.professor) ?? [];
+            offerings.push(record);
+            professors.set(record.professor, offerings);
             professorsBySemester.set(semester, professors);
           }
           recent = [...professorsBySemester.entries()]
             .map(([semester, professors]) => ({
               kind: 'semester' as const,
               semester,
-              professors: [...professors.values()].sort((a, b) => a.label.localeCompare(b.label)),
+              professors: [...professors.entries()].map(([name, offerings]) => ({
+                label: friendlyName(name),
+                slug: ds.profSlugByName.get(name),
+                score: aggregate(offerings, 5).avg,
+              })).sort((a, b) => a.label.localeCompare(b.label)),
             }))
             .sort((a, b) => bySemesterDesc(a.semester, b.semester));
         }

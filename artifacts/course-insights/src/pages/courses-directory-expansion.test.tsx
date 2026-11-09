@@ -474,13 +474,13 @@ describe('Courses table expansion', () => {
     const row = screen.getByTestId('row-courses-evidence');
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
     const spring2026 = within(row).getByTestId('recent-semester-evidence-compact-0');
-    expect(spring2026.textContent).toBe('🌸 Spring 2026 • Alice Doe');
+    expect(spring2026.textContent).toBe('🌸 Spring 2026 • Alice Doe (4.90)');
     expect(spring2026.querySelector('strong')?.textContent).toBe('🌸 Spring 2026');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe, Sam Small');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.90), Sam Small (5.00)');
     const courseLatest = within(row).getByTestId('course-latest-evidence');
     expect(courseLatest.textContent).toMatch(/^Latest (Spring|Fall|Summer) \d{4}$/);
     expect(courseLatest.textContent).not.toMatch(/🌸|🍂|☀️/);
-    const recentProfessorLinks = within(row).getAllByRole('link', { name: 'Alice Doe' });
+    const recentProfessorLinks = within(row).getAllByRole('link', { name: 'Alice Doe (4.90)' });
     expect(recentProfessorLinks.length).toBeGreaterThan(0);
     expect(recentProfessorLinks.every((link) => link.getAttribute('href') === '/professors/alice-doe')).toBe(true);
     const button = within(row).getByRole('button', { name: 'Expand top professors for Evidence' });
@@ -508,6 +508,57 @@ describe('Courses table expansion', () => {
     expect(window.location.pathname).toBe('/courses/evidence');
   });
 
+  it('links each professor name and teaching score from that specific course and semester', () => {
+    const records = [
+      { ...makeRecord(1, 'Adler, Barry E', 3.65, 79, 'Torts'), semester: 'Spring 2026' },
+      { ...makeRecord(2, 'Sharkey, Catherine M.', 4.38, 74, 'Torts'), semester: 'Spring 2026' },
+      { ...makeRecord(3, 'Geistfeld, Mark', 4.13, 72, 'Torts'), semester: 'Spring 2026' },
+      { ...makeRecord(4, 'Adler, Barry E', 5, 1000, 'Torts'), semester: 'Fall 2025' },
+      { ...makeRecord(5, 'Adler, Barry E', 1, 1000, 'Evidence'), semester: 'Spring 2026' },
+    ];
+    const termDataset = buildDataset({ questions: [], sourceNotes: [], records });
+    vi.mocked(useDataset).mockReturnValue({
+      data: termDataset, isLoading: false, error: null, refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    render(<CoursesPage />);
+
+    for (const layout of ['compact', 'wide']) {
+      const semester = screen.getByTestId(`recent-semester-torts-${layout}-0`);
+      expect(semester.textContent).toBe('🌸 Spring 2026 • Barry E. Adler (3.65), Catherine M. Sharkey (4.38), Mark Geistfeld (4.13)');
+      for (const [name, score, slug] of [
+        ['Barry E. Adler', '3.65', 'barry-e-adler'],
+        ['Catherine M. Sharkey', '4.38', 'catherine-m-sharkey'],
+        ['Mark Geistfeld', '4.13', 'mark-geistfeld'],
+      ]) {
+        const link = within(semester).getByRole('link', { name: `${name} (${score})` });
+        expect(link.getAttribute('href')).toBe(`/professors/${slug}`);
+        expect(link.classList.contains('underline')).toBe(true);
+      }
+      const previousSemester = screen.getByTestId(`recent-semester-torts-${layout}-1`);
+      expect(within(previousSemester).getByRole('link', { name: 'Barry E. Adler (5.00)' })).toBeTruthy();
+    }
+  });
+
+  it('weights sections within a semester and shows N/A for unavailable teaching scores', () => {
+    const unavailable = makeRecord(3, 'Roe, Bob', 4, 20);
+    unavailable.scores[5] = null;
+    const termDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Doe, Alice', 3, 10),
+        makeRecord(2, 'Doe, Alice', 5, 30),
+        unavailable,
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: termDataset, isLoading: false, error: null, refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    render(<CoursesPage />);
+    const semester = screen.getByTestId('recent-semester-evidence-wide-0');
+    expect(within(semester).getByRole('link', { name: 'Alice Doe (4.50)' })).toBeTruthy();
+    expect(within(semester).getByRole('link', { name: 'Bob Roe (N/A)' })).toBeTruthy();
+  });
+
   it('expands every recent-professor semester and collapses back to the latest three', () => {
     const historyDataset = buildDataset({
       questions: [],
@@ -532,9 +583,9 @@ describe('Courses table expansion', () => {
 
     const row = screen.getByTestId('row-courses-evidence');
     const historyToggle = () => within(row).getByTestId('button-toggle-course-history-evidence-compact');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-0').textContent).toBe('🌸 Spring 2026 • Alice Doe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe, Bob Roe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('🌸 Spring 2025 • Bob Roe [...]');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-0').textContent).toBe('🌸 Spring 2026 • Alice Doe (4.80)');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe (4.70), Bob Roe (4.60)');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('🌸 Spring 2025 • Bob Roe (4.50) [...]');
     expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
     expect(historyToggle().textContent).toBe('[...]');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('false');
@@ -544,9 +595,9 @@ describe('Courses table expansion', () => {
 
     expect(historyToggle().textContent).toBe('Collapse');
     expect(historyToggle().getAttribute('aria-expanded')).toBe('true');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('🌸 Spring 2024 • Bob Roe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-5').textContent).toBe('☀️ Summer 2023 • Alice Doe Collapse');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe (4.40)');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('🌸 Spring 2024 • Bob Roe (4.30)');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-5').textContent).toBe('☀️ Summer 2023 • Alice Doe (4.20) Collapse');
     expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-5'));
 
     fireEvent.click(historyToggle());
@@ -694,7 +745,7 @@ describe('Courses table expansion', () => {
       expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();
       expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('button-toggle-course-history-evidence-compact').getAttribute('aria-expanded')).toBe('true');
-      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe Collapse');
+      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe (4.50) Collapse');
       expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
       expect(screen.queryByTestId('row-courses-evidence-for-1ls')).toBeNull();

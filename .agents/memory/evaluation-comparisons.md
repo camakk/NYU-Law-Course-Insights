@@ -15,11 +15,11 @@ For directory minimums, interpret “courses taught” as distinct course titles
 
 **How to apply:** Keep distinct-course counts separate from section counts, use “Times Taught” on the Professors page, and apply minimums to the selected semester's records.
 
-For recent-history columns, show up to three distinct partner items and use the latest semester for each professor–course pairing.
+In course teaching histories, a professor's displayed score belongs to the specific course and semester on that line, not their all-time score or latest score from another term.
 
-**Why:** Repeated sections of the same professor–course pairing should not occupy multiple slots or overstate the range of recent teaching.
+**Why:** The user wants to compare how each instructor performed in that particular semester; reusing a lifetime or latest-term score would misrepresent historical results.
 
-**How to apply:** Collapse repeated course titles for a professor and repeated professors for a course, then order by latest semester.
+**How to apply:** Apply the existing response-weighted policy to multiple sections of the same professor–course–semester; leave unavailable teaching scores as N/A rather than substituting another term's rating.
 
 Infer course categories from title keywords using this rule: titles containing “Clinic Seminar” receive both Clinic and Seminar; all other titles use this precedence: Externship, Clinic, Colloquium, Seminar, then Course.
 

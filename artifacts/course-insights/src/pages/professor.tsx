@@ -160,7 +160,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
               value: effectivenessScore == null
                 ? 'N/A'
                 : `${effectivenessScore.toFixed(2)} / 5.00`,
-              sub: '',
+              sub: `based on ${fmtInt(g.totalResponded)} reviews`,
             },
             {
               id: 'grade',
