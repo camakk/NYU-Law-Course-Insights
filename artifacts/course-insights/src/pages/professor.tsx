@@ -267,10 +267,10 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
         </aside>
       ))}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-3 my-6" data-testid="professor-summary-cards">
+      <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-3 my-6 text-xs" data-testid="professor-summary-cards">
         <div className="bg-card border rounded-xl p-4">
           <div
-            className="text-[11px] normal-case tracking-normal text-muted-foreground"
+            className="text-[10px] normal-case tracking-normal text-muted-foreground"
             data-testid="text-professor-distinct-courses-label"
           >
             Courses Taught - {fmtInt(distinctCourses.length)}
@@ -290,7 +290,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
         </div>
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <div
-            className="text-[11px] normal-case tracking-normal text-muted-foreground"
+            className="text-[10px] normal-case tracking-normal text-muted-foreground"
             data-testid="text-professor-seminars-colloquiums-label"
           >
             Seminars and Colloquiums Taught - {fmtInt(distinctSeminarsAndColloquiums.length)}
@@ -319,7 +319,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
         </div>
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <div
-            className="text-[11px] normal-case tracking-normal text-muted-foreground"
+            className="text-[10px] normal-case tracking-normal text-muted-foreground"
             data-testid="text-professor-clinics-externships-label"
           >
             Clinics and Externships Taught - {fmtInt(distinctClinicsAndExternships.length)}
