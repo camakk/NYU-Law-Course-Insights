@@ -680,23 +680,26 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       data-testid={item.kind === 'semester' ? `recent-semester-${r.g.slug}-${compact ? 'compact' : 'wide'}-${index}` : undefined}
                     >
                       <RecentEntryContent item={item} compact={compact} />
+                      {!isProf && index === visibleRecentEntries.length - 1 && (
+                        <>
+                          {' '}
+                          <button
+                            type="button"
+                            aria-expanded={recentSemestersExpanded}
+                            aria-label={`${recentSemestersExpanded ? 'Collapse' : 'Expand'} all semesters for ${r.g.label}`}
+                            onClick={() => setExpandedRecentSemesters((current) => ({
+                              ...current,
+                              [r.g.slug]: !recentSemestersExpanded,
+                            }))}
+                            className="inline-flex cursor-pointer items-center rounded-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            data-testid={`button-toggle-course-history-${r.g.slug}-${compact ? 'compact' : 'wide'}`}
+                          >
+                            {recentSemestersExpanded ? 'Collapse' : '[...]'}
+                          </button>
+                        </>
+                      )}
                     </span>
                   ))}
-                  {!isProf && (
-                    <button
-                      type="button"
-                      aria-expanded={recentSemestersExpanded}
-                      aria-label={`${recentSemestersExpanded ? 'Collapse' : 'Expand'} all semesters for ${r.g.label}`}
-                      onClick={() => setExpandedRecentSemesters((current) => ({
-                        ...current,
-                        [r.g.slug]: !recentSemestersExpanded,
-                      }))}
-                      className="mt-1 inline-flex cursor-pointer items-center rounded-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      data-testid={`button-toggle-course-history-${r.g.slug}-${compact ? 'compact' : 'wide'}`}
-                    >
-                      {recentSemestersExpanded ? 'Collapse' : 'Expand'}
-                    </button>
-                  )}
                 </>
               );
               const renderCells = (expandButton: ReactNode = null) => (

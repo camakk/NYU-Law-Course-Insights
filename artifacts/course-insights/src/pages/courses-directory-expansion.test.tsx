@@ -276,25 +276,27 @@ describe('Courses table expansion', () => {
     render(<CoursesPage />);
 
     const row = screen.getByTestId('row-courses-evidence');
-    const historyToggle = within(row).getByTestId('button-toggle-course-history-evidence-compact');
+    const historyToggle = () => within(row).getByTestId('button-toggle-course-history-evidence-compact');
     expect(within(row).getByTestId('recent-semester-evidence-compact-0').textContent).toBe('Spring 2026 • Alice Doe');
     expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('Fall 2025 • Alice Doe, Bob Roe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('Spring 2025 • Bob Roe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('Spring 2025 • Bob Roe [...]');
     expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
-    expect(historyToggle.textContent).toBe('Expand');
-    expect(historyToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(historyToggle().textContent).toBe('[...]');
+    expect(historyToggle().getAttribute('aria-expanded')).toBe('false');
+    expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-2'));
 
-    fireEvent.click(historyToggle);
+    fireEvent.click(historyToggle());
 
-    expect(historyToggle.textContent).toBe('Collapse');
-    expect(historyToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(historyToggle().textContent).toBe('Collapse');
+    expect(historyToggle().getAttribute('aria-expanded')).toBe('true');
     expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('Fall 2024 • Alice Doe');
-    expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('Spring 2024 • Bob Roe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('Spring 2024 • Bob Roe Collapse');
+    expect(historyToggle().parentElement).toBe(within(row).getByTestId('recent-semester-evidence-compact-4'));
 
-    fireEvent.click(historyToggle);
+    fireEvent.click(historyToggle());
 
-    expect(historyToggle.textContent).toBe('Expand');
-    expect(historyToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(historyToggle().textContent).toBe('[...]');
+    expect(historyToggle().getAttribute('aria-expanded')).toBe('false');
     expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
   });
 
@@ -394,7 +396,7 @@ describe('Courses table expansion', () => {
       expect(screen.getByTestId('button-toggle-course-filters').getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('button-toggle-course-history-evidence-compact').getAttribute('aria-expanded')).toBe('true');
-      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('Fall 2024 • Alice Doe');
+      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('Fall 2024 • Alice Doe Collapse');
       expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
       expect(screen.queryByTestId('row-courses-evidence-for-1ls')).toBeNull();
