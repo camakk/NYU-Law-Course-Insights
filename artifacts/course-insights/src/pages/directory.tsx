@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, Info, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIES, fmt, fmtInt, friendlyName, isCoreTaxCourse, useDataset, type CourseCategory, type Dataset, type EvalRecord, type Group } from '@/lib/data';
@@ -318,10 +318,22 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   );
   const [activeOnly, setActiveOnly] = useState(() => returnSnapshot?.activeOnly ?? true);
   const [filtersOpen, setFiltersOpen] = useState(() => returnSnapshot?.filtersOpen ?? false);
+  const courseToolbarRef = useRef<HTMLDivElement>(null);
+  const [courseToolbarHeight, setCourseToolbarHeight] = useState(0);
   const [expandedRecentSemesters, setExpandedRecentSemesters] = useState<Record<string, boolean>>(
     () => Object.fromEntries((returnSnapshot?.expandedRecentSemesterSlugs ?? []).map((slug) => [slug, true])),
   );
   const lastHeaderSort = useRef<string | null>(returnSnapshot?.lastHeaderSort ?? null);
+  useLayoutEffect(() => {
+    if (kind !== 'courses') return;
+    const toolbar = courseToolbarRef.current;
+    if (!toolbar) return;
+    const measureToolbar = () => setCourseToolbarHeight(toolbar.offsetHeight);
+    measureToolbar();
+    const observer = new ResizeObserver(measureToolbar);
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, [kind]);
   useEffect(() => {
     if (!returnSnapshot) return;
     const frame = window.requestAnimationFrame(() => window.scrollTo(0, returnSnapshot.scrollY));
@@ -650,7 +662,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </div>
       </div>
 
-      <div className={`mb-6 sticky top-14 z-30 bg-background/90 backdrop-blur ${isProf ? 'py-3' : 'pt-0 pb-3'} -mx-1 px-1`} data-testid={`directory-toolbar-${kind}`}>
+      <div
+        ref={courseToolbarRef}
+        className={`mb-6 sticky ${isProf ? 'top-14 py-3 bg-background/90' : 'top-14 pt-0 pb-3 bg-background'} z-30 backdrop-blur -mx-1 px-1`}
+        data-testid={`directory-toolbar-${kind}`}
+      >
         <div className="flex flex-wrap items-end gap-3" data-testid={`directory-toolbar-primary-row-${kind}`}>
         <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
         {isProf && (
@@ -851,7 +867,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             <div className={`${isProf
               ? 'hidden xl:grid xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]'
               : 'hidden md:grid course-directory-grid'
-            } sticky ${isProf ? 'top-36' : 'top-48 md:top-[18rem] xl:top-48'} z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`} data-testid="directory-table-header">
+            } sticky ${isProf ? 'top-36' : ''} z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`}
+              style={!isProf ? { top: `calc(3.5rem + ${courseToolbarHeight}px)` } : undefined}
+              data-testid="directory-table-header">
               <span>#</span>
               {isProf
                 ? sortHeader('Professor', 'professor', 'name', 'name-desc', 'left', 'ascending')

@@ -250,13 +250,28 @@ describe('Courses table expansion', () => {
     const controlsPanel = document.getElementById('directory-filter-controls');
 
     expect(screen.queryByTestId('select-semester')).toBeNull();
+    expect(sortSelect.parentElement?.querySelector('span')?.classList.contains('sr-only')).toBe(true);
+    expect(Array.from((sortSelect as HTMLSelectElement).options).map((option) => option.textContent)).toEqual([
+      'Sort by: Highest rated',
+      'Sort by: Lowest rated',
+      'Sort by: Most reviews',
+      'Sort by: Fewest reviews',
+      'Sort by: Most offerings',
+      'Sort by: Fewest offerings',
+      'Sort by: Name A–Z',
+      'Sort by: Name Z–A',
+    ]);
+    expect(screen.queryByText('Sort', { selector: 'span:not(.sr-only)' })).toBeNull();
     expect(setDefaultFiltersButton.textContent).toBe('Set default filters');
     expect(clearFiltersButton.textContent).toBe('Clear all filters');
     expect(filterActions.parentElement).toBe(filterSummary.parentElement);
     expect(filterActions.parentElement?.className).toContain('justify-between');
     expect(filterActions.parentElement?.previousElementSibling?.tagName).toBe('H1');
     expect(toolbar.contains(filterActions)).toBe(false);
+    expect(toolbar.className).toContain('top-14');
     expect(toolbar.className).toContain('pt-0');
+    expect(toolbar.className).toContain('bg-background');
+    expect(toolbar.className).not.toContain('bg-background/90');
     expect(setDefaultFiltersButton.parentElement).toBe(filterActions);
     expect(clearFiltersButton.parentElement).toBe(filterActions);
     expect(include1LToggle.getAttribute('aria-checked')).toBe('false');
@@ -773,7 +788,7 @@ describe('Courses table expansion', () => {
     const tableHeader = screen.getByTestId('directory-table-header');
     expect(table.classList.contains('overflow-clip')).toBe(true);
     expect(tableHeader.classList.contains('sticky')).toBe(true);
-    expect(tableHeader.classList.contains('top-48')).toBe(true);
+    expect(tableHeader.style.top).toBe('calc(0px + 3.5rem)');
     expect(tableHeader.textContent).toContain('Recent Professors');
     expect(tableHeader.textContent).not.toContain('Recent professors and semesters');
     const recentProfessorsHeading = Array.from(tableHeader.querySelectorAll('span'))
@@ -830,6 +845,30 @@ describe('Courses table expansion', () => {
     expect(window.location.pathname).toBe('/');
     fireEvent.click(within(row).getByRole('link', { name: 'Evidence' }));
     expect(window.location.pathname).toBe('/courses/evidence');
+  });
+
+  it('places sticky course headers flush against the measured toolbar with breathing room below navigation', () => {
+    const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return (this as HTMLElement).dataset.testid === 'directory-toolbar-courses' ? 120 : 0;
+      },
+    });
+    const { unmount } = render(<CoursesPage />);
+    try {
+      const toolbar = screen.getByTestId('directory-toolbar-courses');
+      const tableHeader = screen.getByTestId('directory-table-header');
+      expect(toolbar.classList.contains('top-14')).toBe(true);
+      expect(tableHeader.style.top).toBe('calc(120px + 3.5rem)');
+    } finally {
+      unmount();
+      if (originalOffsetHeight) {
+        Object.defineProperty(HTMLElement.prototype, 'offsetHeight', originalOffsetHeight);
+      } else {
+        delete (HTMLElement.prototype as Partial<HTMLElement>).offsetHeight;
+      }
+    }
   });
 
   it('links each professor name and teaching score from that specific course and semester', () => {
