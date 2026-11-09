@@ -318,17 +318,16 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   );
   const [activeOnly, setActiveOnly] = useState(() => returnSnapshot?.activeOnly ?? true);
   const [filtersOpen, setFiltersOpen] = useState(() => returnSnapshot?.filtersOpen ?? false);
-  const courseStickyControlsRef = useRef<HTMLDivElement>(null);
-  const [courseStickyControlsHeight, setCourseStickyControlsHeight] = useState(0);
+  const directoryStickyControlsRef = useRef<HTMLDivElement>(null);
+  const [directoryStickyControlsHeight, setDirectoryStickyControlsHeight] = useState(0);
   const [expandedRecentSemesters, setExpandedRecentSemesters] = useState<Record<string, boolean>>(
     () => Object.fromEntries((returnSnapshot?.expandedRecentSemesterSlugs ?? []).map((slug) => [slug, true])),
   );
   const lastHeaderSort = useRef<string | null>(returnSnapshot?.lastHeaderSort ?? null);
   useLayoutEffect(() => {
-    if (kind !== 'courses') return;
-    const controls = courseStickyControlsRef.current;
+    const controls = directoryStickyControlsRef.current;
     if (!controls) return;
-    const measureControls = () => setCourseStickyControlsHeight(controls.offsetHeight);
+    const measureControls = () => setDirectoryStickyControlsHeight(controls.offsetHeight);
     measureControls();
     const observer = new ResizeObserver(measureControls);
     observer.observe(controls);
@@ -650,225 +649,219 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       <div className={isProf ? 'mb-2' : 'mb-0'}>
         <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Directory</div>
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
-        {isProf && (
-          <p className="mt-3 text-xs text-muted-foreground" role="status" aria-live="polite" data-testid="filter-summary">
-            {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
-          </p>
-        )}
       </div>
 
       <div
-        ref={!isProf ? courseStickyControlsRef : undefined}
-        className={!isProf ? 'mb-6 sticky top-14 z-30 -mx-1 bg-background px-1 pt-2' : ''}
-        data-testid={!isProf ? 'course-sticky-controls' : undefined}
+        ref={directoryStickyControlsRef}
+        className="mb-6 sticky top-14 z-30 -mx-1 bg-background px-1 pt-2"
+        data-testid={isProf ? 'professor-sticky-controls' : 'course-sticky-controls'}
       >
-        {!isProf && (
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2">
-            <p className="text-xs text-muted-foreground" role="status" aria-live="polite" data-testid="filter-summary">
-              {fmtInt(total)} total courses in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2">
+          <p className={`text-xs text-muted-foreground ${isProf ? 'mt-3' : ''}`} role="status" aria-live="polite" data-testid="filter-summary">
+            {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
+          </p>
+          {!isProf && (
             <div className="flex items-center gap-3" data-testid="course-filter-actions">
               {filterActionButtons}
             </div>
-          </div>
-        )}
-
-      <div
-        className={`mb-6 ${isProf ? 'sticky top-14 py-3 bg-background/90 -mx-1 px-1' : 'mb-0 pt-0 pb-3'} z-30 backdrop-blur`}
-        data-testid={`directory-toolbar-${kind}`}
-      >
-        <div className="flex flex-wrap items-end gap-3" data-testid={`directory-toolbar-primary-row-${kind}`}>
-        <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
-        {isProf && (
-          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-            <Switch
-              id="toggle-active-professors"
-              checked={activeOnly}
-              onCheckedChange={setActiveOnly}
-              data-testid="toggle-active-professors"
-            />
-            <label htmlFor="toggle-active-professors" className="cursor-pointer select-none text-sm">
-              Active professors only
-            </label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Professor activity information"
-                  data-testid="button-professor-activity-info"
-                  className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Info aria-hidden="true" className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="center" className="max-w-xs text-center">
-                A professor is considered active if they have taught a course in the last three years.
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-        {isProf && (
-          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-            <Switch
-              id="toggle-minimum-sample-size"
-              checked={Number(minResponses) >= 50}
-              onCheckedChange={(checked) => setMinResponses(checked ? '50' : '')}
-              data-testid="toggle-minimum-sample-size"
-            />
-            <label htmlFor="toggle-minimum-sample-size" className="cursor-pointer select-none text-sm">
-              Exclude small samples
-            </label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Exclude small samples information"
-                  data-testid="button-minimum-sample-size-info"
-                  className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Info aria-hidden="true" className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="center" className="max-w-xs text-center">
-                Toggle this on to only include professors with 50 or more student reviews
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )}
-        {!isProf && (
-          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-            <Checkbox
-              id="toggle-include-1l-courses"
-              checked={include1LCourses}
-              onCheckedChange={(checked) => setInclude1LCourses(checked === true)}
-              data-testid="toggle-include-1l-courses"
-              className="h-5 w-5 cursor-pointer rounded-md transition-colors"
-            />
-            <label htmlFor="toggle-include-1l-courses" className="cursor-pointer select-none text-sm">
-              Include 1L Courses
-            </label>
-          </div>
-        )}
-        {!isProf && (
-          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-            <Checkbox
-              id="toggle-include-online-international-courses"
-              checked={includeOnlineInternationalCourses}
-              onCheckedChange={(checked) => setIncludeOnlineInternationalCourses(checked === true)}
-              data-testid="toggle-include-online-international-courses"
-              className="h-5 w-5 cursor-pointer rounded-md transition-colors"
-            />
-            <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
-              Include Online/International Courses
-            </label>
-          </div>
-        )}
-        {isProf && <button
-          type="button"
-          aria-expanded={filtersOpen}
-          aria-controls="directory-filter-controls"
-          onClick={() => setFiltersOpen((open) => !open)}
-          className={`group flex h-11 shrink-0 cursor-pointer items-center justify-between gap-3 rounded-lg border border-input bg-card px-4 text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${filtersOpen ? 'bg-secondary/30' : ''}`}
-          data-testid={isProf ? 'button-toggle-professor-filters' : 'button-toggle-course-filters'}
-        >
-          <span className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
-            Filters
-          </span>
-          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-        </button>}
-        <NativeSelect label="Sort by" hideLabel value={sort} onChange={(v) => {
-          lastHeaderSort.current = null;
-          setSort(v as SortKey);
-        }} testId="select-sort">
-          <option value="rating">Sort by: Highest rated</option>
-          <option value="rating-asc">Sort by: Lowest rated</option>
-          <option value="responses">Sort by: Most reviews</option>
-          <option value="responses-asc">Sort by: Fewest reviews</option>
-          <option value="offerings">{isProf ? 'Sort by: Most times taught' : 'Sort by: Most offerings'}</option>
-          <option value="offerings-asc">{isProf ? 'Sort by: Fewest times taught' : 'Sort by: Fewest offerings'}</option>
-          <option value="name">Sort by: Name A–Z</option>
-          <option value="name-desc">Sort by: Name Z–A</option>
-        </NativeSelect>
+          )}
         </div>
-        {!isProf && (
-          <div
-            className="mt-3 flex flex-wrap items-center gap-3"
-            role="group"
-            aria-label="Course category and delivery filters"
-            data-testid="course-toggle-filter-row"
-          >
-            {COURSE_CATEGORY_TOGGLES.map(({ id, label, categories, description }) => (
-              <div key={id} className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-                <Checkbox
-                  id={id}
-                  checked={isCourseCategoryGroupIncluded(categories)}
-                  onCheckedChange={(checked) => setCourseCategoryGroup(categories, checked === true)}
-                  data-testid={id}
-                  className="h-5 w-5 cursor-pointer rounded-md transition-colors"
+
+        <div
+          className={`mb-0 ${isProf ? 'py-3 bg-background/90 -mx-1 px-1' : 'pt-0 pb-3'} z-30 backdrop-blur`}
+          data-testid={`directory-toolbar-${kind}`}
+        >
+          <div className="flex flex-wrap items-end gap-3" data-testid={`directory-toolbar-primary-row-${kind}`}>
+            <SearchBox value={q} onChange={setQ} placeholder={isProf ? 'Search a name or a course they taught' : 'Search a course title or instructor'} testId={`input-search-${kind}`} />
+            {isProf && (
+              <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+                <Switch
+                  id="toggle-active-professors"
+                  checked={activeOnly}
+                  onCheckedChange={setActiveOnly}
+                  data-testid="toggle-active-professors"
                 />
-                <label htmlFor={id} className="cursor-pointer select-none text-sm">{label}</label>
+                <label htmlFor="toggle-active-professors" className="cursor-pointer select-none text-sm">
+                  Active professors only
+                </label>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      aria-label={`${label} information`}
-                      data-testid={`button-course-category-info-${id}`}
+                      aria-label="Professor activity information"
+                      data-testid="button-professor-activity-info"
                       className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Info aria-hidden="true" className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" align="center" className="max-w-xs text-center">
-                    {description}
+                    A professor is considered active if they have taught a course in the last three years.
                   </TooltipContent>
                 </Tooltip>
               </div>
-            ))}
-            <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-              <Checkbox
-                id="toggle-include-upper-level-tax-courses"
-                checked={includeUpperLevelTaxCourses}
-                onCheckedChange={(checked) => setIncludeUpperLevelTaxCourses(checked === true)}
-                data-testid="toggle-include-upper-level-tax-courses"
-                className="h-5 w-5 cursor-pointer rounded-md transition-colors"
-              />
-              <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
-                Include Upper-Level Tax Courses
-              </label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Upper-level tax courses information"
-                    data-testid="button-upper-level-tax-info"
-                    className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <Info aria-hidden="true" className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center" className="max-w-xs text-center">
-                  Excludes all tax classes except for Income Taxation
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <div
-              className="h-11 min-w-[14rem] flex-1 rounded-lg border border-input bg-card px-3"
-              data-testid="course-min-reviews-control"
+            )}
+            {isProf && (
+              <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+                <Switch
+                  id="toggle-minimum-sample-size"
+                  checked={Number(minResponses) >= 50}
+                  onCheckedChange={(checked) => setMinResponses(checked ? '50' : '')}
+                  data-testid="toggle-minimum-sample-size"
+                />
+                <label htmlFor="toggle-minimum-sample-size" className="cursor-pointer select-none text-sm">
+                  Exclude small samples
+                </label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Exclude small samples information"
+                      data-testid="button-minimum-sample-size-info"
+                      className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Info aria-hidden="true" className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                    Toggle this on to only include professors with 50 or more student reviews
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+            {!isProf && (
+              <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+                <Checkbox
+                  id="toggle-include-1l-courses"
+                  checked={include1LCourses}
+                  onCheckedChange={(checked) => setInclude1LCourses(checked === true)}
+                  data-testid="toggle-include-1l-courses"
+                  className="h-5 w-5 cursor-pointer rounded-md transition-colors"
+                />
+                <label htmlFor="toggle-include-1l-courses" className="cursor-pointer select-none text-sm">
+                  Include 1L Courses
+                </label>
+              </div>
+            )}
+            {!isProf && (
+              <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+                <Checkbox
+                  id="toggle-include-online-international-courses"
+                  checked={includeOnlineInternationalCourses}
+                  onCheckedChange={(checked) => setIncludeOnlineInternationalCourses(checked === true)}
+                  data-testid="toggle-include-online-international-courses"
+                  className="h-5 w-5 cursor-pointer rounded-md transition-colors"
+                />
+                <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
+                  Include Online/International Courses
+                </label>
+              </div>
+            )}
+            {isProf && <button
+              type="button"
+              aria-expanded={filtersOpen}
+              aria-controls="directory-filter-controls"
+              onClick={() => setFiltersOpen((open) => !open)}
+              className={`group flex h-11 shrink-0 cursor-pointer items-center justify-between gap-3 rounded-lg border border-input bg-card px-4 text-sm font-semibold transition-colors hover:bg-secondary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${filtersOpen ? 'bg-secondary/30' : ''}`}
+              data-testid={isProf ? 'button-toggle-professor-filters' : 'button-toggle-course-filters'}
             >
-              {minimumReviewsFilter}
-            </div>
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+                Filters
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform group-hover:text-primary ${filtersOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>}
+            <NativeSelect label="Sort by" hideLabel value={sort} onChange={(v) => {
+              lastHeaderSort.current = null;
+              setSort(v as SortKey);
+            }} testId="select-sort">
+              <option value="rating">Sort by: Highest rated</option>
+              <option value="rating-asc">Sort by: Lowest rated</option>
+              <option value="responses">Sort by: Most reviews</option>
+              <option value="responses-asc">Sort by: Fewest reviews</option>
+              <option value="offerings">{isProf ? 'Sort by: Most times taught' : 'Sort by: Most offerings'}</option>
+              <option value="offerings-asc">{isProf ? 'Sort by: Fewest times taught' : 'Sort by: Fewest offerings'}</option>
+              <option value="name">Sort by: Name A–Z</option>
+              <option value="name-desc">Sort by: Name Z–A</option>
+            </NativeSelect>
           </div>
-        )}
-      </div>
-      </div>
-
-      {isProf && <fieldset className="mb-6 overflow-hidden rounded-xl border bg-card p-0" hidden={!filtersOpen}>
-        <legend className="sr-only">Filters</legend>
-        <div id="directory-filter-controls" className="px-4 pb-4 pt-4 sm:px-5">
-          {filterPanelContent}
+          {!isProf && (
+            <div
+              className="mt-3 flex flex-wrap items-center gap-3"
+              role="group"
+              aria-label="Course category and delivery filters"
+              data-testid="course-toggle-filter-row"
+            >
+              {COURSE_CATEGORY_TOGGLES.map(({ id, label, categories, description }) => (
+                <div key={id} className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+                  <Checkbox
+                    id={id}
+                    checked={isCourseCategoryGroupIncluded(categories)}
+                    onCheckedChange={(checked) => setCourseCategoryGroup(categories, checked === true)}
+                    data-testid={id}
+                    className="h-5 w-5 cursor-pointer rounded-md transition-colors"
+                  />
+                  <label htmlFor={id} className="cursor-pointer select-none text-sm">{label}</label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`${label} information`}
+                        data-testid={`button-course-category-info-${id}`}
+                        className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <Info aria-hidden="true" className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                      {description}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              ))}
+              <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+                <Checkbox
+                  id="toggle-include-upper-level-tax-courses"
+                  checked={includeUpperLevelTaxCourses}
+                  onCheckedChange={(checked) => setIncludeUpperLevelTaxCourses(checked === true)}
+                  data-testid="toggle-include-upper-level-tax-courses"
+                  className="h-5 w-5 cursor-pointer rounded-md transition-colors"
+                />
+                <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
+                  Include Upper-Level Tax Courses
+                </label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Upper-level tax courses information"
+                      data-testid="button-upper-level-tax-info"
+                      className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Info aria-hidden="true" className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                    Excludes all tax classes except for Income Taxation
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <div
+                className="h-11 min-w-[14rem] flex-1 rounded-lg border border-input bg-card px-3"
+                data-testid="course-min-reviews-control"
+              >
+                {minimumReviewsFilter}
+              </div>
+            </div>
+          )}
         </div>
-      </fieldset>}
+        {isProf && <fieldset className="mb-0 overflow-hidden rounded-xl border bg-card p-0" hidden={!filtersOpen}>
+          <legend className="sr-only">Filters</legend>
+          <div id="directory-filter-controls" className="px-4 pb-4 pt-4 sm:px-5">
+            {filterPanelContent}
+          </div>
+        </fieldset>}
+      </div>
 
       {rows.length === 0 ? (
         <Empty title="Nothing matches." hint="Lower the minimums, clear filters, or try a shorter search." />
@@ -878,8 +871,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             <div className={`${isProf
               ? 'hidden xl:grid xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]'
               : 'hidden md:grid course-directory-grid'
-            } sticky ${isProf ? 'top-36' : ''} z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`}
-              style={!isProf ? { top: `calc(3.5rem + ${courseStickyControlsHeight}px)` } : undefined}
+            } sticky z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`}
+              style={{ top: `calc(3.5rem + ${directoryStickyControlsHeight}px)` }}
               data-testid="directory-table-header">
               <span>#</span>
               {isProf

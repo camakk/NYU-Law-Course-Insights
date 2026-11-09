@@ -119,8 +119,14 @@ describe('Professor table sorting', () => {
     expect(screen.queryByText("You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.")).toBeNull();
     const header = screen.getByTestId('directory-table-header');
     const row = screen.getByTestId('row-professors-alice-doe');
+    const stickyControls = screen.getByTestId('professor-sticky-controls');
     expect(header.classList.contains('sticky')).toBe(true);
-    expect(header.classList.contains('top-36')).toBe(true);
+    expect(stickyControls.classList.contains('sticky')).toBe(true);
+    expect(stickyControls.classList.contains('top-14')).toBe(true);
+    expect(stickyControls.contains(screen.getByTestId('filter-summary'))).toBe(true);
+    expect(stickyControls.contains(screen.getByTestId('directory-toolbar-professors'))).toBe(true);
+    expect(stickyControls.contains(document.getElementById('directory-filter-controls'))).toBe(true);
+    expect(header.style.top).toBe('calc(0px + 3.5rem)');
     expect(header.textContent).toContain('Recent Courses');
     expect(header.textContent).not.toContain('Recent courses and semesters');
     expect(screen.getByText('Recent Courses').classList.contains('normal-case')).toBe(true);
@@ -202,6 +208,31 @@ describe('Professor table sorting', () => {
 
     expect(filtersButton.getAttribute('aria-expanded')).toBe('true');
     expect(controlsPanel?.parentElement?.hasAttribute('hidden')).toBe(false);
+    expect(screen.getByTestId('professor-sticky-controls').contains(controlsPanel)).toBe(true);
+  });
+
+  it('positions professor table headers beneath the measured sticky controls', () => {
+    const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get() {
+        return (this as HTMLElement).dataset.testid === 'professor-sticky-controls' ? 176 : 0;
+      },
+    });
+    const { unmount } = renderDirectory();
+    try {
+      const stickyControls = screen.getByTestId('professor-sticky-controls');
+      const tableHeader = screen.getByTestId('directory-table-header');
+      expect(stickyControls.classList.contains('top-14')).toBe(true);
+      expect(tableHeader.style.top).toBe('calc(176px + 3.5rem)');
+    } finally {
+      unmount();
+      if (originalOffsetHeight) {
+        Object.defineProperty(HTMLElement.prototype, 'offsetHeight', originalOffsetHeight);
+      } else {
+        delete (HTMLElement.prototype as Partial<HTMLElement>).offsetHeight;
+      }
+    }
   });
 
   it('changes the Minimum reviews slider in ten-review increments', () => {
