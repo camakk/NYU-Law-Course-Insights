@@ -17,7 +17,6 @@ const NAV = [
   { href: '/', label: 'Overview' },
   { href: '/professors', label: 'Professors' },
   { href: '/courses', label: 'Courses' },
-  { href: '/after-exam', label: 'After the exam' },
 ];
 
 export function Shell({ children }: { children: ReactNode }) {

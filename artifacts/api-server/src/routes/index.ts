@@ -1,10 +1,10 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import examFeedbackRouter from "./exam-feedback";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(examFeedbackRouter);
+// After the exam is temporarily disabled. Do not mount its router:
+// this blocks reads, submissions, and reports without deleting saved feedback.
 
 export default router;
