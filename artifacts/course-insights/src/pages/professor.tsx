@@ -1,8 +1,8 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft, Info } from 'lucide-react';
-import { bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
-import { Empty, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Score, useTitle } from '@/components/kit';
+import { bySemesterDesc, calculateProfessorStanding, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
+import { Empty, NotFoundEntity, PageError, PageLoading, RatingBar, Score, useTitle } from '@/components/kit';
 import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -70,12 +70,11 @@ function buildCourseOfferingColors(courseNames: string[]): Map<string, string> {
 
 function Profile({ ds, g }: { ds: Dataset; g: Group }) {
   useTitle(g.label);
-  const [sem, setSem] = useState('all');
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [g.slug]);
 
-  const recs = useMemo(() => (sem === 'all' ? g.records : g.records.filter((r) => r.semester === sem)), [g, sem]);
+  const recs = g.records;
   const offerings = useMemo(() => {
     const sortedRecords = [...recs].sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.id - b.id);
     const totalByCourseSemester = new Map<string, number>();
@@ -280,7 +279,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-xs text-muted-foreground">No courses taught{sem === 'all' ? '' : ' in this semester'}.</p>
+            <p className="mt-2 text-xs text-muted-foreground">No courses taught.</p>
           )}
         </div>
         <div className="min-w-0 rounded-xl border bg-card p-4">
@@ -308,7 +307,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
             </ul>
           ) : (
             <p className="mt-2 text-xs text-muted-foreground">
-              No seminars or colloquiums taught{sem === 'all' ? '' : ' in this semester'}.
+              No seminars or colloquiums taught.
             </p>
           )}
         </div>
@@ -337,31 +336,38 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
             </ul>
           ) : (
             <p className="mt-2 text-xs text-muted-foreground">
-              No clinics or externships taught{sem === 'all' ? '' : ' in this semester'}.
+              No clinics or externships taught.
             </p>
           )}
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-6">
-        <NativeSelect label="Semester" value={sem} onChange={setSem} testId="select-semester">
-          <option value="all">All semesters ({g.semesters.length})</option>
-          {g.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
-        </NativeSelect>
-      </div>
-
       <section className="mb-10" aria-labelledby="offering-chart-title">
         <h2 id="offering-chart-title" className="font-display text-2xl mb-1">Every offering, newest to oldest</h2>
-        <p className="text-sm text-muted-foreground mb-3">Each row is one course offering. Overall teaching and course scores are emphasized; the other eight question scores appear inline.</p>
+        <p className="text-sm text-muted-foreground mb-3">Each row is one course offering. Overall teaching and course scores are emphasized; each of the other eight question scores has its own column.</p>
         {offerings.length === 0 ? (
           <Empty title="No course offerings" hint="There are no offerings for this semester." />
         ) : (
           <div className="overflow-hidden rounded-xl border bg-card">
-            <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_10rem_10rem] xl:grid-cols-[minmax(14rem,1fr)_12rem_12rem_minmax(26rem,2fr)] gap-4 border-b bg-muted/40 px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_10rem_10rem] xl:grid-cols-[minmax(14rem,1fr)_12rem_12rem_repeat(8,minmax(3.25rem,1fr))] gap-4 border-b bg-muted/40 px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground">
               <span>Course offering</span>
               <span>Professor teaching</span>
               <span>Course overall</span>
-              <span className="hidden xl:block">Other question scores</span>
+              <div
+                className="col-span-3 grid grid-cols-8 gap-2 xl:contents"
+                data-testid="header-professor-other-question-scores"
+              >
+                {OTHER_QUESTION_INDEXES.map((index) => (
+                  <span
+                    key={index}
+                    className="min-w-0 text-center"
+                    title={qs[index] ?? `Question ${index + 1}`}
+                    data-testid={`header-professor-question-${index}`}
+                  >
+                    Q{index + 1}
+                  </span>
+                ))}
+              </div>
             </div>
             <ol className="divide-y" data-testid="list-professor-offerings">
               {offerings.map(({ record, section }) => {
@@ -370,7 +376,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 return (
                   <li
                     key={record.id}
-                    className="relative grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[minmax(0,1fr)_10rem_10rem] xl:grid-cols-[minmax(14rem,1fr)_12rem_12rem_minmax(26rem,2fr)] xl:items-center"
+                    className="relative grid grid-cols-1 gap-x-4 gap-y-3 p-4 md:grid-cols-[minmax(0,1fr)_10rem_10rem] xl:grid-cols-[minmax(14rem,1fr)_12rem_12rem_repeat(8,minmax(3.25rem,1fr))] xl:items-center"
                     data-testid={`row-offering-${record.id}`}
                   >
                     <span
@@ -412,29 +418,31 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                         testId={`offering-course-score-${record.id}`}
                       />
                     </div>
-                    <div className="min-w-0 md:col-span-3 xl:col-span-1">
-                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground xl:hidden">Other question scores</p>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {OTHER_QUESTION_INDEXES.map((index) => {
-                          const question = qs[index] ?? `Question ${index + 1}`;
-                          const score = offeringScore(record, index);
-                          return (
-                            <span
-                              key={index}
-                              className="inline-flex items-center gap-1.5"
-                              title={question}
-                              aria-label={`${question}: ${fmt(score)}`}
-                            >
-                              <span className="text-[10px] font-medium text-muted-foreground">Q{index + 1}</span>
-                              <Score
-                                v={score}
-                                size="sm"
-                                testId={`offering-other-score-${record.id}-${index}`}
-                              />
+                    <div
+                      className="grid grid-cols-4 gap-2 md:col-span-3 md:grid-cols-8 xl:contents"
+                      data-testid={`offering-other-scores-${record.id}`}
+                    >
+                      {OTHER_QUESTION_INDEXES.map((index) => {
+                        const question = qs[index] ?? `Question ${index + 1}`;
+                        const score = offeringScore(record, index);
+                        return (
+                          <div
+                            key={index}
+                            className="flex min-w-0 flex-col items-center gap-1"
+                            title={question}
+                            data-testid={`offering-other-question-${record.id}-${index}`}
+                          >
+                            <span className="text-[9px] font-medium text-muted-foreground md:hidden">
+                              Q{index + 1}
                             </span>
-                          );
-                        })}
-                      </div>
+                            <Score
+                              v={score}
+                              size="sm"
+                              testId={`offering-other-score-${record.id}-${index}`}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   </li>
                 );

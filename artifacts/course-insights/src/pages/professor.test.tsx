@@ -72,11 +72,18 @@ describe('Professor detail summary', () => {
   it('uses the course detail score-chip format for other question scores', () => {
     renderProfessorPage();
     const scoreChip = screen.getByTestId('offering-other-score-1-0');
+    const scoreCells = screen.getByTestId('offering-other-scores-1');
 
     expect(scoreChip.textContent).toBe('4.50');
     expect(scoreChip.classList.contains('num')).toBe(true);
     expect(scoreChip.classList.contains('tone-4')).toBe(true);
     expect(scoreChip.classList.contains('rounded')).toBe(true);
+    expect(scoreCells.className).toContain('md:grid-cols-8');
+    expect(scoreCells.className).toContain('xl:contents');
+    expect(within(scoreCells).getAllByTestId(/^offering-other-question-1-/)).toHaveLength(8);
+    expect(screen.getAllByTestId(/^header-professor-question-/)).toHaveLength(8);
+    expect(screen.getByTestId('header-professor-question-0').textContent).toBe('Q1');
+    expect(screen.queryByTestId('header-professor-question-5')).toBeNull();
   });
 
   it('replaces the Course Effective card with a full-width three-card summary and course history', () => {
@@ -161,7 +168,7 @@ describe('Professor detail summary', () => {
     }
   });
 
-  it('shows all-time response totals beneath the effectiveness score even when filtering semesters', () => {
+  it('shows all-time response totals beneath the effectiveness score without a semester filter', () => {
     const missingTeachingScore = makeRecord(2, 'Contracts', 'Spring 2026', 'Cox, Adam B.', 30);
     missingTeachingScore.scores[5] = null;
     const reviewDataset = buildDataset({
@@ -176,8 +183,7 @@ describe('Professor detail summary', () => {
     renderProfessorPage(reviewDataset, professor.slug);
     const scoreCard = screen.getByTestId('professor-standing-score');
     expect(within(scoreCard).getByText('based on 50 reviews')).toBeTruthy();
-    fireEvent.change(screen.getByTestId('select-semester'), { target: { value: 'Fall 2025' } });
-    expect(within(scoreCard).getByText('based on 50 reviews')).toBeTruthy();
+    expect(screen.queryByTestId('select-semester')).toBeNull();
     expect(screen.getByTestId('professor-standing-score-value').textContent).toBe('4.50 / 5.00');
   });
 
@@ -213,17 +219,17 @@ describe('Professor detail summary', () => {
     expect(screen.getByTestId('professor-standing-grade-value').textContent).toBe('B-');
   });
 
-  it('updates the distinct course list to the selected semester', () => {
+  it('keeps the all-time course list visible without a semester selector', () => {
     renderProfessorPage();
-    fireEvent.change(screen.getByTestId('select-semester'), {
-      target: { value: 'Fall 2024' },
-    });
+    expect(screen.queryByTestId('select-semester')).toBeNull();
 
     const list = screen.getByTestId('list-professor-distinct-courses');
     expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      'Evidence (last taught Spring 2026)',
+      'Contracts (last taught Fall 2025)',
       'Torts (last taught Fall 2024)',
     ]);
-    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 1');
+    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 3');
   });
 
   it('counts only distinct Course-labeled titles but includes every offering in the header', () => {
@@ -269,21 +275,7 @@ describe('Professor detail summary', () => {
     ]);
     expect(screen.getByText('Taught 10 Offerings from Spring 2019 - Spring 2026')).toBeTruthy();
     expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(10);
-
-    fireEvent.change(screen.getByTestId('select-semester'), { target: { value: 'Spring 2023' } });
-    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 0');
-    expect(screen.queryByTestId('list-professor-distinct-courses')).toBeNull();
-    expect(screen.getByText('No courses taught in this semester.')).toBeTruthy();
-    expect(screen.getByTestId('text-professor-seminars-colloquiums-label').textContent)
-      .toBe('Seminars and Colloquiums Taught - 1');
-    expect(within(screen.getByTestId('list-professor-seminars-colloquiums')).getAllByRole('listitem')
-      .map((item) => item.textContent))
-      .toEqual(['Research Seminar (last taught Spring 2023)']);
-    expect(screen.getByTestId('text-professor-clinics-externships-label').textContent)
-      .toBe('Clinics and Externships Taught - 0');
-    expect(screen.getByText('No clinics or externships taught in this semester.')).toBeTruthy();
-    expect(screen.getByTestId('list-professor-offerings').textContent).toContain('Research Seminar');
-    expect(screen.getByText('Taught 10 Offerings from Spring 2019 - Spring 2026')).toBeTruthy();
+    expect(screen.queryByTestId('select-semester')).toBeNull();
   });
 
   it('shows a reusable name-variation note on Scott Hemphill’s profile', () => {
