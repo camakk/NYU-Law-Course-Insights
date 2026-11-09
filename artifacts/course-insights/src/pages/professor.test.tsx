@@ -64,6 +64,59 @@ beforeEach(() => {
 });
 
 describe('Professor detail summary', () => {
+  it('filters every offering of a course and restores it without changing all-time summaries', () => {
+    renderProfessorPage();
+    const controls = within(screen.getByTestId('professor-history-course-filters'));
+    expect(controls.getAllByRole('checkbox')).toHaveLength(3);
+    for (const checkbox of controls.getAllByRole('checkbox')) {
+      expect(checkbox.getAttribute('aria-checked')).toBe('true');
+    }
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(5);
+
+    fireEvent.click(controls.getByRole('checkbox', { name: 'Evidence' }));
+    expect(screen.queryByTestId('row-offering-1')).toBeNull();
+    expect(screen.queryByTestId('row-offering-2')).toBeNull();
+    expect(screen.queryByTestId('row-offering-3')).toBeNull();
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByTestId('text-professor-distinct-courses-label').textContent).toBe('Courses Taught - 3');
+
+    fireEvent.click(controls.getByRole('checkbox', { name: 'Contracts' }));
+    fireEvent.click(controls.getByRole('checkbox', { name: 'Torts' }));
+    expect(screen.getByText('No courses selected')).toBeTruthy();
+    expect(screen.queryByTestId('list-professor-offerings')).toBeNull();
+    expect(controls.getAllByRole('checkbox')).toHaveLength(3);
+
+    fireEvent.click(controls.getByRole('checkbox', { name: 'Evidence' }));
+    const restored = within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem');
+    expect(restored.map((row) => row.getAttribute('data-testid'))).toEqual([
+      'row-offering-2', 'row-offering-3', 'row-offering-1',
+    ]);
+    expect(restored[0].textContent).toContain('Section 1');
+    expect(restored[1].textContent).toContain('Section 2');
+  });
+
+  it('tailors the course checkboxes to the professor including seminars and clinics', () => {
+    const tailored = buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Evidence', 'Spring 2026'),
+        makeRecord(2, 'Research Seminar', 'Fall 2025'),
+        makeRecord(3, 'Housing Clinic Seminar', 'Fall 2024'),
+        makeRecord(4, 'Torts', 'Spring 2026', 'Doe, Jane'),
+      ],
+    });
+    const professor = tailored.professors.find((group) => group.name === 'Cox, Adam B.')!;
+    renderProfessorPage(tailored, professor.slug);
+    const controls = within(screen.getByTestId('professor-history-course-filters'));
+    expect(controls.getAllByRole('checkbox').map((checkbox) => checkbox.getAttribute('aria-label'))).toEqual([
+      'Evidence', 'Housing Clinic Seminar', 'Research Seminar',
+    ]);
+    expect(controls.queryByRole('checkbox', { name: 'Torts' })).toBeNull();
+    fireEvent.click(controls.getByRole('checkbox', { name: 'Housing Clinic Seminar' }));
+    expect(screen.queryByTestId('row-offering-3')).toBeNull();
+    expect(screen.getByTestId('row-offering-2')).toBeTruthy();
+  });
+
   it('starts the detail page at the top', () => {
     renderProfessorPage();
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);

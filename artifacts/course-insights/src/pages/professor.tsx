@@ -1,10 +1,11 @@
-import { useLayoutEffect, useMemo } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft, Info } from 'lucide-react';
 import { bySemesterDesc, calculateProfessorStanding, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { Empty, NotFoundEntity, PageError, PageLoading, RatingBar, Score, useTitle } from '@/components/kit';
 import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
@@ -81,6 +82,11 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
   }, [g.slug]);
 
   const recs = g.records;
+  const [hiddenCourses, setHiddenCourses] = useState<Set<string>>(() => new Set());
+  const historyCourses = useMemo(
+    () => [...new Set(recs.map((record) => record.course))].sort((a, b) => a.localeCompare(b)),
+    [recs],
+  );
   const offerings = useMemo(() => {
     const sortedRecords = [...recs].sort((a, b) => bySemesterDesc(a.semester, b.semester) || a.id - b.id);
     const totalByCourseSemester = new Map<string, number>();
@@ -99,6 +105,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       };
     });
   }, [recs]);
+  const visibleOfferings = offerings.filter(({ record }) => !hiddenCourses.has(record.course));
   const distinctCourses = useMemo(() => {
     const latestSemesterByCourse = new Map<string, string>();
     for (const record of recs) {
@@ -351,8 +358,40 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
       <section className="mb-10" aria-labelledby="offering-chart-title">
         <h2 id="offering-chart-title" className="font-display text-2xl mb-1">{`Professor ${g.label}'s Teaching History`}</h2>
         <p className="text-sm text-muted-foreground mb-3">Each row is one course offering. Overall teaching and course scores are emphasized; each of the other eight question scores has its own column.</p>
-        {offerings.length === 0 ? (
-          <Empty title="No course offerings" hint="There are no offerings for this semester." />
+        <fieldset className="mb-4" data-testid="professor-history-course-filters">
+          <legend className="sr-only">Filter teaching history by course</legend>
+          <div className="flex flex-wrap gap-2">
+            {historyCourses.map((course) => {
+              const id = `history-course-${g.slug}-${ds.courseSlugByName.get(course)}`;
+              return (
+                <label
+                  key={course}
+                  htmlFor={id}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2 text-xs transition-colors hover:bg-primary/10"
+                >
+                  <Checkbox
+                    id={id}
+                    aria-label={course}
+                    checked={!hiddenCourses.has(course)}
+                    onCheckedChange={(checked) => setHiddenCourses((current) => {
+                      const next = new Set(current);
+                      if (checked === true) next.delete(course);
+                      else next.add(course);
+                      return next;
+                    })}
+                    className="shrink-0 cursor-pointer"
+                  />
+                  <span>{course}</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+        {visibleOfferings.length === 0 ? (
+          <Empty
+            title={offerings.length === 0 ? 'No course offerings' : 'No courses selected'}
+            hint={offerings.length === 0 ? 'There are no offerings for this professor.' : 'Check a course above to show its teaching history.'}
+          />
         ) : (
           <div className="overflow-hidden rounded-xl border bg-card">
             <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_8rem] xl:grid-cols-[minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] gap-4 border-b bg-muted/40 px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -388,7 +427,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
               </div>
             </div>
             <ol className="divide-y" data-testid="list-professor-offerings">
-              {offerings.map(({ record, section }) => {
+              {visibleOfferings.map(({ record, section }) => {
                 const professorScore = offeringScore(record, PROFESSOR_EFFECTIVE_QUESTION);
                 const courseScore = offeringScore(record, COURSE_EFFECTIVE_QUESTION);
                 return (
