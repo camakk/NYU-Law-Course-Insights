@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft, Info } from 'lucide-react';
 import { bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
-import { Empty, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, useTitle } from '@/components/kit';
+import { Empty, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Score, useTitle } from '@/components/kit';
 import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -421,12 +421,16 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                           return (
                             <span
                               key={index}
-                              className="inline-flex items-center gap-1 rounded bg-muted/50 px-1.5 py-1 text-[10px] sm:text-xs"
+                              className="inline-flex items-center gap-1.5"
                               title={question}
                               aria-label={`${question}: ${fmt(score)}`}
                             >
-                              <span className="font-medium text-muted-foreground">Q{index + 1}</span>
-                              <span className="num text-foreground">{fmt(score)}</span>
+                              <span className="text-[10px] font-medium text-muted-foreground">Q{index + 1}</span>
+                              <Score
+                                v={score}
+                                size="sm"
+                                testId={`offering-other-score-${record.id}-${index}`}
+                              />
                             </span>
                           );
                         })}

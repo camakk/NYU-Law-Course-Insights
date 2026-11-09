@@ -112,9 +112,9 @@ describe('Professor table sorting', () => {
     expect(screen.queryByTestId('button-load-more')).toBeNull();
   });
 
-  it('shows the requested professor-directory introduction', () => {
+  it('omits the professor-directory introduction and keeps the table header sticky', () => {
     renderDirectory();
-    expect(screen.getByText("You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.")).toBeTruthy();
+    expect(screen.queryByText("You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.")).toBeNull();
     const header = screen.getByTestId('directory-table-header');
     const row = screen.getByTestId('row-professors-alice-doe');
     expect(header.classList.contains('sticky')).toBe(true);
@@ -474,7 +474,9 @@ describe('Professor table sorting', () => {
     expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);
 
     expect(screen.getByText('Teaching Grade').className).toContain('text-center');
-    expect(screen.getByTestId('button-sort-teaching').className).toContain('justify-center');
+    expect(screen.getByTestId('button-sort-teaching').className).toContain('justify-start');
+    expect(screen.getByTestId('button-sort-teaching').querySelector('span')?.style.width)
+      .toBe('calc(100% - 4.5rem)');
     expect(screen.getByTestId('button-sort-teaching').querySelector('svg')?.classList.contains('absolute')).toBe(true);
     fireEvent.click(screen.getByTestId('button-sort-teaching'));
     expect(selectedSort()).toBe('rating');

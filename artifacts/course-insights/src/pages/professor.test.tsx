@@ -69,6 +69,16 @@ describe('Professor detail summary', () => {
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
+  it('uses the course detail score-chip format for other question scores', () => {
+    renderProfessorPage();
+    const scoreChip = screen.getByTestId('offering-other-score-1-0');
+
+    expect(scoreChip.textContent).toBe('4.50');
+    expect(scoreChip.classList.contains('num')).toBe(true);
+    expect(scoreChip.classList.contains('tone-4')).toBe(true);
+    expect(scoreChip.classList.contains('rounded')).toBe(true);
+  });
+
   it('replaces the Course Effective card with a full-width three-card summary and course history', () => {
     const { container } = renderProfessorPage();
     const summary = screen.getByTestId('professor-summary-cards');

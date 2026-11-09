@@ -205,7 +205,7 @@ describe('Courses table expansion', () => {
     expect(courseLink.parentElement?.nextElementSibling?.classList.contains('mt-1.5')).toBe(true);
   });
 
-  it('places the online toggle in the upper row and the tax toggle after Clinics', () => {
+  it('places the online checkbox in the upper row and the tax checkbox after Clinics', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
     const primaryRow = screen.getByTestId('directory-toolbar-primary-row-courses');
@@ -253,8 +253,9 @@ describe('Courses table expansion', () => {
     expect(includeClinicsToggle.getAttribute('aria-checked')).toBe('true');
     expect(includeClinicsToggle.getAttribute('role')).toBe('checkbox');
     expect(includeClinicsToggle.parentElement?.textContent).toBe('Include Clinics');
-    expect(includeOnlineInternationalToggle.getAttribute('role')).toBe('switch');
-    expect(includeTaxToggle.getAttribute('role')).toBe('switch');
+    expect(include1LToggle.getAttribute('role')).toBe('checkbox');
+    expect(includeOnlineInternationalToggle.getAttribute('role')).toBe('checkbox');
+    expect(includeTaxToggle.getAttribute('role')).toBe('checkbox');
     expect(toolbar.children[0]).toBe(primaryRow);
     expect(toolbar.children[1]).toBe(categoryToggleRow);
     expect(categoryToggleRow.parentElement).toBe(toolbar);
@@ -287,6 +288,23 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('filter-course-rating-range-slider')).toBeNull();
     expect(screen.queryByText('Minimum class offerings')).toBeNull();
     expect(screen.queryByText('Average Course Rating')).toBeNull();
+  });
+
+  it('omits Most recently taught and resets a previously saved selection', () => {
+    window.history.replaceState({
+      courseInsightsCourseDirectory: {
+        version: 1,
+        sort: 'recent',
+        includedCategories: ['Course', 'Seminar', 'Clinic', 'Colloquium', 'Externship'],
+        scrollY: 0,
+      },
+    }, '', '/courses');
+
+    render(<CoursesPage />);
+    const sortSelect = screen.getByTestId('select-sort') as HTMLSelectElement;
+
+    expect(Array.from(sortSelect.options).some((option) => option.value === 'recent')).toBe(false);
+    expect(sortSelect.value).toBe('responses');
   });
 
   it('resets course filters to their defaults or clears their restrictions', () => {
@@ -399,6 +417,7 @@ describe('Courses table expansion', () => {
     const topToggle = within(row).getByTestId('button-toggle-course-top-professors-evidence');
     const recentToggle = within(row).getByTestId('button-toggle-course-history-evidence-compact');
     const topPreview = within(row).getByTestId('course-professor-preview-evidence');
+    const topProfessorsCell = topPreview.parentElement!;
     const topEntries = () => within(topPreview).getAllByTestId(/^preview-professor-evidence-/);
 
     expect(topToggle.className).toContain('font-sans');
@@ -410,6 +429,7 @@ describe('Courses table expansion', () => {
     expect(topEntries()).toHaveLength(3);
     expect(topToggle.textContent).toBe('[...]');
     expect(topToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(topProfessorsCell.className).not.toContain('self-start');
     expect(recentToggle.textContent).toBe('[...]');
     expect(recentToggle.getAttribute('aria-expanded')).toBe('false');
     expect(within(row).queryByTestId('recent-semester-evidence-compact-2')).toBeNull();
@@ -419,6 +439,8 @@ describe('Courses table expansion', () => {
     expect(topEntries()).toHaveLength(4);
     expect(topToggle.textContent).toBe('Collapse');
     expect(topToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(topProfessorsCell.className).toContain('self-start');
+    expect(topProfessorsCell.className).toContain('mt-2');
     expect(recentToggle.textContent).toBe('Collapse');
     expect(recentToggle.getAttribute('aria-expanded')).toBe('true');
     expect(within(row).getByTestId('recent-semester-evidence-compact-2')).toBeTruthy();
@@ -429,6 +451,7 @@ describe('Courses table expansion', () => {
     expect(topEntries()).toHaveLength(3);
     expect(topToggle.textContent).toBe('[...]');
     expect(topToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(topProfessorsCell.className).not.toContain('self-start');
     expect(recentToggle.textContent).toBe('[...]');
     expect(recentToggle.getAttribute('aria-expanded')).toBe('false');
     expect(within(row).queryByTestId('recent-semester-evidence-compact-2')).toBeNull();
@@ -955,6 +978,7 @@ describe('Courses table expansion', () => {
     render(<CoursesPage />);
     fireEvent.click(screen.getByTestId('toggle-include-1l-courses'));
     const sortControl = screen.getByTestId('select-sort') as HTMLSelectElement;
+    expect(screen.getByTestId('button-sort-reviews').className).toContain('justify-center');
     const sortedCourseSlugs = () => screen.getAllByTestId(/^row-courses-/)
       .map((row) => row.getAttribute('data-testid')!.replace('row-courses-', ''));
 

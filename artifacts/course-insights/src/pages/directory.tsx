@@ -290,8 +290,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   ));
   const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
   const [sort, setSort] = useState<SortKey>(() =>
-    kind === 'professors' && returnSnapshot?.sort === 'recent'
-      ? 'rating'
+    returnSnapshot?.sort === 'recent'
+      ? kind === 'professors' ? 'rating' : 'responses'
       : returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'),
   );
   const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? false);
@@ -528,6 +528,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     second: SortKey,
     alignment: 'left' | 'center' | 'right' = 'right',
     firstDirection: 'ascending' | 'descending' = 'descending',
+    centeredLabelWidth: 'full' | 'rating-bar' = 'full',
   ) => {
     const active = sort === first || sort === second;
     const direction = sort === first
@@ -543,11 +544,16 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         aria-label={`${label}, ${active ? `sorted ${direction}` : 'not sorted'}`}
         aria-pressed={active}
         data-testid={`button-sort-${header}`}
-        className={`relative flex w-full min-w-0 cursor-pointer items-center rounded-sm py-0.5 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${alignment === 'left' ? 'justify-start' : alignment === 'center' ? 'justify-center' : 'justify-end text-right'}`}
+        className={`relative flex w-full min-w-0 cursor-pointer items-center rounded-sm py-0.5 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${alignment === 'left' ? 'justify-start' : alignment === 'center' ? centeredLabelWidth === 'rating-bar' ? 'justify-start' : 'justify-center' : 'justify-end text-right'}`}
       >
         {alignment === 'center' ? (
           <>
-            <span className="w-full truncate text-center">{label}</span>
+            <span
+              className={`${centeredLabelWidth === 'rating-bar' ? '' : 'w-full'} truncate text-center`}
+              style={centeredLabelWidth === 'rating-bar' ? { width: 'calc(100% - 4.5rem)' } : undefined}
+            >
+              {label}
+            </span>
             <Icon className={`absolute right-0 h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : 'opacity-50'}`} aria-hidden="true" />
           </>
         ) : (
@@ -629,14 +635,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
 
   return (
     <div className="rise">
-      <div className={isProf ? 'mb-8' : 'mb-2'}>
+      <div className="mb-2">
         <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Directory</div>
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
-        {isProf && (
-          <p className="text-muted-foreground mt-2 max-w-2xl">
-            You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.
-          </p>
-        )}
         <p className="text-xs text-muted-foreground mt-3" role="status" aria-live="polite" data-testid="filter-summary">
           {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
         </p>
@@ -703,11 +704,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         )}
         {!isProf && (
           <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-            <Switch
+            <Checkbox
               id="toggle-include-1l-courses"
               checked={include1LCourses}
-              onCheckedChange={setInclude1LCourses}
+              onCheckedChange={(checked) => setInclude1LCourses(checked === true)}
               data-testid="toggle-include-1l-courses"
+              className="h-5 w-5 cursor-pointer rounded-md transition-colors"
             />
             <label htmlFor="toggle-include-1l-courses" className="cursor-pointer select-none text-sm">
               Include 1L Courses
@@ -716,11 +718,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         )}
         {!isProf && (
           <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-            <Switch
+            <Checkbox
               id="toggle-include-online-international-courses"
               checked={includeOnlineInternationalCourses}
-              onCheckedChange={setIncludeOnlineInternationalCourses}
+              onCheckedChange={(checked) => setIncludeOnlineInternationalCourses(checked === true)}
               data-testid="toggle-include-online-international-courses"
+              className="h-5 w-5 cursor-pointer rounded-md transition-colors"
             />
             <label htmlFor="toggle-include-online-international-courses" className="cursor-pointer select-none text-sm">
               Include Online/International Courses
@@ -751,7 +754,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           <option value="responses-asc">Fewest reviews</option>
           <option value="offerings">{isProf ? 'Most times taught' : 'Most offerings'}</option>
           <option value="offerings-asc">{isProf ? 'Fewest times taught' : 'Fewest offerings'}</option>
-          {!isProf && <option value="recent">Most recently taught</option>}
           <option value="name">Name A–Z</option>
           <option value="name-desc">Name Z–A</option>
         </NativeSelect>
@@ -791,11 +793,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               </div>
             ))}
             <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-              <Switch
+              <Checkbox
                 id="toggle-include-upper-level-tax-courses"
                 checked={includeUpperLevelTaxCourses}
-                onCheckedChange={setIncludeUpperLevelTaxCourses}
+                onCheckedChange={(checked) => setIncludeUpperLevelTaxCourses(checked === true)}
                 data-testid="toggle-include-upper-level-tax-courses"
+                className="h-5 w-5 cursor-pointer rounded-md transition-colors"
               />
               <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
                 Include Upper-Level Tax Courses
@@ -856,11 +859,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               {!isProf && <span className="text-center">
                 {sortHeader('Times Offered', 'offerings', 'offerings', 'offerings-asc', 'center')}
               </span>}
-              {!isProf && <span className="text-right">
-                {sortHeader('Reviews', 'reviews', 'responses', 'responses-asc')}
+              {!isProf && <span className="text-center">
+                {sortHeader('Reviews', 'reviews', 'responses', 'responses-asc', 'center')}
               </span>}
               <span className="text-center">{isProf
-                ? sortHeader('Teaching Grade', 'teaching', 'rating', 'rating-asc', 'center')
+                ? sortHeader('Teaching Grade', 'teaching', 'rating', 'rating-asc', 'center', 'descending', 'rating-bar')
                 : sortHeader('Top Professors', 'rating', 'rating', 'rating-asc', 'center')}</span>
               {isProf && <span className="text-right">
                 {sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')}
@@ -980,7 +983,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   )}
                   {!isProf && <span className="hidden md:block text-center num text-sm">{r.offerings}</span>}
                   {!isProf && <span className="hidden md:block text-center num text-sm">{fmtInt(r.m.responses)}</span>}
-                  <div className={isProf ? 'xl:justify-self-end' : 'col-span-2 col-start-2 min-w-0 md:col-span-1 md:col-start-auto'}>
+                  <div className={`${isProf ? 'xl:justify-self-end' : 'col-span-2 col-start-2 min-w-0 md:col-span-1 md:col-start-auto'}${!isProf && recentSemestersExpanded ? ' self-start mt-2' : ''}`}>
                     {isProf
                       ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />
                       : <CourseProfessorPreview
