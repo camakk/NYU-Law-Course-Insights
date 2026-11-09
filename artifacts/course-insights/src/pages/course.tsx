@@ -83,7 +83,7 @@ function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
       <section className="grid lg:grid-cols-[1.1fr_1fr] gap-6 mb-10">
         <div className="bg-card border rounded-xl p-4">
           <h2 className="font-display text-xl">Instructor comparison</h2>
-          <p className="text-xs text-muted-foreground mb-3">{qs[metric]} · amber bars indicate Small Sample (fewer than {SMALL_SAMPLE} reviews) · click to open profile</p>
+          <p className="text-xs text-muted-foreground mb-3">{qs[metric]} · green ≥ 4.80 · yellow 4.00 · red ≤ 3.00 · click to open profile</p>
           {chart.length ? <RankBars data={chart} metricLabel={qs[metric] ?? ''} onSelect={(d) => d.href && navigate(d.href)} /> : <Empty title="No rated offerings" hint="Try All semesters, another metric, or turn off Exclude small samples." />}
         </div>
         <div className="bg-card border rounded-xl overflow-hidden">

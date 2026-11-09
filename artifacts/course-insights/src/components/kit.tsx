@@ -285,7 +285,7 @@ export function RankBars({ data, onSelect, metricLabel }: { data: BarDatum[]; on
             label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--foreground))', formatter: (v: number) => v.toFixed(2) }}
           >
             {data.map((d, i) => (
-              <Cell key={i} fill={d.responses < SMALL_SAMPLE ? 'hsl(38 88% 58%)' : 'hsl(var(--chart-1))'} />
+              <Cell key={i} fill={ratingBarColor(d.value)} />
             ))}
           </Bar>
         </BarChart>
