@@ -5,6 +5,7 @@ import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIE
 import { Empty, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
 import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CourseProfessorExpansion } from '@/components/course-professor-expansion';
@@ -33,7 +34,8 @@ type DirectorySnapshot = {
 
 const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
 const PROFESSOR_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsProfessorDirectory';
-const REVIEW_TICKS = Array.from({ length: 6 }, (_, index) => index * 100);
+const MAX_MINIMUM_REVIEWS = 300;
+const REVIEW_TICKS = Array.from({ length: 4 }, (_, index) => index * 100);
 const COURSE_CATEGORY_TOGGLES: Array<{ id: string; label: string; categories: CourseCategory[] }> = [
   { id: 'toggle-include-courses', label: 'Include Courses', categories: ['Course'] },
   { id: 'toggle-include-seminars-colloquiums', label: 'Include Seminars', categories: ['Seminar', 'Colloquium'] },
@@ -267,7 +269,10 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     () => returnSnapshot?.includeUpperLevelTaxCourses ?? true,
   );
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
-  const [minResponses, setMinResponses] = useState(() => returnSnapshot?.minResponses ?? '50');
+  const [minResponses, setMinResponses] = useState(() => {
+    const savedValue = returnSnapshot?.minResponses;
+    return savedValue ? String(Math.min(Number(savedValue), MAX_MINIMUM_REVIEWS)) : savedValue ?? '50';
+  });
   const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
   const [maxScore, setMaxScore] = useState(() => returnSnapshot?.maxScore ?? '');
   const [includedCategories, setIncludedCategories] = useState<CourseCategory[]>(() =>
@@ -289,7 +294,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const maxOfferings = kind === 'professors'
     ? 30
     : Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
-  const maxReviews = kind === 'professors' ? 300 : 500;
+  const maxReviews = MAX_MINIMUM_REVIEWS;
   const hasFilters = q !== '' || (kind === 'courses' && (!include1LCourses || !includeOnlineInternationalCourses || !includeUpperLevelTaxCourses)) ||
     (kind === 'professors' && minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||
@@ -574,11 +579,11 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       <div className={isProf ? 'mb-8' : 'mb-2'}>
         <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Directory</div>
         <h1 className="font-display text-4xl md:text-5xl font-semibold mt-2">{isProf ? 'Professors' : 'Courses'}</h1>
-        <p className="text-muted-foreground mt-2 max-w-2xl">
-          {isProf
-            ? <>You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.</>
-            : <>You have to take Professional Responsibility, but there are 13 professors teaching it. How do you choose whose class to take? We have all the data to help you decide.</>}
-        </p>
+        {isProf && (
+          <p className="text-muted-foreground mt-2 max-w-2xl">
+            You're in law school to learn from the best professors. But who are the best professors? It used to be nearly impossible to find that data: until we went out and got it.
+          </p>
+        )}
         <p className="text-xs text-muted-foreground mt-3" role="status" aria-live="polite" data-testid="filter-summary">
           {fmtInt(total)} total {isProf ? 'professors' : 'courses'} in the dataset · {fmtInt(total - rows.length)} filtered out · {fmtInt(rows.length)} matching
         </p>
@@ -722,11 +727,12 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           >
             {COURSE_CATEGORY_TOGGLES.map(({ id, label, categories }) => (
               <div key={id} className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
-                <Switch
+                <Checkbox
                   id={id}
                   checked={isCourseCategoryGroupIncluded(categories)}
-                  onCheckedChange={(checked) => setCourseCategoryGroup(categories, checked)}
+                  onCheckedChange={(checked) => setCourseCategoryGroup(categories, checked === true)}
                   data-testid={id}
+                  className="h-5 w-5 cursor-pointer rounded-md transition-colors"
                 />
                 <label htmlFor={id} className="cursor-pointer select-none text-sm">{label}</label>
               </div>

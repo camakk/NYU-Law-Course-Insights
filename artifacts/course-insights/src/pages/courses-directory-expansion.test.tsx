@@ -141,11 +141,16 @@ describe('Courses table expansion', () => {
     expect(include1LToggle.compareDocumentPosition(includeTaxToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeTaxToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeCoursesToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeCoursesToggle.getAttribute('role')).toBe('checkbox');
     expect(includeCoursesToggle.parentElement?.textContent).toBe('Include Courses');
     expect(includeSeminarsToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeSeminarsToggle.getAttribute('role')).toBe('checkbox');
     expect(includeSeminarsToggle.parentElement?.textContent).toBe('Include Seminars');
     expect(includeClinicsToggle.getAttribute('aria-checked')).toBe('true');
+    expect(includeClinicsToggle.getAttribute('role')).toBe('checkbox');
     expect(includeClinicsToggle.parentElement?.textContent).toBe('Include Clinics');
+    expect(includeOnlineInternationalToggle.getAttribute('role')).toBe('switch');
+    expect(includeTaxToggle.getAttribute('role')).toBe('switch');
     expect(toolbar.children[0]).toBe(primaryRow);
     expect(toolbar.children[1]).toBe(categoryToggleRow);
     expect(categoryToggleRow.parentElement).toBe(toolbar);
@@ -157,13 +162,14 @@ describe('Courses table expansion', () => {
     expect(minimumReviewsControl.parentElement).toBe(categoryToggleRow);
     expect(minimumReviewsControl.classList.contains('flex-1')).toBe(true);
     expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('50');
-    expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('500');
+    expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('300');
     expect(minimumReviewsSlider.getAttribute('aria-valuemin')).toBe('0');
     expect(screen.getByTestId('filter-min-responses-tick-0').textContent).toBe('0');
     expect(screen.getByTestId('filter-min-responses-tick-100').textContent).toBe('100');
     expect(screen.queryByTestId('filter-min-responses-tick-50')).toBeNull();
-    expect(screen.getByTestId('filter-min-responses-tick-500').textContent).toBe('500');
-    expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(6);
+    expect(screen.getByTestId('filter-min-responses-tick-300').textContent).toBe('300');
+    expect(screen.queryByTestId('filter-min-responses-tick-400')).toBeNull();
+    expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(4);
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
     expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
     expect(within(minimumReviewsControl).queryByText('No minimum')).toBeNull();
@@ -241,6 +247,9 @@ describe('Courses table expansion', () => {
         makeRecord(1, 'Doe, Alice', 4.5, 50, 'Evidence'),
         makeRecord(2, 'Roe, Bob', 4.5, 55, 'Torts'),
         makeRecord(3, 'Smith, Sam', 4.5, 60, 'Contracts'),
+        makeRecord(4, 'Doe, Alice', 4.5, 299, 'Below Threshold'),
+        makeRecord(5, 'Roe, Bob', 4.5, 300, 'At Threshold'),
+        makeRecord(6, 'Smith, Sam', 4.5, 600, 'Above Threshold'),
       ],
     });
     vi.mocked(useDataset).mockReturnValue({
@@ -270,6 +279,14 @@ describe('Courses table expansion', () => {
     fireEvent.keyDown(reviewsSlider, { key: 'ArrowLeft' });
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('40+');
     expect(reviewsSlider.getAttribute('aria-valuenow')).toBe('40');
+
+    fireEvent.keyDown(reviewsSlider, { key: 'End' });
+    fireEvent.keyDown(reviewsSlider, { key: 'ArrowRight' });
+    expect(reviewsSlider.getAttribute('aria-valuenow')).toBe('300');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('300+');
+    expect(screen.queryByTestId('row-courses-below-threshold')).toBeNull();
+    expect(screen.getByTestId('row-courses-at-threshold')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-above-threshold')).toBeTruthy();
   });
 
   it('shows 1L courses by default and hides only those courses when the toggle is off', () => {
@@ -403,7 +420,8 @@ describe('Courses table expansion', () => {
   it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
     render(<CoursesPage />);
 
-    expect(screen.getByText('You have to take Professional Responsibility, but there are 13 professors teaching it. How do you choose whose class to take? We have all the data to help you decide.')).toBeTruthy();
+    expect(screen.queryByText(/You have to take Professional Responsibility/)).toBeNull();
+    expect(screen.getByTestId('filter-summary').previousElementSibling?.tagName).toBe('H1');
     const table = screen.getByTestId('directory-table');
     const tableHeader = screen.getByTestId('directory-table-header');
     expect(table.classList.contains('overflow-clip')).toBe(true);
