@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { Router, Route } from 'wouter';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, useDataset, type RawData } from '@/lib/data';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import ProfessorPage from './professor';
 
 vi.mock('@/lib/data', async (importOriginal) => ({
@@ -49,9 +50,11 @@ function renderProfessorPage(data = dataset, professorSlug = data.professors[0].
   } as unknown as ReturnType<typeof useDataset>);
   window.history.replaceState(null, '', `/professors/${professorSlug}`);
   return render(
-    <Router>
-      <Route path="/professors/:id" component={ProfessorPage} />
-    </Router>,
+    <TooltipProvider>
+      <Router>
+        <Route path="/professors/:id" component={ProfessorPage} />
+      </Router>
+    </TooltipProvider>,
   );
 }
 
@@ -109,7 +112,8 @@ describe('Professor detail summary', () => {
     expect(standingCards.className).toContain('xl:justify-self-end');
     expect(screen.getByTestId('professor-standing-rank').className).toContain('rounded-[1.6rem]');
     expect(standingCards.textContent).toContain('Rank #1');
-    expect(standingCards.textContent).toContain('out of 100 professors with 50+ reviews');
+    expect(standingCards.textContent).toContain('out of 100 professors rated');
+    expect(standingCards.textContent).not.toContain('with 50+ reviews');
     expect(standingCards.textContent).toContain('Effectiveness Score');
     expect(screen.getByTestId('professor-standing-score-value').textContent).toBe('5.00 / 5.00');
     expect(screen.queryByText('Percentile Standing')).toBeNull();
@@ -137,6 +141,19 @@ describe('Professor detail summary', () => {
       expect(screen.queryByText('Based on overall effectiveness percentile')).toBeNull();
       close();
     }
+  });
+
+  it('explains the 50-review threshold for professor rankings', async () => {
+    renderProfessorPage();
+    const infoButton = screen.getByTestId('button-professor-rank-info');
+
+    fireEvent.pointerMove(infoButton, { pointerType: 'mouse', clientX: 0, clientY: 0 });
+
+    expect(await screen.findByText(
+      'Only professors with 50 or more reviews were rated.',
+      {},
+      { timeout: 3000 },
+    )).toBeTruthy();
   });
 
   it('shows N/A for standing cards when a professor has fewer than 50 reviews', () => {

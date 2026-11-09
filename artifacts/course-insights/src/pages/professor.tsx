@@ -1,8 +1,9 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Info } from 'lucide-react';
 import { aggregate, bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Stat, useTitle } from '@/components/kit';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
@@ -159,7 +160,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 ? `Professors with fewer than ${MIN_REVIEWS_FOR_PROFESSOR_RANKING} reviews are not included in overall rankings`
                 : standing.rank == null
                   ? 'No overall teaching score to rank'
-                  : `out of ${fmtInt(standing.totalRated)} professors with ${MIN_REVIEWS_FOR_PROFESSOR_RANKING}+ reviews`,
+                  : `out of ${fmtInt(standing.totalRated)} professors rated`,
             },
             {
               id: 'score',
@@ -197,8 +198,25 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                   {card.value}
                 </div>
                 {card.sub && (
-                  <p className="relative z-10 mt-2 max-w-full text-xs leading-relaxed text-muted-foreground">
-                    {card.sub}
+                  <p className="relative z-10 mt-2 flex max-w-full flex-wrap items-center justify-center gap-x-1 text-xs leading-relaxed text-muted-foreground">
+                    <span>{card.sub}</span>
+                    {card.id === 'rank' && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label="Overall rank information"
+                            data-testid="button-professor-rank-info"
+                            className="inline-flex shrink-0 cursor-help rounded-full transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <Info aria-hidden="true" className="h-3.5 w-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                          Only professors with 50 or more reviews were rated.
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </p>
                 )}
               </article>
