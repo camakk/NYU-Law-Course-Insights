@@ -34,7 +34,6 @@ type DirectorySnapshot = {
 
 const COURSE_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsCourseDirectory';
 const PROFESSOR_DIRECTORY_SNAPSHOT_KEY = 'courseInsightsProfessorDirectory';
-const MAX_MINIMUM_REVIEWS = 300;
 const REVIEW_TICKS = Array.from({ length: 4 }, (_, index) => index * 100);
 const COURSE_CATEGORY_TOGGLES: Array<{ id: string; label: string; categories: CourseCategory[] }> = [
   { id: 'toggle-include-courses', label: 'Include Courses', categories: ['Course'] },
@@ -256,6 +255,7 @@ function RangeBandFilter({ label, minValue, maxValue, onChange, id }: {
 }
 
 function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
+  const maxReviews = kind === 'courses' ? 200 : 300;
   const [returnSnapshot] = useState(() => readDirectorySnapshot(
     kind === 'courses' ? COURSE_DIRECTORY_SNAPSHOT_KEY : PROFESSOR_DIRECTORY_SNAPSHOT_KEY,
   ));
@@ -275,7 +275,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
   const [minResponses, setMinResponses] = useState(() => {
     const savedValue = returnSnapshot?.minResponses;
-    return savedValue ? String(Math.min(Number(savedValue), MAX_MINIMUM_REVIEWS)) : savedValue ?? (kind === 'courses' ? '0' : '50');
+    return savedValue ? String(Math.min(Number(savedValue), maxReviews)) : savedValue ?? (kind === 'courses' ? '0' : '50');
   });
   const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
   const [maxScore, setMaxScore] = useState(() => returnSnapshot?.maxScore ?? '');
@@ -298,7 +298,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const maxOfferings = kind === 'professors'
     ? 30
     : Math.max(10, ...groupsForKind.map((group) => group.records.length + 10));
-  const maxReviews = MAX_MINIMUM_REVIEWS;
   const hasFilters = q !== '' || (kind === 'courses' && (!include1LCourses || !includeOnlineInternationalCourses || !includeUpperLevelTaxCourses)) ||
     (kind === 'professors' && minOfferings !== '' && Number(minOfferings) > 1) ||
     (minResponses !== '' && Number(minResponses) > 0) ||

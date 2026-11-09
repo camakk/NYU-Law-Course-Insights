@@ -162,14 +162,14 @@ describe('Courses table expansion', () => {
     expect(minimumReviewsControl.parentElement).toBe(categoryToggleRow);
     expect(minimumReviewsControl.classList.contains('flex-1')).toBe(true);
     expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('0');
-    expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('300');
+    expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('200');
     expect(minimumReviewsSlider.getAttribute('aria-valuemin')).toBe('0');
     expect(screen.getByTestId('filter-min-responses-tick-0').textContent).toBe('0');
     expect(screen.getByTestId('filter-min-responses-tick-100').textContent).toBe('100');
     expect(screen.queryByTestId('filter-min-responses-tick-50')).toBeNull();
-    expect(screen.getByTestId('filter-min-responses-tick-300').textContent).toBe('300');
-    expect(screen.queryByTestId('filter-min-responses-tick-400')).toBeNull();
-    expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(4);
+    expect(screen.getByTestId('filter-min-responses-tick-200').textContent).toBe('200');
+    expect(screen.queryByTestId('filter-min-responses-tick-300')).toBeNull();
+    expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(3);
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('No minimum');
     expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
     expect(within(minimumReviewsControl).getAllByText('No minimum')).toHaveLength(1);
@@ -247,8 +247,8 @@ describe('Courses table expansion', () => {
         makeRecord(1, 'Doe, Alice', 4.5, 50, 'Evidence'),
         makeRecord(2, 'Roe, Bob', 4.5, 55, 'Torts'),
         makeRecord(3, 'Smith, Sam', 4.5, 60, 'Contracts'),
-        makeRecord(4, 'Doe, Alice', 4.5, 299, 'Below Threshold'),
-        makeRecord(5, 'Roe, Bob', 4.5, 300, 'At Threshold'),
+        makeRecord(4, 'Doe, Alice', 4.5, 199, 'Below Threshold'),
+        makeRecord(5, 'Roe, Bob', 4.5, 200, 'At Threshold'),
         makeRecord(6, 'Smith, Sam', 4.5, 600, 'Above Threshold'),
         makeRecord(7, 'Doe, Alice', 4.5, 5, 'Small Course'),
       ],
@@ -288,8 +288,8 @@ describe('Courses table expansion', () => {
 
     fireEvent.keyDown(reviewsSlider, { key: 'End' });
     fireEvent.keyDown(reviewsSlider, { key: 'ArrowRight' });
-    expect(reviewsSlider.getAttribute('aria-valuenow')).toBe('300');
-    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('300+');
+    expect(reviewsSlider.getAttribute('aria-valuenow')).toBe('200');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('200+');
     expect(screen.queryByTestId('row-courses-below-threshold')).toBeNull();
     expect(screen.getByTestId('row-courses-at-threshold')).toBeTruthy();
     expect(screen.getByTestId('row-courses-above-threshold')).toBeTruthy();
