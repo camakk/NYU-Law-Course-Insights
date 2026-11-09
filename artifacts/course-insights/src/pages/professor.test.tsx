@@ -434,9 +434,9 @@ describe('Professor detail summary', () => {
     const brown = colorFor(2);
     const purple = colorFor(3);
 
-    expect(blue).toBe('rgb(37, 99, 235)');
-    expect(brown).toBe('rgb(139, 90, 43)');
-    expect(purple).toBe('rgb(124, 58, 237)');
+    expect(blue).toBe('rgb(82, 119, 157)');
+    expect(brown).toBe('rgb(139, 112, 85)');
+    expect(purple).toBe('rgb(138, 109, 158)');
     expect(colorFor(4)).toBe(blue);
     expect(colorFor(5)).toBe(brown);
     expect(new Set([blue, brown, purple]).size).toBe(3);
@@ -447,5 +447,22 @@ describe('Professor detail summary', () => {
     expect(marker.classList.contains('absolute')).toBe(true);
     expect(marker.classList.contains('left-0')).toBe(true);
     expect(marker.classList.contains('inset-y-0')).toBe(true);
+  });
+
+  it('uses distinct muted hues for successive courses and keeps colors stable when filtering', () => {
+    const paletteDataset = buildDataset({
+      questions: [], sourceNotes: [],
+      records: ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map((course, i) =>
+        makeRecord(i + 1, course, 'Spring 2026')),
+    });
+    renderProfessorPage(paletteDataset);
+    const color = (id: number) => screen.getByTestId(`course-color-block-${id}`).style.backgroundColor;
+    expect([color(1), color(2), color(4), color(5), color(3)]).toEqual([
+      'rgb(82, 119, 157)', 'rgb(179, 154, 85)', 'rgb(138, 109, 158)',
+      'rgb(113, 142, 120)', 'rgb(184, 117, 112)',
+    ]);
+    const gammaColor = color(3);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Alpha' }));
+    expect(color(3)).toBe(gammaColor);
   });
 });

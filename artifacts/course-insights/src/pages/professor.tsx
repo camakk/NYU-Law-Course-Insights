@@ -17,22 +17,21 @@ const COURSE_QUESTION_LABELS: Record<number, string> = {
 };
 const OTHER_QUESTION_INDEXES = Array.from({ length: 10 }, (_, index) => index)
   .filter((index) => index !== PROFESSOR_EFFECTIVE_QUESTION && index !== COURSE_EFFECTIVE_QUESTION);
-const COURSE_COLOR_BLUE = '#2563EB';
-const COURSE_COLOR_BROWN = '#8B5A2B';
-const COURSE_COLOR_PURPLE = '#7C3AED';
+const COURSE_COLOR_BLUE = '#52779D';
+const COURSE_COLOR_BROWN = '#8B7055';
+const COURSE_COLOR_PURPLE = '#8A6D9E';
 const COURSE_COLOR_OVERRIDES: Record<string, string> = {
   'constitutional law (for 1ls)': COURSE_COLOR_BLUE,
   'free expression and social media seminar': COURSE_COLOR_BROWN,
   'leadership, diversity, and inclusion': COURSE_COLOR_PURPLE,
 };
 const COURSE_COLOR_PALETTE = [
-  COURSE_COLOR_BLUE, '#1D4ED8', '#3B82F6', '#1E40AF', '#60A5FA', '#0EA5E9', '#0284C7', '#075985', '#1E3A8A', '#4338CA',
-  COURSE_COLOR_PURPLE, '#8B5CF6', '#6D28D9', '#9333EA', '#A855F7', '#C084FC', '#5B21B6', '#A21CAF', '#C026D3', '#D946EF', '#86198F', '#701A75',
-  '#0891B2', '#06B6D4', '#0E7490', '#155E75', '#22D3EE', '#164E63',
-  COURSE_COLOR_BROWN, '#A0522D', '#6F4E37', '#795548', '#92400E', '#78350F',
-  '#475569', '#64748B', '#334155', '#52525B',
+  COURSE_COLOR_BLUE, '#B39A55', COURSE_COLOR_PURPLE, '#718E78', '#B87570',
+  '#579294', COURSE_COLOR_BROWN, '#B37F9A', '#6C7C91', '#A68A65',
+  '#7275A3', '#8C995F', '#A36C83', '#729DAA', '#AC8464',
+  '#667E68', '#9F8CAB', '#B4988A', '#768DAD', '#9A796A',
 ];
-const EXTRA_COURSE_COLOR_HUES = [210, 222, 234, 246, 258, 270, 282, 294, 306, 190, 198, 28, 32];
+const EXTRA_COURSE_COLOR_HUES = [210, 35, 280, 145, 5, 185, 325, 70, 250, 115, 20, 300];
 function offeringScore(record: EvalRecord, questionIndex: number): number | null {
   return usable(record, questionIndex) ? record.scores[questionIndex] : null;
 }
@@ -47,11 +46,8 @@ function shortSemester(semester: string): string {
 function extraCourseColor(index: number): string {
   const hue = EXTRA_COURSE_COLOR_HUES[index % EXTRA_COURSE_COLOR_HUES.length];
   const shade = Math.floor(index / EXTRA_COURSE_COLOR_HUES.length);
-  const isBrown = hue === 28 || hue === 32;
-  const saturation = 55 + (shade % 7) * 5;
-  const lightness = isBrown
-    ? 24 + (Math.floor(shade / 7) % 6) * 3
-    : 32 + (Math.floor(shade / 7) % 11) * 4;
+  const saturation = 28 + (shade % 3) * 6;
+  const lightness = 42 + (Math.floor(shade / 3) % 5) * 6;
   return `hsl(${hue} ${saturation}% ${lightness}%)`;
 }
 
