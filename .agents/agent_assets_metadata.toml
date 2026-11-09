@@ -14,3 +14,17 @@ mtime_ms = 1794087670030
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:eb85ca93-f594-439c-9cd9-5e80b100a3d8/3c1f872d-6bab-4c9a-b819-80653b74d77d/dc428c45-b1c3-4aa9-9299-5c81a70083a3"
 storage_version_token = "1794087679467815"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "e5zCvSz2MradNnLOvAfmq"
+uri = "file://generated-artifacts/nyu-course-insights-static.zip"
+type = "unspecified"
+title = "NYU Course Insights — Static Website"
+description = "Upload-ready static website with all 7,744 evaluation offerings preloaded. Includes hosting instructions; no API server or database required."
+logical_id = "1b49b354-4da7-4d7c-b95c-839784732baf"
+content_hash = "sha256:9fe7b837c6f695ce1c243e684ab6f9597c9f20b247bec39e771fe9d2d17bb44d"
+size = 838029
+mtime_ms = 1794249935405
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:eb85ca93-f594-439c-9cd9-5e80b100a3d8/1b49b354-4da7-4d7c-b95c-839784732baf/5959ff8a-2ebd-4cee-8372-c17a65ca4771"
+storage_version_token = "1794249968488257"
+content_type = "application/octet-stream"

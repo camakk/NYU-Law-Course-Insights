@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, Info, SlidersHorizontal } from 'lucide-react';
 import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIES, fmt, fmtInt, friendlyName, isCoreTaxCourse, useDataset, type CourseCategory, type Dataset, type EvalRecord, type Group } from '@/lib/data';
@@ -9,7 +9,6 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { CourseProfessorExpansion } from '@/components/course-professor-expansion';
 import { CourseProfessorPreview } from '@/components/course-professor-preview';
 
 type Kind = 'professors' | 'courses';
@@ -29,7 +28,6 @@ type DirectorySnapshot = {
   activeOnly?: boolean;
   filtersOpen: boolean;
   lastHeaderSort: string | null;
-  expandedCourseSlugs?: string[];
   expandedRecentSemesterSlugs?: string[];
   scrollY: number;
 };
@@ -405,11 +403,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       activeOnly,
       filtersOpen,
       lastHeaderSort: lastHeaderSort.current,
-      expandedCourseSlugs: Array.from(document.querySelectorAll<HTMLButtonElement>(
-        '[data-testid^="button-expand-course-"][aria-expanded="true"]',
-      ))
-        .map((button) => button.dataset.testid?.replace('button-expand-course-', ''))
-        .filter((slug): slug is string => Boolean(slug)),
       expandedRecentSemesterSlugs: Object.entries(expandedRecentSemesters)
         .filter(([, expanded]) => expanded)
         .map(([slug]) => slug),
@@ -914,7 +907,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   )}
                 </>
               );
-              const renderCells = (expandButton: ReactNode = null) => (
+              const renderCells = () => (
                 <>
                   <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
                   <span className="min-w-0">
@@ -958,11 +951,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       <span className={isProf ? 'xl:hidden num' : 'md:hidden num'}>· {fmtInt(r.m.responses)} reviews</span>
                       <SmallSample responses={r.m.responses} />
                     </span>
-                    {!isProf && (
-                      <span className="mt-1 block text-xs" data-testid={`course-expand-line-${r.g.slug}`}>
-                        {expandButton}
-                      </span>
-                    )}
                     <span className={`mt-1 block min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:hidden' : 'lg:hidden'}`}>
                        <span className={`block text-[10px] font-medium ${isProf ? 'uppercase tracking-wide' : 'normal-case tracking-normal'}`}>
                          {isProf ? 'Recent courses' : 'Recent Professors'}
@@ -1014,21 +1002,13 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 );
               }
               return (
-                <CourseProfessorExpansion
+                <div
                   key={r.g.slug}
-                  course={r.g}
-                  dataset={ds}
-                  includeMostRecent
-                  formatSemester={formatSemesterForDisplay}
-                  initialExpanded={returnSnapshot?.expandedCourseSlugs?.includes(r.g.slug) ?? false}
+                  data-testid={`row-courses-${r.g.slug}`}
+                  className="border-b last:border-0"
                 >
-                  {({ button, panel }) => (
-                    <div data-testid={`row-courses-${r.g.slug}`} className="border-b last:border-0">
-                      <div className={rowClass}>{renderCells(button)}</div>
-                      {panel}
-                    </div>
-                  )}
-                </CourseProfessorExpansion>
+                  <div className={rowClass}>{renderCells()}</div>
+                </div>
               );
             })}
           </div>

@@ -5,3 +5,4 @@
 - [Feedback report test adapter](feedback-report-test-adapter.md) — pg-mem needs hidden report IDs resolved from its isolated table instead of grouped HAVING subqueries.
 - [Professor name normalization](professor-name-normalization.md) — merge optional middle-initial variants under the initialed name; keep conflicting initials separate.
 - [PostgreSQL integration tests](postgresql-test-lifecycle.md) — run temporary PostgreSQL in a managed background process; shell-launched daemons may stop with the command.
+- [Static catalog hosting](static-catalog.md) — preload the complete evaluation snapshot; public browsing must work without a backend or runtime data requests.

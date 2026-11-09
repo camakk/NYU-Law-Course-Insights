@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
+import bundledEvaluations from '../artifacts/course-insights/evaluations-plugin.mjs';
 
 const projectRoot = path.resolve(import.meta.dirname, '..');
 const appRoot = path.join(projectRoot, 'artifacts/course-insights');
@@ -11,7 +12,7 @@ const { default: tailwindcss } = await import(pathToFileURL(appRequire.resolve('
 export default {
   base: '/',
   root: appRoot,
-  plugins: [react(), tailwindcss()],
+  plugins: [bundledEvaluations(), react(), tailwindcss()],
   resolve: {
     alias: {
       '@': path.join(appRoot, 'src'),

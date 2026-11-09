@@ -67,7 +67,7 @@ beforeEach(() => {
 });
 
 describe('Courses table expansion', () => {
-  it('previews the top three course-specific professors using the same ranking as Expand', () => {
+  it('previews the top three course-specific professors and expands them only within Top Professors', () => {
     const missingScore = makeRecord(8, 'Missing, Morgan', 5, 60);
     missingScore.scores[5] = null;
     const previewDataset = buildDataset({
@@ -121,16 +121,15 @@ describe('Courses table expansion', () => {
     expect(within(preview).queryByText('Morgan Missing')).toBeNull();
     expect(screen.queryByTestId('rating-course-evidence')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
-    const panel = screen.getByTestId('panel-top-professors-evidence');
-    const expandedLinks = within(panel).getAllByRole('link');
-    expect(expandedLinks.map((link) => link.textContent)).toEqual(['Bob Roe', 'Carol Smith', 'Dan White', 'Alice Doe']);
-    for (const slug of ['bob-roe', 'carol-smith', 'dan-white']) {
-      const previewBar = screen.getByTestId(`preview-rating-evidence-${slug}`).querySelector('[role="meter"]');
-      const expandedBar = screen.getByTestId(`rating-course-professor-evidence-${slug}`).querySelector('[role="meter"]');
-      expect(previewBar?.getAttribute('aria-valuenow')).toBe(expandedBar?.getAttribute('aria-valuenow'));
-      expect(previewBar?.firstElementChild?.getAttribute('style')).toBe(expandedBar?.firstElementChild?.getAttribute('style'));
-    }
+    expect(screen.queryByRole('button', { name: 'Expand top professors for Evidence' })).toBeNull();
+    expect(screen.queryByTestId('panel-top-professors-evidence')).toBeNull();
+    fireEvent.click(screen.getByTestId('button-toggle-course-top-professors-evidence'));
+    expect(within(preview).getAllByRole('link').map((link) => link.textContent)).toEqual([
+      '1. Bob Roe • Fall 2025', '2. Carol Smith • Fall 2025',
+      '3. Dan White • Fall 2025', '4. Alice Doe • Fall 2025',
+    ]);
+    expect(within(preview).getAllByRole('meter').map((meter) => meter.getAttribute('aria-valuenow')))
+      .toEqual(['4.8', '4.7', '4.5', '4.4']);
 
     fireEvent.click(links[0]);
     expect(window.location.pathname).toBe('/professors/bob-roe');
@@ -738,7 +737,7 @@ describe('Courses table expansion', () => {
     expect(rowFor('Taxonomy Workshop')).toBeTruthy();
   });
 
-  it('shows the same eligible, ranked professors and keeps expansion separate from course navigation', () => {
+  it('removes course-column expansion while keeping course links and eligible professor previews', () => {
     render(<CoursesPage />);
 
     expect(screen.queryByText(/You have to take Professional Responsibility/)).toBeNull();
@@ -773,10 +772,10 @@ describe('Courses table expansion', () => {
     expect(previewCell.previousElementSibling?.classList.contains('text-center')).toBe(true);
     expect(previewCell.previousElementSibling?.previousElementSibling?.textContent).toBe('4');
     expect(previewCell.previousElementSibling?.previousElementSibling?.classList.contains('text-center')).toBe(true);
-    const expandLine = within(row).getByTestId('course-expand-line-evidence');
-    expect(expandLine.classList.contains('block')).toBe(true);
-    expect(within(expandLine).getByRole('button', { name: 'Expand top professors for Evidence' })).toBeTruthy();
-    expect(expandLine.previousElementSibling?.querySelector('button')).toBeNull();
+    expect(within(row).queryByTestId('course-expand-line-evidence')).toBeNull();
+    expect(within(row).queryByRole('button', { name: 'Expand top professors for Evidence' })).toBeNull();
+    const courseCell = within(row).getByRole('link', { name: 'Evidence' }).parentElement!.parentElement!;
+    expect(within(courseCell).queryByRole('button', { name: /^Expand top professors/ })).toBeNull();
     expect(within(row).queryByTestId('rating-course-teaching-evidence')).toBeNull();
     const spring2026 = within(row).getByTestId('recent-semester-evidence-compact-0');
     expect(spring2026.textContent).toBe('🌸 Spring 2026 • Alice Doe (4.90)');
@@ -792,27 +791,16 @@ describe('Courses table expansion', () => {
     const recentProfessorLinks = within(row).getAllByRole('link', { name: 'Alice Doe (4.90)' });
     expect(recentProfessorLinks.length).toBeGreaterThan(0);
     expect(recentProfessorLinks.every((link) => link.getAttribute('href') === '/professors/alice-doe')).toBe(true);
-    const button = within(row).getByRole('button', { name: 'Expand top professors for Evidence' });
-    const panel = screen.getByTestId('panel-top-professors-evidence');
-
-    expect(panel.hidden).toBe(true);
-    fireEvent.click(button);
-    expect(button.getAttribute('aria-expanded')).toBe('true');
-    expect(panel.hidden).toBe(false);
-
-    const entries = within(panel).getAllByRole('listitem');
+    expect(screen.queryByTestId('panel-top-professors-evidence')).toBeNull();
+    const preview = within(row).getByTestId('course-professor-preview-evidence');
+    const entries = within(preview).getAllByTestId(/^preview-professor-evidence-/);
     expect(entries).toHaveLength(2);
     expect(entries.map((entry) => within(entry).getByRole('link').textContent)).toEqual([
-      'Alice Doe',
-      'Bob Roe',
+      '1. Alice Doe • Spring 2026',
+      '2. Bob Roe • Spring 2024',
     ]);
-    expect(within(panel).queryByText('Sam Small')).toBeNull();
-    expect(within(entries[0]).getByText('50 reviews · 2 times taught · Most recently: 🌸 Spring 2026')).toBeTruthy();
-    expect(within(entries[1]).getByText('25 reviews · 1 time taught · Most recently: 🌸 Spring 2024')).toBeTruthy();
+    expect(within(preview).queryByText('Sam Small')).toBeNull();
     expect(window.location.pathname).toBe('/');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }));
-    expect(panel.hidden).toBe(true);
     fireEvent.click(within(row).getByRole('link', { name: 'Evidence' }));
     expect(window.location.pathname).toBe('/courses/evidence');
   });
@@ -1052,7 +1040,6 @@ describe('Courses table expansion', () => {
       fireEvent.click(screen.getByTestId('toggle-include-upper-level-tax-courses'));
       fireEvent.change(screen.getByTestId('select-sort'), { target: { value: 'rating-asc' } });
       fireEvent.click(screen.getByTestId('toggle-include-seminars-colloquiums'));
-      fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
       fireEvent.click(screen.getByTestId('button-toggle-course-history-evidence-compact'));
       fireEvent.click(screen.getByRole('link', { name: 'Evidence' }));
 
@@ -1076,10 +1063,9 @@ describe('Courses table expansion', () => {
       expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('rating-asc');
       expect(screen.getByTestId('toggle-include-seminars-colloquiums').getAttribute('aria-checked')).toBe('false');
       expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();
-      expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('button-toggle-course-history-evidence-compact').getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('🍂 Fall 2024 • Alice Doe (4.50)');
-      expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
+      expect(screen.queryByTestId('panel-top-professors-evidence')).toBeNull();
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
       expect(screen.getByTestId('row-courses-evidence-for-1ls')).toBeTruthy();
       expect(screen.getByTestId('row-courses-evidence-online')).toBeTruthy();

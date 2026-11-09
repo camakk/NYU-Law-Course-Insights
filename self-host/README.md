@@ -1,5 +1,14 @@
 # NYU Course Insights — self-hosted edition
 
+**The current website is static.** For the recommended backend-free package,
+see [STATIC-HOSTING.md](STATIC-HOSTING.md) and run
+`node self-host/build-static.mjs`. That package requires no Node server,
+database, secrets, or API. All evaluations are preloaded in the browser.
+
+The instructions below describe the older, separate full-server export tools.
+They are not required for the static website and do not re-enable the disabled
+After the exam section.
+
 This download contains the complete website source, the evaluation dataset, a prebuilt frontend, and a bundled Node.js server that serves both the website and the feedback API at one URL. Replit is not required to run it.
 
 ## What is included

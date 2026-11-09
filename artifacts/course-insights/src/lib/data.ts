@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { buildProfessorNameAliases } from '@workspace/professor-identity';
+import bundledEvaluations from 'virtual:course-evaluations';
 
 export interface EvalRecord {
   id: number;
@@ -265,18 +266,25 @@ export function buildDataset(raw: RawData): Dataset {
   };
 }
 
+let preloadedDataset: Dataset | undefined;
+
+function getPreloadedDataset(): Dataset {
+  // Normalize, aggregate, and index once per page load. Every route uses the
+  // same in-memory dataset, including manual retries and new query providers.
+  return preloadedDataset ??= buildDataset(bundledEvaluations);
+}
+
 export function useDataset() {
   return useQuery({
     queryKey: ['evaluations'],
+    initialData: getPreloadedDataset,
+    queryFn: getPreloadedDataset,
     staleTime: Infinity,
-    retry: 1,
-    queryFn: async () => {
-      const res = await fetch(import.meta.env.BASE_URL + 'data/evaluations.json', { credentials: 'include' });
-      if (!res.ok) throw new Error(`Could not load evaluations (HTTP ${res.status})`);
-      const json = (await res.json()) as RawData;
-      if (!json || !Array.isArray(json.records)) throw new Error('Evaluation file is malformed.');
-      return buildDataset(json);
-    },
+    gcTime: Infinity,
+    retry: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
