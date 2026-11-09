@@ -60,7 +60,7 @@ function renderDirectoryWithData(data: ReturnType<typeof buildDataset>) {
 
 function professorOrder(container: HTMLElement) {
   return Array.from(container.querySelectorAll('[data-testid^="row-professors-"]'))
-    .map((row) => row.querySelector('.font-medium.truncate')?.textContent);
+    .map((row) => row.querySelector('.font-medium')?.textContent);
 }
 
 function selectedSort() {
@@ -101,12 +101,37 @@ describe('Professor table sorting', () => {
     expect(header.classList.contains('top-36')).toBe(true);
     expect(header.textContent).toContain('Recent Courses');
     expect(header.textContent).not.toContain('Recent courses and semesters');
-    const professorColumnLayout = 'xl:grid-cols-[3rem_minmax(10rem,0.8fr)_minmax(18rem,1.4fr)_12rem_6rem_7rem_2rem]';
+    expect(screen.getByText('Recent Courses').classList.contains('normal-case')).toBe(true);
+    const professorColumnLayout = 'xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_12rem_6rem_7rem_2rem]';
     expect(header.classList.contains(professorColumnLayout)).toBe(true);
     expect(row.classList.contains(professorColumnLayout)).toBe(true);
+    const professorName = row.querySelector('.font-medium');
+    expect(professorName?.classList.contains('whitespace-normal')).toBe(true);
+    expect(professorName?.classList.contains('break-words')).toBe(true);
+    expect(professorName?.classList.contains('truncate')).toBe(false);
     expect(screen.queryByTestId('select-semester')).toBeNull();
     expect(row.textContent).toContain('Last Taught Fall 2025');
     expect(row.textContent).not.toContain('Latest Fall 2025');
+  });
+
+  it('wraps long professor names instead of truncating them', () => {
+    const longNameDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Worcester-Fitzgerald, Alexandria Catherine-Montgomery', 'Evidence', 4.6, 60),
+      ],
+    });
+    renderDirectoryWithData(longNameDataset);
+
+    const professor = longNameDataset.professors[0];
+    const row = screen.getByTestId(`row-professors-${professor.slug}`);
+    const name = row.querySelector('.font-medium');
+
+    expect(name?.textContent).toBe(professor.label);
+    expect(name?.classList.contains('whitespace-normal')).toBe(true);
+    expect(name?.classList.contains('break-words')).toBe(true);
+    expect(name?.classList.contains('truncate')).toBe(false);
   });
 
   it('places Filters just left of Sort in the search toolbar and expands below it', () => {
