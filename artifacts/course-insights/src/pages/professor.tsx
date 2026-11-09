@@ -3,6 +3,7 @@ import { Link, useParams } from 'wouter';
 import { ChevronLeft, Info } from 'lucide-react';
 import { aggregate, bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Stat, useTitle } from '@/components/kit';
+import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
@@ -25,15 +26,6 @@ const COURSE_COLOR_PALETTE = [
   '#475569', '#64748B', '#334155', '#52525B',
 ];
 const EXTRA_COURSE_COLOR_HUES = [210, 222, 234, 246, 258, 270, 282, 294, 306, 190, 198, 28, 32];
-const EFFECTIVENESS_GRADE_PILL_STYLES: Record<string, string> = {
-  'A+': 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200',
-  A: 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200',
-  'A-': 'border-lime-300 bg-gradient-to-r from-lime-100 to-yellow-100 text-lime-800 dark:border-lime-700 dark:from-lime-900/60 dark:to-yellow-900/50 dark:text-lime-200',
-  'B+': 'border-lime-300 bg-gradient-to-r from-lime-100 via-yellow-100 to-yellow-200 text-amber-800 dark:border-lime-700 dark:from-lime-900/50 dark:via-yellow-900/50 dark:to-yellow-900/60 dark:text-yellow-200',
-  B: 'border-yellow-300 bg-yellow-100 text-amber-800 dark:border-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-200',
-  'B-': 'border-orange-300 bg-gradient-to-r from-yellow-100 to-red-200 text-red-800 dark:border-orange-700 dark:from-yellow-900/50 dark:to-red-900/60 dark:text-orange-200',
-};
-
 function offeringScore(record: EvalRecord, questionIndex: number): number | null {
   return usable(record, questionIndex) ? record.scores[questionIndex] : null;
 }
@@ -187,16 +179,21 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 <div className="relative z-10 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   {card.label}
                 </div>
-                <div
-                  className={`relative z-10 mt-2 inline-flex max-w-full items-center justify-center rounded-full border num ${
-                    card.id === 'grade'
-                      ? `min-h-14 px-6 text-4xl font-bold leading-none shadow-sm ${EFFECTIVENESS_GRADE_PILL_STYLES[card.value] ?? 'border-primary/10 bg-primary/10 text-primary'}`
-                      : 'min-h-10 bg-primary/10 px-4 text-lg font-semibold text-primary sm:text-xl'
-                  }`}
-                  data-testid={`professor-standing-${card.id}-value`}
-                >
-                  {card.value}
-                </div>
+                {card.id === 'grade' ? (
+                  <EffectivenessGradePill
+                    grade={card.value}
+                    size="large"
+                    className="relative z-10 mt-2"
+                    testId={`professor-standing-${card.id}-value`}
+                  />
+                ) : (
+                  <div
+                    className="relative z-10 mt-2 inline-flex min-h-10 max-w-full items-center justify-center rounded-full border bg-primary/10 px-4 text-lg font-semibold text-primary num sm:text-xl"
+                    data-testid={`professor-standing-${card.id}-value`}
+                  >
+                    {card.value}
+                  </div>
+                )}
                 {card.sub && (
                   <p className="relative z-10 mt-2 flex max-w-full flex-wrap items-center justify-center gap-x-1 text-xs leading-relaxed text-muted-foreground">
                     <span>{card.sub}</span>

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpRight, ChevronDown, Info, SlidersHorizontal } from 'lucide-react';
-import { aggregate, bySemesterDesc, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
+import { aggregate, bySemesterDesc, calculateProfessorStanding, COURSE_CATEGORIES, fmtInt, friendlyName, useDataset, type CourseCategory, type Dataset, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, PageError, PageLoading, RatingBar, Score, SearchBox, useTitle } from '@/components/kit';
+import { EffectivenessGradePill } from '@/components/effectiveness-grade-pill';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -264,6 +265,20 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setMaxScore('');
     setActiveOnly(true);
   };
+  const professorGradeBySlug = useMemo(() => {
+    if (kind !== 'professors') return new Map<string, string>();
+    const rankingEntries = ds.professors.map((professor) => ({
+      score: professor.metrics[5]?.avg ?? null,
+      reviews: professor.metrics[5]?.responses ?? 0,
+    }));
+    return new Map(ds.professors.map((professor, index) => {
+      const standing = calculateProfessorStanding(rankingEntries, rankingEntries[index]);
+      return [
+        professor.slug,
+        standing.grade ?? (standing.belowReviewThreshold ? 'N/A' : '—'),
+      ] as const;
+    }));
+  }, [ds.professors, kind]);
   const toggleCategory = (category: CourseCategory) => {
     setIncludedCategories((current) =>
       current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
@@ -665,7 +680,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         <>
           <div className="bg-card border rounded-xl overflow-clip" data-testid="directory-table">
             <div className={`${isProf
-              ? 'hidden xl:grid xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_12rem_6rem_7rem_2rem]'
+              ? 'hidden xl:grid xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]'
               : 'hidden md:grid md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
             } sticky top-36 z-20 gap-3 px-4 py-2.5 text-[11px] uppercase tracking-wider text-muted-foreground border-b bg-muted/95 backdrop-blur`} data-testid="directory-table-header">
               <span>#</span>
@@ -673,6 +688,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 ? sortHeader('Professor', 'professor', 'name', 'name-desc', 'left', 'ascending')
                 : sortHeader('Course', 'course', 'name', 'name-desc', 'left', 'ascending')}
               <span className={isProf ? 'hidden xl:block normal-case tracking-normal' : 'hidden lg:block normal-case tracking-normal'}>{isProf ? 'Recent Courses' : 'Recent Professors'}</span>
+              {isProf && <span className="hidden xl:block text-center normal-case tracking-normal">Grade</span>}
               <span className="text-center">{isProf
                 ? sortHeader('Teaching', 'teaching', 'rating', 'rating-asc', 'center')
                 : sortHeader('Course Rating', 'rating', 'rating', 'rating-asc', 'center')}</span>
@@ -685,7 +701,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             </div>
             {rows.map((r, i) => {
               const rowClass = `group grid grid-cols-[2rem_1fr_auto] ${isProf
-                ? 'xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_12rem_6rem_7rem_2rem]'
+                ? 'xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]'
                 : 'md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
               } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
               const recentSemestersExpanded = expandedRecentSemesters[r.g.slug] ?? false;
@@ -766,6 +782,14 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   <span className={`hidden min-w-0 text-xs leading-5 text-muted-foreground ${isProf ? 'xl:block' : 'lg:block'}`}>
                     {renderRecentEntries(false)}
                   </span>
+                  {isProf && (
+                    <span className="hidden xl:flex justify-center">
+                      <EffectivenessGradePill
+                        grade={professorGradeBySlug.get(r.g.slug) ?? '—'}
+                        testId={`grade-professor-${r.g.slug}`}
+                      />
+                    </span>
+                  )}
                   <span className={isProf ? 'xl:justify-self-end' : 'md:justify-self-end'}>
                     {isProf
                       ? <RatingBar rating={r.m.avg} label={`${r.g.label} overall teaching rating`} compact testId={`rating-professor-${r.g.slug}`} />

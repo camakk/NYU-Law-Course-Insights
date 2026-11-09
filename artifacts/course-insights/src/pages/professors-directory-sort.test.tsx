@@ -103,7 +103,7 @@ describe('Professor table sorting', () => {
     expect(header.textContent).toContain('Recent Courses');
     expect(header.textContent).not.toContain('Recent courses and semesters');
     expect(screen.getByText('Recent Courses').classList.contains('normal-case')).toBe(true);
-    const professorColumnLayout = 'xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_12rem_6rem_7rem_2rem]';
+    const professorColumnLayout = 'xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_4rem_12rem_6rem_7rem_2rem]';
     expect(header.classList.contains(professorColumnLayout)).toBe(true);
     expect(row.classList.contains(professorColumnLayout)).toBe(true);
     const professorName = row.querySelector('.font-medium');
@@ -114,6 +114,31 @@ describe('Professor table sorting', () => {
     expect(screen.queryByTestId('select-semester')).toBeNull();
     expect(row.textContent).toContain('Last Taught Fall 2025');
     expect(row.textContent).not.toContain('Latest Fall 2025');
+  });
+
+  it('shows each professor’s all-time effectiveness grade in a colored bubble between recent courses and teaching', () => {
+    renderDirectory();
+
+    const header = screen.getByTestId('directory-table-header');
+    const headerLabels = Array.from(header.children).map((child) => child.textContent?.trim() ?? '');
+    const recentIndex = headerLabels.indexOf('Recent Courses');
+    const gradeIndex = headerLabels.indexOf('Grade');
+    const teachingIndex = headerLabels.findIndex((label) => label.includes('Teaching'));
+    expect(recentIndex).toBeLessThan(gradeIndex);
+    expect(gradeIndex).toBeLessThan(teachingIndex);
+
+    const aliceRow = screen.getByTestId('row-professors-alice-doe');
+    const aliceGrade = screen.getByTestId('grade-professor-alice-doe');
+    expect(aliceGrade.textContent).toBe('B-');
+    expect(aliceGrade.classList.contains('rounded-full')).toBe(true);
+    expect(aliceGrade.classList.contains('border-orange-300')).toBe(true);
+    expect(aliceGrade.classList.contains('to-red-200')).toBe(true);
+    expect(aliceRow.children[3].contains(aliceGrade)).toBe(true);
+    expect(aliceRow.children[4].querySelector('[data-testid="rating-professor-alice-doe"]')).toBeTruthy();
+
+    const bobGrade = screen.getByTestId('grade-professor-bob-roe');
+    expect(bobGrade.textContent).toBe('B+');
+    expect(bobGrade.classList.contains('border-lime-300')).toBe(true);
   });
 
   it('wraps long professor names instead of truncating them', () => {
