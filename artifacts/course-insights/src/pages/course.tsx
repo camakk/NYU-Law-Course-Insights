@@ -4,19 +4,29 @@ import { ChevronLeft } from 'lucide-react';
 import { aggregate, fmt, fmtInt, rankBy, shortQ, SMALL_SAMPLE, useDataset, type Dataset, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RankBars, Score, Stat, useTitle } from '@/components/kit';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
   useTitle(g.label);
   const [, navigate] = useLocation();
   const [sem, setSem] = useState('all');
   const [metric, setMetric] = useState(5);
+  const [excludeSmallSamples, setExcludeSmallSamples] = useState(true);
   const qs = ds.questions;
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [g.slug]);
 
-  const recs = useMemo(() => (sem === 'all' ? g.records : g.records.filter((r) => r.semester === sem)), [g, sem]);
+  const recs = useMemo(() => {
+    const selected = sem === 'all' ? g.records : g.records.filter((r) => r.semester === sem);
+    if (!excludeSmallSamples) return selected;
+    const reviewsByProfessor = new Map<string, number>();
+    for (const record of selected) {
+      reviewsByProfessor.set(record.professor, (reviewsByProfessor.get(record.professor) ?? 0) + (record.responded ?? 0));
+    }
+    return selected.filter((record) => (reviewsByProfessor.get(record.professor) ?? 0) >= SMALL_SAMPLE);
+  }, [g, sem, excludeSmallSamples]);
   const ranked = useMemo(() => {
     const m = new Map<string, typeof recs>();
     for (const r of recs) { if (!m.has(r.professor)) m.set(r.professor, []); m.get(r.professor)!.push(r); }
@@ -49,7 +59,7 @@ function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
         <Stat label="Course effective" value={fmt(aggregate(recs, 8).avg)} sub="/ 5, response-weighted" />
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap items-end gap-3 mb-6">
         <NativeSelect label="Rank by" value={String(metric)} onChange={(v) => setMetric(Number(v))} testId="select-metric">
           {qs.map((q, i) => <option key={i} value={i}>{i < 6 ? 'Teaching' : 'Course'} · {shortQ(q, i)}</option>)}
         </NativeSelect>
@@ -57,13 +67,24 @@ function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
           <option value="all">All semesters</option>
           {g.semesters.map((s) => <option key={s} value={s}>{s}</option>)}
         </NativeSelect>
+        <div className="flex h-11 items-center gap-2 rounded-lg border border-input bg-card px-3">
+          <Switch
+            id="course-exclude-small-samples"
+            checked={excludeSmallSamples}
+            onCheckedChange={setExcludeSmallSamples}
+            data-testid="toggle-course-small-samples"
+          />
+          <label htmlFor="course-exclude-small-samples" className="cursor-pointer select-none text-sm">
+            Exclude small samples
+          </label>
+        </div>
       </div>
 
       <section className="grid lg:grid-cols-[1.1fr_1fr] gap-6 mb-10">
         <div className="bg-card border rounded-xl p-4">
           <h2 className="font-display text-xl">Instructor comparison</h2>
           <p className="text-xs text-muted-foreground mb-3">{qs[metric]} · amber bars indicate Small Sample (fewer than {SMALL_SAMPLE} reviews) · click to open profile</p>
-          {chart.length ? <RankBars data={chart} metricLabel={qs[metric] ?? ''} onSelect={(d) => d.href && navigate(d.href)} /> : <Empty title="No rated offerings" hint="Try All semesters or another metric." />}
+          {chart.length ? <RankBars data={chart} metricLabel={qs[metric] ?? ''} onSelect={(d) => d.href && navigate(d.href)} /> : <Empty title="No rated offerings" hint="Try All semesters, another metric, or turn off Exclude small samples." />}
         </div>
         <div className="bg-card border rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b"><h2 className="font-display text-xl">Ranking</h2></div>
@@ -81,11 +102,12 @@ function CourseView({ ds, g }: { ds: Dataset; g: Group }) {
               </li>
             ))}
           </ol>
+          {ranked.length === 0 && <Empty title="No professors match these filters" hint="Try All semesters or turn off Exclude small samples." />}
         </div>
       </section>
 
       <h2 className="font-display text-2xl mb-3">Offering detail</h2>
-      {recs.length === 0 ? <Empty title="No offerings this semester." /> : (
+      {recs.length === 0 ? <Empty title="No offerings match these filters." /> : (
         <div className="bg-card border rounded-xl overflow-x-auto">
           <table className="w-full text-sm min-w-[1000px]">
             <thead>
