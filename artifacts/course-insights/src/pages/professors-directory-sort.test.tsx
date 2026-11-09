@@ -141,6 +141,48 @@ describe('Professor table sorting', () => {
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('60+');
   });
 
+  it('restores all default professor filters without clearing the search or sort', () => {
+    const activityDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Old, Pat', 'Evidence', 4.4, 60, 'Spring 2021'),
+        makeRecord(2, 'Recent, Alex', 'Torts Seminar', 4.1, 60, 'Spring 2026'),
+      ],
+    });
+    renderDirectoryWithData(activityDataset);
+    fireEvent.click(screen.getByTestId('button-toggle-professor-filters'));
+    fireEvent.click(screen.getByTestId('toggle-active-professors'));
+
+    const offeringsThumb = screen.getByTestId('filter-min-offerings-slider')
+      .querySelector('[role="slider"]') as HTMLElement;
+    const reviewsThumb = screen.getByTestId('filter-min-responses-slider')
+      .querySelector('[role="slider"]') as HTMLElement;
+    fireEvent.keyDown(offeringsThumb, { key: 'ArrowRight' });
+    fireEvent.keyDown(reviewsThumb, { key: 'ArrowRight' });
+    fireEvent.click(screen.getByTestId('filter-category-seminar'));
+
+    expect(screen.getByTestId('filter-min-offerings-value').textContent).toBe('2+');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('60+');
+    expect(screen.getByTestId('filter-score-range-value').textContent).toBe('No minimum · No maximum');
+    expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(false);
+
+    const setDefaultButton = screen.getByTestId('button-set-default-filters');
+    const clearButton = screen.getByTestId('button-clear-filters');
+    expect(setDefaultButton.compareDocumentPosition(clearButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(setDefaultButton);
+
+    expect(screen.getByTestId('filter-min-offerings-value').textContent).toBe('1+');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
+    expect(screen.getByTestId('filter-score-range-value').textContent).toBe('No minimum · No maximum');
+    expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByTestId('toggle-active-professors').getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByTestId('row-professors-alex-recent')).toBeTruthy();
+    expect(screen.queryByTestId('row-professors-pat-old')).toBeNull();
+    expect(selectedSort()).toBe('rating');
+    expect((screen.getByTestId('input-search-professors') as HTMLInputElement).value).toBe('');
+  });
+
   it('shows up to three recent distinct semesters for a professor-course pair', () => {
     const historyDataset = buildDataset({
       questions: [],

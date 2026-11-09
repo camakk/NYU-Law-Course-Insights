@@ -234,6 +234,14 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setIncludedCategories([...COURSE_CATEGORIES]);
     setActiveOnly(true);
   };
+  const setDefaultFilters = () => {
+    setMinOfferings('1');
+    setMinResponses('50');
+    setMinScore('');
+    setMaxScore('');
+    setIncludedCategories([...COURSE_CATEGORIES]);
+    setActiveOnly(true);
+  };
   const toggleCategory = (category: CourseCategory) => {
     setIncludedCategories((current) =>
       current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
@@ -471,9 +479,19 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           {hasFilters && <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>}
         </div>
       )}
-      {isProf && hasFilters && (
-        <div className="flex justify-end mt-3">
-          <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
+      {isProf && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+          <button
+            type="button"
+            onClick={setDefaultFilters}
+            className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline"
+            data-testid="button-set-default-filters"
+          >
+            Set default filters
+          </button>
+          {hasFilters && (
+            <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
+          )}
         </div>
       )}
     </>

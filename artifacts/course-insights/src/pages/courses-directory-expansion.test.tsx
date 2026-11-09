@@ -114,6 +114,7 @@ describe('Courses table expansion', () => {
     const controlsPanel = document.getElementById('directory-filter-controls');
 
     expect(screen.queryByTestId('select-semester')).toBeNull();
+    expect(screen.queryByTestId('button-set-default-filters')).toBeNull();
     expect(include1LToggle.getAttribute('aria-checked')).toBe('true');
     expect(include1LToggle.parentElement?.textContent).toContain('Include 1L Courses');
     expect(include1LToggle.parentElement?.parentElement).toBe(toolbar);
