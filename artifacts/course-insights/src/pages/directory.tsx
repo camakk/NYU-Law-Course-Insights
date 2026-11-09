@@ -609,9 +609,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 <>
                   <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
                   <span className="min-w-0">
-                    <span className="block font-medium truncate group-hover:text-primary transition-colors">
+                    <span className={`block font-medium group-hover:text-primary transition-colors ${isProf ? 'truncate' : 'whitespace-normal break-words'}`}>
                       {isProf ? r.g.label : (
-                        <Link href={`/courses/${r.g.slug}`} className="hover:underline" onClick={saveCourseDirectorySnapshot}>
+                        <Link href={`/courses/${r.g.slug}`} className="block whitespace-normal break-words hover:underline" onClick={saveCourseDirectorySnapshot}>
                           {r.g.label}
                         </Link>
                       )}

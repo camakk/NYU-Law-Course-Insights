@@ -82,6 +82,28 @@ describe('Courses table expansion', () => {
     expect(screen.queryByTestId('button-load-more')).toBeNull();
   });
 
+  it('wraps long course names instead of truncating them', () => {
+    const title = 'Professional Responsibility and the Regulation of Lawyers';
+    const longTitleDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [makeRecord(1, 'Doe, Alice', 4.7, 60, title, 4.5)],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: longTitleDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+
+    render(<CoursesPage />);
+
+    const courseLink = screen.getByRole('link', { name: title });
+    expect(courseLink.className).toContain('whitespace-normal');
+    expect(courseLink.className).toContain('break-words');
+    expect(courseLink.className).not.toContain('truncate');
+  });
+
   it('places the 1L toggle between search and Filters, with no Semester selector', () => {
     render(<CoursesPage />);
     const toolbar = screen.getByTestId('directory-toolbar-courses');
