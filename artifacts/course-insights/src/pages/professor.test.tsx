@@ -93,13 +93,20 @@ describe('Professor detail summary', () => {
       'offering-other-question-1-9',
     ]);
     expect(screen.getAllByTestId(/^header-professor-question-/)).toHaveLength(8);
-    expect(screen.getByTestId('header-professor-question-0').textContent).toBe('Prepared for Class');
+    expect(screen.getByTestId('header-professor-question-0').textContent).toBe('Prepared\nfor Class');
+    expect(screen.getByTestId('header-professor-question-0').className).toContain('whitespace-pre-line');
     expect(screen.queryByTestId('header-professor-question-5')).toBeNull();
     expect(Array.from(headerCells.children).map((cell) => cell.textContent?.trim())).toEqual([
-      'Prepared for Class', 'Clear Communication', 'Independent Thought', 'Respectful in Class', 'Accessible Outside Class', 'Course overall', 'Q7', 'Q8', 'Q10',
+      'Prepared\nfor Class', 'Clear Communication', 'Independent Thought', 'Respectful\nIn Class', 'Accessible\nOutside Class', 'Course Overall', 'Q7', 'Q8', 'Q10',
     ]);
     expect(screen.getByTestId('offering-professor-score-1').className).toContain('w-[6.5rem]');
     expect(screen.getByTestId('offering-course-score-1').className).toContain('w-[6.5rem]');
+    for (const id of ['header-teaching-overall', 'header-course-overall']) {
+      const header = screen.getByTestId(id);
+      expect(header.className).toContain('w-[6.5rem]');
+      expect(header.className).toContain('justify-self-end');
+      expect(header.className).toContain('text-center');
+    }
   });
 
   it('replaces the Course Effective card with a full-width three-card summary and course history', () => {

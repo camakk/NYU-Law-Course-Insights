@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
-const TEACHING_QUESTION_LABELS = ['Prepared for Class', 'Clear Communication', 'Independent Thought', 'Respectful in Class', 'Accessible Outside Class'];
+const TEACHING_QUESTION_LABELS = ['Prepared\nfor Class', 'Clear Communication', 'Independent Thought', 'Respectful\nIn Class', 'Accessible\nOutside Class'];
 const OTHER_QUESTION_INDEXES = Array.from({ length: 10 }, (_, index) => index)
   .filter((index) => index !== PROFESSOR_EFFECTIVE_QUESTION && index !== COURSE_EFFECTIVE_QUESTION);
 const COURSE_COLOR_BLUE = '#2563EB';
@@ -352,7 +352,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
           <div className="overflow-hidden rounded-xl border bg-card">
             <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_8rem] xl:grid-cols-[minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] gap-4 border-b bg-muted/40 px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground">
               <span>Course offering</span>
-              <span>Professor teaching</span>
+              <span className="w-[6.5rem] justify-self-end text-center normal-case" data-testid="header-teaching-overall">Teaching Overall</span>
               <div
                 className="col-span-2 grid grid-cols-9 gap-2 xl:contents"
                 data-testid="header-professor-score-columns"
@@ -360,15 +360,15 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 {OTHER_QUESTION_INDEXES.slice(0, 5).map((index) => (
                   <span
                     key={index}
-                    className="min-w-0 self-center whitespace-normal text-center text-[9px] leading-tight tracking-normal normal-case"
+                    className="min-w-0 self-center whitespace-pre-line text-center text-[9px] leading-tight tracking-normal normal-case"
                     title={qs[index] ?? `Question ${index + 1}`}
                     data-testid={`header-professor-question-${index}`}
                   >
                     {TEACHING_QUESTION_LABELS[index]}
                   </span>
                 ))}
-                <span className="min-w-0 text-center" data-testid="header-course-overall">
-                  Course overall
+                <span className="min-w-0 w-[6.5rem] justify-self-end text-center normal-case" data-testid="header-course-overall">
+                  Course Overall
                 </span>
                 {OTHER_QUESTION_INDEXES.slice(5).map((index) => (
                   <span
@@ -414,7 +414,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                       </p>
                     </div>
                     <div className="min-w-0 md:justify-self-end">
-                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden">Professor teaching</p>
+                      <p className="mb-1 text-[10px] font-semibold tracking-wide text-muted-foreground md:hidden">Teaching Overall</p>
                       <RatingBar
                         rating={professorScore}
                         label={`${g.label} overall teaching score for ${record.course}, ${record.semester}`}
@@ -437,7 +437,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                             title={question}
                             data-testid={`offering-other-question-${record.id}-${index}`}
                           >
-                            <span className="text-center text-[9px] font-medium leading-tight text-muted-foreground md:hidden">
+                            <span className="whitespace-pre-line text-center text-[9px] font-medium leading-tight text-muted-foreground md:hidden">
                               {TEACHING_QUESTION_LABELS[index]}
                             </span>
                             <Score
@@ -453,7 +453,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                         data-testid={`offering-course-overall-column-${record.id}`}
                       >
                         <span className="text-[9px] font-medium text-muted-foreground md:hidden">
-                          Course overall
+                          Course Overall
                         </span>
                         <RatingBar
                           rating={courseScore}
