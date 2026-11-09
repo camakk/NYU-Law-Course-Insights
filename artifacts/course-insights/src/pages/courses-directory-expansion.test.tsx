@@ -161,7 +161,7 @@ describe('Courses table expansion', () => {
     expect(categoryToggleRow.lastElementChild?.contains(minimumReviewsControl)).toBe(true);
     expect(minimumReviewsControl.parentElement).toBe(categoryToggleRow);
     expect(minimumReviewsControl.classList.contains('flex-1')).toBe(true);
-    expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('50');
+    expect(minimumReviewsSlider.getAttribute('aria-valuenow')).toBe('0');
     expect(minimumReviewsSlider.getAttribute('aria-valuemax')).toBe('300');
     expect(minimumReviewsSlider.getAttribute('aria-valuemin')).toBe('0');
     expect(screen.getByTestId('filter-min-responses-tick-0').textContent).toBe('0');
@@ -170,9 +170,9 @@ describe('Courses table expansion', () => {
     expect(screen.getByTestId('filter-min-responses-tick-300').textContent).toBe('300');
     expect(screen.queryByTestId('filter-min-responses-tick-400')).toBeNull();
     expect(minimumReviewsControl.querySelectorAll('[data-testid^="filter-min-responses-tick-"]').length).toBe(4);
-    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('No minimum');
     expect(minimumReviewsControl.classList.contains('h-11')).toBe(true);
-    expect(within(minimumReviewsControl).queryByText('No minimum')).toBeNull();
+    expect(within(minimumReviewsControl).getAllByText('No minimum')).toHaveLength(1);
     expect(within(minimumReviewsControl).queryByText('500+')).toBeNull();
     expect(sortSelect.parentElement?.parentElement).toBe(primaryRow);
     expect(screen.queryByTestId('button-toggle-course-filters')).toBeNull();
@@ -250,6 +250,7 @@ describe('Courses table expansion', () => {
         makeRecord(4, 'Doe, Alice', 4.5, 299, 'Below Threshold'),
         makeRecord(5, 'Roe, Bob', 4.5, 300, 'At Threshold'),
         makeRecord(6, 'Smith, Sam', 4.5, 600, 'Above Threshold'),
+        makeRecord(7, 'Doe, Alice', 4.5, 5, 'Small Course'),
       ],
     });
     vi.mocked(useDataset).mockReturnValue({
@@ -264,15 +265,20 @@ describe('Courses table expansion', () => {
     expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
     expect(screen.getByTestId('row-courses-torts')).toBeTruthy();
     expect(screen.getByTestId('row-courses-contracts')).toBeTruthy();
+    expect(screen.getByTestId('row-courses-small-course')).toBeTruthy();
     const reviewsSlider = screen.getByTestId('filter-min-responses-slider')
       .querySelector('[role="slider"]') as HTMLElement;
     reviewsSlider.focus();
-    fireEvent.keyDown(reviewsSlider, { key: 'ArrowRight' });
+    expect(reviewsSlider.getAttribute('aria-valuenow')).toBe('0');
+    for (let step = 0; step < 6; step++) {
+      fireEvent.keyDown(reviewsSlider, { key: 'ArrowRight' });
+    }
 
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('60+');
     expect(screen.queryByTestId('row-courses-evidence')).toBeNull();
     expect(screen.queryByTestId('row-courses-torts')).toBeNull();
     expect(screen.getByTestId('row-courses-contracts')).toBeTruthy();
+    expect(screen.queryByTestId('row-courses-small-course')).toBeNull();
 
     fireEvent.keyDown(reviewsSlider, { key: 'ArrowLeft' });
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');

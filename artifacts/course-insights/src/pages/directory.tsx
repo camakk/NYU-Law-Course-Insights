@@ -275,7 +275,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [minOfferings, setMinOfferings] = useState(() => returnSnapshot?.minOfferings ?? '1');
   const [minResponses, setMinResponses] = useState(() => {
     const savedValue = returnSnapshot?.minResponses;
-    return savedValue ? String(Math.min(Number(savedValue), MAX_MINIMUM_REVIEWS)) : savedValue ?? '50';
+    return savedValue ? String(Math.min(Number(savedValue), MAX_MINIMUM_REVIEWS)) : savedValue ?? (kind === 'courses' ? '0' : '50');
   });
   const [minScore, setMinScore] = useState(() => returnSnapshot?.minScore ?? '');
   const [maxScore, setMaxScore] = useState(() => returnSnapshot?.maxScore ?? '');
