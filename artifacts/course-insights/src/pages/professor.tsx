@@ -50,7 +50,8 @@ function needsThickSemesterDivider(previous: string, current: string): boolean {
   const priorSeason = prior[1].toLowerCase();
   const nextSeason = next[1].toLowerCase();
   return (priorSeason === 'fall' && nextSeason === 'spring')
-    || (priorSeason === nextSeason && prior[2] !== next[2]);
+    || (priorSeason === nextSeason && prior[2] !== next[2])
+    || (priorSeason === 'spring' && nextSeason === 'fall' && Number(prior[2]) - Number(next[2]) > 1);
 }
 
 function extraCourseColor(index: number): string {

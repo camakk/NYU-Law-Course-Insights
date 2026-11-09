@@ -72,6 +72,8 @@ describe('Professor detail summary', () => {
     ['Fall 2025', 'Fall 2025', false],
     ['Spring 2026', 'Spring 2026', false],
     ['Spring 2026', 'Fall 2025', false],
+    ['Spring 2026', 'Fall 2024', true],
+    ['Spring 2026', 'Fall 2023', true],
     ['Fall 2025', 'Summer 2025', false],
   ])('uses the correct divider between %s and %s', (previous, current, thick) => {
     renderProfessorPage(buildDataset({
@@ -118,6 +120,25 @@ describe('Professor detail summary', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Beta' }));
     expect(delta.classList.contains('border-t-[3px]')).toBe(false);
     expect(delta.classList.contains('border-t')).toBe(false);
+  });
+
+  it('recalculates Spring-to-Fall year gaps after filtering and restoring courses', () => {
+    renderProfessorPage(buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Evidence', 'Spring 2026'),
+        makeRecord(2, 'Contracts', 'Spring 2025'),
+        makeRecord(3, 'Torts', 'Fall 2024'),
+      ],
+    }));
+    const torts = screen.getByTestId('row-offering-3');
+    expect(torts.classList.contains('border-t')).toBe(true);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Contracts' }));
+    expect(torts.classList.contains('border-t-[3px]')).toBe(true);
+    expect(torts.classList.contains('border-t')).toBe(false);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Contracts' }));
+    expect(torts.classList.contains('border-t')).toBe(true);
+    expect(torts.classList.contains('border-t-[3px]')).toBe(false);
   });
 
   it.each([
