@@ -64,11 +64,37 @@ beforeEach(() => {
 });
 
 describe('Professor detail summary', () => {
+  it('selects only the requested course, including when it was unchecked', () => {
+    renderProfessorPage(dataset);
+    const controls = within(screen.getByTestId('professor-history-course-filters'));
+    expect(controls.getAllByRole('button').map((button) => button.textContent)).toEqual(['(only)', '(only)', '(only)']);
+    const onlyEvidence = controls.getByRole('button', { name: 'Show only Evidence' });
+    expect(onlyEvidence.className).toContain('underline');
+    expect(onlyEvidence.className).toContain('text-[10px]');
+    fireEvent.click(onlyEvidence);
+    expect(controls.getByRole('checkbox', { name: 'Evidence' }).getAttribute('data-state')).toBe('checked');
+    expect(controls.getByRole('checkbox', { name: 'Contracts' }).getAttribute('data-state')).toBe('unchecked');
+    expect(controls.getByRole('checkbox', { name: 'Torts' }).getAttribute('data-state')).toBe('unchecked');
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(3);
+
+    fireEvent.click(controls.getByRole('button', { name: 'Show only Contracts' }));
+    expect(controls.getByRole('checkbox', { name: 'Contracts' }).getAttribute('data-state')).toBe('checked');
+    expect(controls.getByRole('checkbox', { name: 'Evidence' }).getAttribute('data-state')).toBe('unchecked');
+    expect(controls.getByRole('checkbox', { name: 'Torts' }).getAttribute('data-state')).toBe('unchecked');
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByTestId('row-offering-4')).toBeTruthy();
+
+    fireEvent.click(controls.getByRole('button', { name: 'Show only Contracts' }));
+    expect(controls.getByRole('checkbox', { name: 'Contracts' }).getAttribute('data-state')).toBe('checked');
+    fireEvent.click(controls.getByRole('checkbox', { name: 'Torts' }));
+    expect(within(screen.getByTestId('list-professor-offerings')).getAllByRole('listitem')).toHaveLength(2);
+  });
+
   it('matches course filter chips and checkboxes to row colors in both checked states', () => {
     renderProfessorPage(dataset);
     for (const [course, recordId] of [['Evidence', 2], ['Contracts', 4], ['Torts', 5]] as const) {
       const checkbox = screen.getByRole('checkbox', { name: course });
-      const chip = checkbox.closest('label')!;
+      const chip = checkbox.closest('label')!.parentElement!;
       const markerColor = screen.getByTestId(`course-color-block-${recordId}`).style.backgroundColor;
       expect(checkbox.style.backgroundColor).toBe(markerColor);
       expect(checkbox.style.borderColor).toBe(markerColor);

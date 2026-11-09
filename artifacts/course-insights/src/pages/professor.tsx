@@ -390,27 +390,36 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
               const color = courseColors.get(course) ?? COURSE_COLOR_BLUE;
               const checked = !hiddenCourses.has(course);
               return (
-                <label
+                <div
                   key={course}
-                  htmlFor={id}
                   style={{ '--course-color': color, borderColor: color } as CSSProperties}
-                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-[color-mix(in_srgb,var(--course-color)_20%,transparent)] ${checked ? 'bg-[color-mix(in_srgb,var(--course-color)_12%,transparent)]' : 'bg-[color-mix(in_srgb,var(--course-color)_4%,transparent)]'}`}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-[color-mix(in_srgb,var(--course-color)_20%,transparent)] ${checked ? 'bg-[color-mix(in_srgb,var(--course-color)_12%,transparent)]' : 'bg-[color-mix(in_srgb,var(--course-color)_4%,transparent)]'}`}
                 >
-                  <Checkbox
-                    id={id}
-                    aria-label={course}
-                    checked={checked}
-                    style={{ borderColor: color, backgroundColor: checked ? color : 'transparent' }}
-                    onCheckedChange={(checked) => setHiddenCourses((current) => {
-                      const next = new Set(current);
-                      if (checked === true) next.delete(course);
-                      else next.add(course);
-                      return next;
-                    })}
-                    className="shrink-0 cursor-pointer focus-visible:ring-[var(--course-color)]"
-                  />
-                  <span>{course}</span>
-                </label>
+                  <label htmlFor={id} className="flex cursor-pointer items-center gap-2">
+                    <Checkbox
+                      id={id}
+                      aria-label={course}
+                      checked={checked}
+                      style={{ borderColor: color, backgroundColor: checked ? color : 'transparent' }}
+                      onCheckedChange={(checked) => setHiddenCourses((current) => {
+                        const next = new Set(current);
+                        if (checked === true) next.delete(course);
+                        else next.add(course);
+                        return next;
+                      })}
+                      className="shrink-0 cursor-pointer focus-visible:ring-[var(--course-color)]"
+                    />
+                    <span>{course}</span>
+                  </label>
+                  <button
+                    type="button"
+                    aria-label={`Show only ${course}`}
+                    className="shrink-0 cursor-pointer rounded-sm text-[10px] text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--course-color)]"
+                    onClick={() => setHiddenCourses(new Set(historyCourses.filter((name) => name !== course)))}
+                  >
+                    (only)
+                  </button>
+                </div>
               );
             })}
           </div>
