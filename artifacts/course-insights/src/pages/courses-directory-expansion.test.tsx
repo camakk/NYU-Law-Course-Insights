@@ -254,6 +254,50 @@ describe('Courses table expansion', () => {
     expect(window.location.pathname).toBe('/courses/evidence');
   });
 
+  it('expands every recent-professor semester and collapses back to the latest three', () => {
+    const historyDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        { ...makeRecord(1, 'Doe, Alice', 4.8, 20), semester: 'Spring 2026' },
+        { ...makeRecord(2, 'Roe, Bob', 4.6, 15), semester: 'Fall 2025' },
+        { ...makeRecord(3, 'Doe, Alice', 4.7, 10), semester: 'Fall 2025' },
+        { ...makeRecord(4, 'Roe, Bob', 4.5, 10), semester: 'Spring 2025' },
+        { ...makeRecord(5, 'Doe, Alice', 4.4, 10), semester: 'Fall 2024' },
+        { ...makeRecord(6, 'Roe, Bob', 4.3, 10), semester: 'Spring 2024' },
+      ],
+    });
+    vi.mocked(useDataset).mockReturnValue({
+      data: historyDataset,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useDataset>);
+    render(<CoursesPage />);
+
+    const row = screen.getByTestId('row-courses-evidence');
+    const historyToggle = within(row).getByTestId('button-toggle-course-history-evidence-compact');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-0').textContent).toBe('Spring 2026 • Alice Doe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('Fall 2025 • Alice Doe, Bob Roe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-2').textContent).toBe('Spring 2025 • Bob Roe');
+    expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
+    expect(historyToggle.textContent).toBe('Expand');
+    expect(historyToggle.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(historyToggle);
+
+    expect(historyToggle.textContent).toBe('Collapse');
+    expect(historyToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-3').textContent).toBe('Fall 2024 • Alice Doe');
+    expect(within(row).getByTestId('recent-semester-evidence-compact-4').textContent).toBe('Spring 2024 • Bob Roe');
+
+    fireEvent.click(historyToggle);
+
+    expect(historyToggle.textContent).toBe('Expand');
+    expect(historyToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(within(row).queryByTestId('recent-semester-evidence-compact-3')).toBeNull();
+  });
+
   it('sorts course rows from their column headers and keeps the Sort control in sync', () => {
     render(<CoursesPage />);
     const sortControl = screen.getByTestId('select-sort') as HTMLSelectElement;
@@ -298,6 +342,9 @@ describe('Courses table expansion', () => {
       records: [
         { ...makeRecord(1, 'Doe, Alice', 4.9, 30, 'Evidence', 4.8), semester: 'Spring 2026' },
         { ...makeRecord(2, 'Roe, Bob', 4.6, 25, 'Evidence', 4.2), semester: 'Spring 2026' },
+        { ...makeRecord(6, 'Doe, Alice', 4.5, 20, 'Evidence', 4.5), semester: 'Fall 2025' },
+        { ...makeRecord(7, 'Roe, Bob', 4.5, 20, 'Evidence', 4.5), semester: 'Spring 2025' },
+        { ...makeRecord(8, 'Doe, Alice', 4.5, 20, 'Evidence', 4.5), semester: 'Fall 2024' },
         makeRecord(3, 'Roe, Bob', 5, 60, 'Contracts', 4.6),
         makeRecord(4, 'Doe, Alice', 4.5, 60, 'Evidence (for 1Ls)', 4.5),
         makeRecord(5, 'Doe, Alice', 4.5, 60, 'Evidence [ONLINE]', 4.5),
@@ -323,6 +370,7 @@ describe('Courses table expansion', () => {
       fireEvent.click(screen.getByTestId('button-toggle-course-filters'));
       fireEvent.click(screen.getByTestId('filter-category-seminar'));
       fireEvent.click(screen.getByRole('button', { name: 'Expand top professors for Evidence' }));
+      fireEvent.click(screen.getByTestId('button-toggle-course-history-evidence-compact'));
       fireEvent.click(screen.getByRole('link', { name: 'Evidence' }));
 
       expect(window.location.pathname).toBe('/courses/evidence');
@@ -345,6 +393,8 @@ describe('Courses table expansion', () => {
       expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(false);
       expect(screen.getByTestId('button-toggle-course-filters').getAttribute('aria-expanded')).toBe('true');
       expect(screen.getByRole('button', { name: 'Collapse top professors for Evidence' }).getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByTestId('button-toggle-course-history-evidence-compact').getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByTestId('recent-semester-evidence-compact-3').textContent).toBe('Fall 2024 • Alice Doe');
       expect(screen.getByTestId('panel-top-professors-evidence').hasAttribute('hidden')).toBe(false);
       expect(screen.getByTestId('row-courses-evidence')).toBeTruthy();
       expect(screen.queryByTestId('row-courses-evidence-for-1ls')).toBeNull();

@@ -24,6 +24,7 @@ type CourseDirectorySnapshot = {
   filtersOpen: boolean;
   lastHeaderSort: string | null;
   expandedCourseSlugs?: string[];
+  expandedRecentSemesterSlugs?: string[];
   scrollY: number;
 };
 
@@ -202,6 +203,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   );
   const [activeOnly, setActiveOnly] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(() => returnSnapshot?.filtersOpen ?? false);
+  const [expandedRecentSemesters, setExpandedRecentSemesters] = useState<Record<string, boolean>>(
+    () => Object.fromEntries((returnSnapshot?.expandedRecentSemesterSlugs ?? []).map((slug) => [slug, true])),
+  );
   const lastHeaderSort = useRef<string | null>(returnSnapshot?.lastHeaderSort ?? null);
   useEffect(() => {
     if (kind !== 'courses' || !returnSnapshot) return;
@@ -269,6 +273,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
       ))
         .map((button) => button.dataset.testid?.replace('button-expand-course-', ''))
         .filter((slug): slug is string => Boolean(slug)),
+      expandedRecentSemesterSlugs: Object.entries(expandedRecentSemesters)
+        .filter(([, expanded]) => expanded)
+        .map(([slug]) => slug),
       scrollY: window.scrollY,
     };
     window.history.replaceState({
@@ -334,8 +341,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               semester,
               professors: [...professors.values()].sort((a, b) => a.label.localeCompare(b.label)),
             }))
-            .sort((a, b) => bySemesterDesc(a.semester, b.semester))
-            .slice(0, 3);
+            .sort((a, b) => bySemesterDesc(a.semester, b.semester));
         }
         return { g, m, teach, offerings: recs.length, partners, latest: recs[0]?.semester ?? '', recent };
       })
@@ -661,17 +667,38 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                 ? 'xl:grid-cols-[3rem_minmax(7rem,0.56fr)_minmax(21rem,1.64fr)_12rem_6rem_7rem_2rem]'
                 : 'md:grid-cols-[3rem_1fr_7rem_8rem_7rem_2rem] lg:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_7rem_8rem_7rem_2rem] xl:grid-cols-[3rem_1fr_minmax(14rem,1.2fr)_12rem_8rem_7rem_2rem]'
               } gap-3 items-center px-4 py-3 hover:bg-secondary/60 transition-colors ${isProf ? 'border-b last:border-0' : ''}`;
-              const renderRecentEntries = (compact: boolean) => r.recent.map((item, index) => (
-                <span
-                  key={item.kind === 'course'
-                    ? `${item.label}-${item.semesters.join('-')}`
-                    : `${item.semester}-${item.professors.map((professor) => professor.slug ?? professor.label).join('-')}`}
-                  className="block break-words"
-                  data-testid={item.kind === 'semester' ? `recent-semester-${r.g.slug}-${compact ? 'compact' : 'wide'}-${index}` : undefined}
-                >
-                  <RecentEntryContent item={item} compact={compact} />
-                </span>
-              ));
+              const recentSemestersExpanded = expandedRecentSemesters[r.g.slug] ?? false;
+              const visibleRecentEntries = isProf || recentSemestersExpanded ? r.recent : r.recent.slice(0, 3);
+              const renderRecentEntries = (compact: boolean) => (
+                <>
+                  {visibleRecentEntries.map((item, index) => (
+                    <span
+                      key={item.kind === 'course'
+                        ? `${item.label}-${item.semesters.join('-')}`
+                        : `${item.semester}-${item.professors.map((professor) => professor.slug ?? professor.label).join('-')}`}
+                      className="block break-words"
+                      data-testid={item.kind === 'semester' ? `recent-semester-${r.g.slug}-${compact ? 'compact' : 'wide'}-${index}` : undefined}
+                    >
+                      <RecentEntryContent item={item} compact={compact} />
+                    </span>
+                  ))}
+                  {!isProf && (
+                    <button
+                      type="button"
+                      aria-expanded={recentSemestersExpanded}
+                      aria-label={`${recentSemestersExpanded ? 'Collapse' : 'Expand'} all semesters for ${r.g.label}`}
+                      onClick={() => setExpandedRecentSemesters((current) => ({
+                        ...current,
+                        [r.g.slug]: !recentSemestersExpanded,
+                      }))}
+                      className="mt-1 inline-flex cursor-pointer items-center rounded-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      data-testid={`button-toggle-course-history-${r.g.slug}-${compact ? 'compact' : 'wide'}`}
+                    >
+                      {recentSemestersExpanded ? 'Collapse' : 'Expand'}
+                    </button>
+                  )}
+                </>
+              );
               const renderCells = (expandButton: ReactNode = null) => (
                 <>
                   <span className="num text-xs text-muted-foreground">{sort.startsWith('rating') && r.m.avg == null ? '–' : i + 1}</span>
