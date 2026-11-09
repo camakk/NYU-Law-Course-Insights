@@ -170,6 +170,9 @@ describe('Professor table sorting', () => {
     const setDefaultButton = screen.getByTestId('button-set-default-filters');
     const clearButton = screen.getByTestId('button-clear-filters');
     expect(setDefaultButton.compareDocumentPosition(clearButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(setDefaultButton.parentElement).toBe(clearButton.parentElement);
+    expect(setDefaultButton.parentElement?.className).toContain('justify-end');
+    expect(setDefaultButton.parentElement?.className).not.toContain('flex-wrap');
     fireEvent.click(setDefaultButton);
 
     expect(screen.getByTestId('filter-min-offerings-value').textContent).toBe('1+');

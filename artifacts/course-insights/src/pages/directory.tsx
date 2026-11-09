@@ -479,17 +479,17 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
         </div>
       )}
       {isProf && (
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+        <div className="flex items-center justify-end gap-3 mt-3">
           <button
             type="button"
             onClick={setDefaultFilters}
-            className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline"
+            className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline"
             data-testid="button-set-default-filters"
           >
             Set default filters
           </button>
           {hasFilters && (
-            <button type="button" onClick={clearFilters} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
+            <button type="button" onClick={clearFilters} className="shrink-0 whitespace-nowrap text-sm font-medium text-primary underline underline-offset-4 hover:no-underline" data-testid="button-clear-filters">Clear filters</button>
           )}
         </div>
       )}
