@@ -131,7 +131,7 @@ describe('Courses table expansion', () => {
     expect(includeOnlineInternationalToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(include1LToggle.compareDocumentPosition(includeOnlineInternationalToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeTaxToggle.getAttribute('aria-checked')).toBe('true');
-    expect(includeTaxToggle.parentElement?.textContent).toBe('Show Upper-Level Tax Courses');
+    expect(includeTaxToggle.parentElement?.textContent).toBe('Show Upper-Level Tax');
     expect(includeTaxToggle.parentElement?.parentElement).toBe(primaryRow);
     expect(includeOnlineInternationalToggle.compareDocumentPosition(includeTaxToggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(includeTaxToggle.compareDocumentPosition(sortSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

@@ -678,7 +678,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               data-testid="toggle-include-upper-level-tax-courses"
             />
             <label htmlFor="toggle-include-upper-level-tax-courses" className="cursor-pointer select-none text-sm">
-              Show Upper-Level Tax Courses
+              Show Upper-Level Tax
             </label>
           </div>
         )}
