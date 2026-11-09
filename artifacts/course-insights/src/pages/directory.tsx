@@ -855,9 +855,27 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
               {!isProf && <span className="text-center">
                 {sortHeader('Reviews', 'reviews', 'responses', 'responses-asc', 'center')}
               </span>}
-              <span className="text-center">{isProf
+              <span className="relative text-center">{isProf
                 ? sortHeader('Teaching Grade', 'teaching', 'rating', 'rating-asc', 'center', 'descending', 'rating-bar')
-                : sortHeader('Top Professors', 'rating', 'rating', 'rating-asc', 'center')}</span>
+                : sortHeader('Top Professors', 'rating', 'rating', 'rating-asc', 'center')}
+                {isProf && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="About teaching grades"
+                        data-testid="button-teaching-grade-info"
+                        className="absolute left-[calc(100%-4.5rem+0.25rem)] top-1/2 -translate-y-1/2 cursor-help rounded-full text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <Info className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-center normal-case tracking-normal">
+                      Professors are graded on the exact same distribution curve that NYU Law uses for 1L grades
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </span>
               {isProf && <span className="text-right">
                 {sortHeader('Times Taught', 'times-taught', 'offerings', 'offerings-asc')}
               </span>}

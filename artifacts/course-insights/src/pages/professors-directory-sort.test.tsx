@@ -279,6 +279,22 @@ describe('Professor table sorting', () => {
     )).toBeTruthy();
   });
 
+  it('explains the teaching grade distribution without changing the table sort', async () => {
+    renderDirectory();
+    const infoButton = screen.getByRole('button', { name: 'About teaching grades' });
+    const initialSort = selectedSort();
+    expect(infoButton.parentElement).toBe(screen.getByTestId('button-sort-teaching').parentElement);
+    expect(screen.getByTestId('button-sort-teaching').contains(infoButton)).toBe(false);
+    fireEvent.pointerMove(infoButton, { pointerType: 'mouse', clientX: 0, clientY: 0 });
+    expect(await screen.findByText(
+      'Professors are graded on the exact same distribution curve that NYU Law uses for 1L grades',
+      {},
+      { timeout: 3000 },
+    )).toBeTruthy();
+    fireEvent.click(infoButton);
+    expect(selectedSort()).toBe(initialSort);
+  });
+
   it('restores all default professor filters without clearing the search or sort', () => {
     const activityDataset = buildDataset({
       questions: [],
