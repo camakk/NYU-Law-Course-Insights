@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
 const COURSE_EFFECTIVE_QUESTION = 8;
-const TEACHING_QUESTION_LABELS = ['Prepared', 'Communication', 'Independent Thought', 'Respectful', 'Accessible'];
+const TEACHING_QUESTION_LABELS = ['Prepared for Class', 'Clear Communication', 'Independent Thought', 'Respectful in Class', 'Accessible Outside Class'];
 const OTHER_QUESTION_INDEXES = Array.from({ length: 10 }, (_, index) => index)
   .filter((index) => index !== PROFESSOR_EFFECTIVE_QUESTION && index !== COURSE_EFFECTIVE_QUESTION);
 const COURSE_COLOR_BLUE = '#2563EB';
