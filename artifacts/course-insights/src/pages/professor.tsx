@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft, Info } from 'lucide-react';
 import { bySemesterDesc, calculateProfessorStanding, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
@@ -387,23 +387,27 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
           <div className="flex flex-wrap gap-2">
             {historyCourses.map((course) => {
               const id = `history-course-${g.slug}-${ds.courseSlugByName.get(course)}`;
+              const color = courseColors.get(course) ?? COURSE_COLOR_BLUE;
+              const checked = !hiddenCourses.has(course);
               return (
                 <label
                   key={course}
                   htmlFor={id}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2 text-xs transition-colors hover:bg-primary/10"
+                  style={{ '--course-color': color, borderColor: color } as CSSProperties}
+                  className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors hover:bg-[color-mix(in_srgb,var(--course-color)_20%,transparent)] ${checked ? 'bg-[color-mix(in_srgb,var(--course-color)_12%,transparent)]' : 'bg-[color-mix(in_srgb,var(--course-color)_4%,transparent)]'}`}
                 >
                   <Checkbox
                     id={id}
                     aria-label={course}
-                    checked={!hiddenCourses.has(course)}
+                    checked={checked}
+                    style={{ borderColor: color, backgroundColor: checked ? color : 'transparent' }}
                     onCheckedChange={(checked) => setHiddenCourses((current) => {
                       const next = new Set(current);
                       if (checked === true) next.delete(course);
                       else next.add(course);
                       return next;
                     })}
-                    className="shrink-0 cursor-pointer"
+                    className="shrink-0 cursor-pointer focus-visible:ring-[var(--course-color)]"
                   />
                   <span>{course}</span>
                 </label>

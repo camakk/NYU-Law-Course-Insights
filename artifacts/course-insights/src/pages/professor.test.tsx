@@ -64,6 +64,34 @@ beforeEach(() => {
 });
 
 describe('Professor detail summary', () => {
+  it('matches course filter chips and checkboxes to row colors in both checked states', () => {
+    renderProfessorPage(dataset);
+    for (const [course, recordId] of [['Evidence', 2], ['Contracts', 4], ['Torts', 5]] as const) {
+      const checkbox = screen.getByRole('checkbox', { name: course });
+      const chip = checkbox.closest('label')!;
+      const markerColor = screen.getByTestId(`course-color-block-${recordId}`).style.backgroundColor;
+      expect(checkbox.style.backgroundColor).toBe(markerColor);
+      expect(checkbox.style.borderColor).toBe(markerColor);
+      expect(chip.style.borderColor).toBe(markerColor);
+      const courseColor = chip.style.getPropertyValue('--course-color');
+      expect(courseColor).toBeTruthy();
+      expect(chip.className).toContain('var(--course-color)_12%');
+      expect(chip.className).toContain('hover:bg-[color-mix');
+
+      fireEvent.click(checkbox);
+      expect(checkbox.getAttribute('data-state')).toBe('unchecked');
+      expect(checkbox.style.backgroundColor).toBe('transparent');
+      expect(checkbox.style.borderColor).toBe(markerColor);
+      expect(chip.style.getPropertyValue('--course-color')).toBe(courseColor);
+      expect(chip.className).toContain('var(--course-color)_4%');
+
+      fireEvent.click(checkbox);
+      expect(checkbox.getAttribute('data-state')).toBe('checked');
+      expect(checkbox.style.backgroundColor).toBe(markerColor);
+      expect(screen.getByTestId(`course-color-block-${recordId}`).style.backgroundColor).toBe(markerColor);
+    }
+  });
+
   it.each([
     ['Fall 2025', 'Spring 2025', true],
     ['Fall 2025', 'Spring 2024', true],
