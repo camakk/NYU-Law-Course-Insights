@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'wouter';
 import { ChevronLeft } from 'lucide-react';
-import { aggregate, bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
+import { aggregate, bySemesterDesc, calculateProfessorStanding, fmt, fmtInt, MIN_REVIEWS_FOR_PROFESSOR_RANKING, usable, useDataset, type Dataset, type EvalRecord, type Group } from '@/lib/data';
 import { Empty, SmallSample, NativeSelect, NotFoundEntity, PageError, PageLoading, RatingBar, Stat, useTitle } from '@/components/kit';
 
 const PROFESSOR_EFFECTIVE_QUESTION = 5;
@@ -113,8 +113,14 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
   const overall = useMemo(() => Array.from({ length: 10 }, (_, q) => aggregate(recs, q)), [recs]);
   const standing = useMemo(
     () => calculateProfessorStanding(
-      ds.professors.map((professor) => professor.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.avg ?? null),
-      g.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.avg ?? null,
+      ds.professors.map((professor) => ({
+        score: professor.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.avg ?? null,
+        reviews: professor.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.responses ?? 0,
+      })),
+      {
+        score: g.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.avg ?? null,
+        reviews: g.metrics[PROFESSOR_EFFECTIVE_QUESTION]?.responses ?? 0,
+      },
     ),
     [ds.professors, g],
   );
@@ -140,21 +146,31 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
             {
               id: 'rank',
               label: 'Overall Rank',
-              value: standing.rank == null ? 'Not ranked' : `Rank #${fmtInt(standing.rank)}`,
-              sub: standing.rank == null
-                ? 'No overall teaching score to rank'
-                : `out of ${fmtInt(standing.totalRated)} rated professors`,
+              value: standing.belowReviewThreshold
+                ? 'N/A'
+                : standing.rank == null
+                  ? 'Not ranked'
+                  : `Rank #${fmtInt(standing.rank)}`,
+              sub: standing.belowReviewThreshold
+                ? `Professors with fewer than ${MIN_REVIEWS_FOR_PROFESSOR_RANKING} reviews are not included in overall rankings`
+                : standing.rank == null
+                  ? 'No overall teaching score to rank'
+                  : `out of ${fmtInt(standing.totalRated)} professors with ${MIN_REVIEWS_FOR_PROFESSOR_RANKING}+ reviews`,
             },
             {
               id: 'percentile',
               label: 'Percentile Standing',
-              value: standing.rank == null
-                ? 'Not ranked'
+              value: standing.belowReviewThreshold
+                ? 'N/A'
+                : standing.rank == null
+                  ? 'Not ranked'
                 : standing.topPercent == null
                   ? 'Below top 50%'
                   : `Top ${standing.topPercent}%`,
-              sub: standing.rank == null
-                ? 'No score to compare'
+              sub: standing.belowReviewThreshold
+                ? ''
+                : standing.rank == null
+                  ? 'No score to compare'
                 : standing.topPercent == null
                   ? 'Outside the listed percentile groups'
                   : 'Highest applicable percentile group',
@@ -162,7 +178,7 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
             {
               id: 'grade',
               label: 'Effectiveness Grade',
-              value: standing.grade ?? '—',
+              value: standing.belowReviewThreshold ? 'N/A' : standing.grade ?? '—',
                 sub: '',
             },
           ].map((card) => (

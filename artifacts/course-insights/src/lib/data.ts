@@ -294,26 +294,45 @@ export interface Ranked {
 }
 
 export type ProfessorLetterGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-';
+export const MIN_REVIEWS_FOR_PROFESSOR_RANKING = 50;
+
+export interface ProfessorRankingEntry {
+  score: number | null;
+  reviews: number;
+}
 
 export interface ProfessorStanding {
   rank: number | null;
   totalRated: number;
   topPercent: number | null;
   grade: ProfessorLetterGrade | null;
+  belowReviewThreshold: boolean;
 }
 
-/** Rank a professor by overall score, keeping equal scores tied. */
+/** Rank eligible professors by overall score, breaking exact score ties by review count. */
 export function calculateProfessorStanding(
-  scores: Array<number | null>,
-  score: number | null,
+  professors: ProfessorRankingEntry[],
+  target: ProfessorRankingEntry,
 ): ProfessorStanding {
-  const ratedScores = scores.filter((value): value is number => value != null && Number.isFinite(value));
-  if (score == null || !Number.isFinite(score) || ratedScores.length === 0) {
-    return { rank: null, totalRated: ratedScores.length, topPercent: null, grade: null };
+  const eligibleProfessors = professors.filter(
+    ({ score, reviews }) =>
+      reviews >= MIN_REVIEWS_FOR_PROFESSOR_RANKING && score != null && Number.isFinite(score),
+  );
+  const belowReviewThreshold = target.reviews < MIN_REVIEWS_FOR_PROFESSOR_RANKING;
+  if (belowReviewThreshold || target.score == null || !Number.isFinite(target.score) || eligibleProfessors.length === 0) {
+    return {
+      rank: null,
+      totalRated: eligibleProfessors.length,
+      topPercent: null,
+      grade: null,
+      belowReviewThreshold,
+    };
   }
 
-  const rank = ratedScores.filter((value) => value > score).length + 1;
-  const topShare = rank / ratedScores.length;
+  const rank = eligibleProfessors.filter(
+    ({ score, reviews }) => score! > target.score! || (score === target.score && reviews > target.reviews),
+  ).length + 1;
+  const topShare = rank / eligibleProfessors.length;
   const topPercent = [0.1, 0.5, 1, 5, 10, 20, 50]
     .find((threshold) => topShare <= threshold / 100) ?? null;
   const grade: ProfessorLetterGrade = topShare <= 0.02
@@ -328,7 +347,7 @@ export function calculateProfessorStanding(
             ? 'B'
             : 'B-';
 
-  return { rank, totalRated: ratedScores.length, topPercent, grade };
+  return { rank, totalRated: eligibleProfessors.length, topPercent, grade, belowReviewThreshold };
 }
 
 /** Rank groups by a metric over (optionally filtered) records. Unrated go last with rank null. */

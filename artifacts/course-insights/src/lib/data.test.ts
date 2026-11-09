@@ -249,31 +249,75 @@ describe('professor identity aliases', () => {
 
 describe('professor standing', () => {
   const scores = Array.from({ length: 100 }, (_, index) => 100 - index);
+  const professors = scores.map((score) => ({ score, reviews: 50 }));
 
   it('assigns percentile tiers and grades from overall-score rank bands', () => {
-    expect(calculateProfessorStanding(scores, 100)).toEqual({
+    expect(calculateProfessorStanding(professors, { score: 100, reviews: 50 })).toEqual({
       rank: 1,
       totalRated: 100,
       topPercent: 1,
       grade: 'A+',
+      belowReviewThreshold: false,
     });
-    expect(calculateProfessorStanding(scores, 99).grade).toBe('A+');
-    expect(calculateProfessorStanding(scores, 98).grade).toBe('A');
-    expect(calculateProfessorStanding(scores, 97).grade).toBe('A');
-    expect(calculateProfessorStanding(scores, 89).grade).toBe('A');
-    expect(calculateProfessorStanding(scores, 88).grade).toBe('A-');
-    expect(calculateProfessorStanding(scores, 69).grade).toBe('A-');
-    expect(calculateProfessorStanding(scores, 68).grade).toBe('B+');
-    expect(calculateProfessorStanding(scores, 39).grade).toBe('B+');
-    expect(calculateProfessorStanding(scores, 38).grade).toBe('B');
-    expect(calculateProfessorStanding(scores, 9).grade).toBe('B');
-    expect(calculateProfessorStanding(scores, 8).grade).toBe('B-');
+    expect(calculateProfessorStanding(professors, { score: 99, reviews: 50 }).grade).toBe('A+');
+    expect(calculateProfessorStanding(professors, { score: 98, reviews: 50 }).grade).toBe('A');
+    expect(calculateProfessorStanding(professors, { score: 97, reviews: 50 }).grade).toBe('A');
+    expect(calculateProfessorStanding(professors, { score: 89, reviews: 50 }).grade).toBe('A');
+    expect(calculateProfessorStanding(professors, { score: 88, reviews: 50 }).grade).toBe('A-');
+    expect(calculateProfessorStanding(professors, { score: 69, reviews: 50 }).grade).toBe('A-');
+    expect(calculateProfessorStanding(professors, { score: 68, reviews: 50 }).grade).toBe('B+');
+    expect(calculateProfessorStanding(professors, { score: 39, reviews: 50 }).grade).toBe('B+');
+    expect(calculateProfessorStanding(professors, { score: 38, reviews: 50 }).grade).toBe('B');
+    expect(calculateProfessorStanding(professors, { score: 9, reviews: 50 }).grade).toBe('B');
+    expect(calculateProfessorStanding(professors, { score: 8, reviews: 50 }).grade).toBe('B-');
   });
 
-  it('uses the strongest applicable top-percent group and keeps ties at one rank', () => {
+  it('breaks exact score ties by review count before calculating standing', () => {
+    const tiedProfessors = [
+      { score: 5, reviews: 50 },
+      { score: 4, reviews: 60 },
+      { score: 4, reviews: 80 },
+      { score: 3, reviews: 50 },
+    ];
+    expect(calculateProfessorStanding(tiedProfessors, { score: 4, reviews: 60 })).toMatchObject({
+      rank: 3,
+      totalRated: 4,
+    });
+    expect(calculateProfessorStanding(tiedProfessors, { score: 4, reviews: 80 })).toMatchObject({
+      rank: 2,
+      totalRated: 4,
+    });
+  });
+
+  it('excludes professors with fewer than 50 reviews from the ranking pool', () => {
+    const qualifiedProfessors = [
+      { score: 5, reviews: 49 },
+      { score: 4.8, reviews: 50 },
+      { score: 4.7, reviews: 100 },
+      { score: null, reviews: 100 },
+    ];
+    expect(calculateProfessorStanding(qualifiedProfessors, { score: 4.7, reviews: 100 })).toMatchObject({
+      rank: 2,
+      totalRated: 2,
+      belowReviewThreshold: false,
+    });
+    expect(calculateProfessorStanding(qualifiedProfessors, { score: 5, reviews: 49 })).toEqual({
+      rank: null,
+      totalRated: 2,
+      topPercent: null,
+      grade: null,
+      belowReviewThreshold: true,
+    });
+  });
+
+  it('uses the strongest applicable top-percent group within the eligible pool', () => {
     const largeScores = Array.from({ length: 1000 }, (_, index) => 1000 - index);
-    expect(calculateProfessorStanding(largeScores, 996).topPercent).toBe(0.5);
-    expect(calculateProfessorStanding([5, 4, 4, 3], 4)).toMatchObject({
+    const largeProfessors = largeScores.map((score) => ({ score, reviews: 50 }));
+    expect(calculateProfessorStanding(largeProfessors, { score: 996, reviews: 50 }).topPercent).toBe(0.5);
+    expect(calculateProfessorStanding(
+      [{ score: 5, reviews: 50 }, { score: 4, reviews: 50 }, { score: 4, reviews: 50 }, { score: 3, reviews: 50 }],
+      { score: 4, reviews: 50 },
+    )).toMatchObject({
       rank: 2,
       totalRated: 4,
       topPercent: 50,
@@ -281,11 +325,15 @@ describe('professor standing', () => {
   });
 
   it('leaves professors without an overall rating unranked', () => {
-    expect(calculateProfessorStanding([null, 4, Number.NaN], null)).toEqual({
+    expect(calculateProfessorStanding(
+      [{ score: null, reviews: 80 }, { score: 4, reviews: 80 }, { score: Number.NaN, reviews: 100 }],
+      { score: null, reviews: 50 },
+    )).toEqual({
       rank: null,
       totalRated: 1,
       topPercent: null,
       grade: null,
+      belowReviewThreshold: false,
     });
   });
 });

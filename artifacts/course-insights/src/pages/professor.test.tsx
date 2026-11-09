@@ -14,6 +14,7 @@ function makeRecord(
   course: string,
   semester: string,
   professor = 'Cox, Adam B.',
+  responded = 20,
 ): RawData['records'][number] {
   return {
     id,
@@ -21,7 +22,7 @@ function makeRecord(
     professor,
     semester,
     enrolled: 100,
-    responded: 20,
+    responded,
     scores: Array(10).fill(4.5),
     inaccessible: false,
   };
@@ -86,7 +87,7 @@ describe('Professor detail summary', () => {
         const scores = Array(10).fill(4.5);
         scores[5] = 5 - index * 0.04;
         return {
-          ...makeRecord(index + 1, `Course ${index + 1}`, 'Fall 2025', `Prof, Faculty ${index}`),
+          ...makeRecord(index + 1, `Course ${index + 1}`, 'Fall 2025', `Prof, Faculty ${index}`, 50),
           scores,
         };
       }),
@@ -102,7 +103,7 @@ describe('Professor detail summary', () => {
     expect(standingCards.className).toContain('xl:justify-self-end');
     expect(screen.getByTestId('professor-standing-rank').className).toContain('rounded-[1.6rem]');
     expect(standingCards.textContent).toContain('Rank #1');
-    expect(standingCards.textContent).toContain('out of 100 rated professors');
+    expect(standingCards.textContent).toContain('out of 100 professors with 50+ reviews');
     expect(standingCards.textContent).toContain('Top 1%');
     expect(standingCards.textContent).toContain('A+');
     expect(screen.getByTestId('professor-standing-grade-value').className).toContain('bg-emerald-100');
@@ -128,6 +129,25 @@ describe('Professor detail summary', () => {
       expect(screen.queryByText('Based on overall effectiveness percentile')).toBeNull();
       close();
     }
+  });
+
+  it('shows N/A for standing cards when a professor has fewer than 50 reviews', () => {
+    const lowReviewDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Evidence', 'Fall 2025', 'Low, Alex', 49),
+        makeRecord(2, 'Torts', 'Fall 2025', 'Qualified, Pat', 50),
+      ],
+    });
+    const professor = lowReviewDataset.professors.find((group) => group.label === 'Alex Low')!;
+    renderProfessorPage(lowReviewDataset, professor.slug);
+
+    expect(screen.getByTestId('professor-standing-rank-value').textContent).toBe('N/A');
+    expect(screen.getByTestId('professor-standing-rank').textContent)
+      .toContain('Professors with fewer than 50 reviews are not included in overall rankings');
+    expect(screen.getByTestId('professor-standing-percentile-value').textContent).toBe('N/A');
+    expect(screen.getByTestId('professor-standing-grade-value').textContent).toBe('N/A');
   });
 
   it('updates the distinct course list to the selected semester', () => {
