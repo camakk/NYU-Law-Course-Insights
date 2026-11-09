@@ -83,10 +83,10 @@ describe('Professor table sorting', () => {
   it('does not offer Most recently taught as a professor sort', () => {
     renderDirectory();
     expect(screen.queryByRole('option', { name: 'Most recently taught' })).toBeNull();
-    expect(selectedSort()).toBe('rating');
+    expect(selectedSort()).toBe('responses');
   });
 
-  it('falls back to Highest rated when restoring the removed recent sort', () => {
+  it('falls back to Most reviews when restoring the removed recent sort', () => {
     window.history.replaceState({
       courseInsightsProfessorDirectory: {
         version: 1,
@@ -96,7 +96,7 @@ describe('Professor table sorting', () => {
       },
     }, '', '/professors');
     renderDirectory();
-    expect(selectedSort()).toBe('rating');
+    expect(selectedSort()).toBe('responses');
   });
 
   it('shows every matching professor without a Load More control', () => {
@@ -319,7 +319,7 @@ describe('Professor table sorting', () => {
     expect(screen.getByTestId('toggle-active-professors').getAttribute('aria-checked')).toBe('true');
     expect(screen.getByTestId('row-professors-alex-recent')).toBeTruthy();
     expect(screen.queryByTestId('row-professors-pat-old')).toBeNull();
-    expect(selectedSort()).toBe('rating');
+    expect(selectedSort()).toBe('responses');
     expect((screen.getByTestId('input-search-professors') as HTMLInputElement).value).toBe('');
   });
 
@@ -474,8 +474,8 @@ describe('Professor table sorting', () => {
 
   it('toggles each sortable column and syncs the Sort selector', () => {
     const { container } = renderDirectory();
-    expect(selectedSort()).toBe('rating');
-    expect(professorOrder(container)).toEqual(['Bob Roe', 'Alice Doe']);
+    expect(selectedSort()).toBe('responses');
+    expect(professorOrder(container)).toEqual(['Alice Doe', 'Bob Roe']);
     expect(screen.queryByRole('option', { name: 'Most courses taught' })).toBeNull();
     expect(screen.queryByRole('option', { name: 'Fewest courses taught' })).toBeNull();
 

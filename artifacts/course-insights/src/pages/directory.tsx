@@ -291,8 +291,8 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
   const [q, setQ] = useState(() => returnSnapshot?.q ?? '');
   const [sort, setSort] = useState<SortKey>(() =>
     returnSnapshot?.sort === 'recent'
-      ? kind === 'professors' ? 'rating' : 'responses'
-      : returnSnapshot?.sort ?? (kind === 'courses' ? 'responses' : 'rating'),
+      ? 'responses'
+      : returnSnapshot?.sort ?? 'responses',
   );
   const [include1LCourses, setInclude1LCourses] = useState(() => returnSnapshot?.include1LCourses ?? false);
   const [includeOnlineInternationalCourses, setIncludeOnlineInternationalCourses] = useState(
