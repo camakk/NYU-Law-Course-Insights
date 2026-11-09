@@ -167,6 +167,63 @@ describe('Professor table sorting', () => {
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('60+');
   });
 
+  it('keeps the minimum-sample toggle synchronized with the review threshold', () => {
+    const reviewDataset = buildDataset({
+      questions: [],
+      sourceNotes: [],
+      records: [
+        makeRecord(1, 'Low, Alex', 'Evidence', 4.8, 40),
+        makeRecord(2, 'Threshold, Pat', 'Torts', 4.5, 50),
+        makeRecord(3, 'High, Robin', 'Contracts', 4.2, 70),
+      ],
+    });
+    renderDirectoryWithData(reviewDataset);
+    const sampleToggle = screen.getByTestId('toggle-minimum-sample-size');
+
+    expect(sampleToggle.getAttribute('aria-checked')).toBe('true');
+    expect(screen.queryByTestId('row-professors-alex-low')).toBeNull();
+    expect(screen.getByTestId('row-professors-pat-threshold')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('button-toggle-professor-filters'));
+    const reviewSlider = screen.getByTestId('filter-min-responses-slider')
+      .querySelector('[role="slider"]') as HTMLElement;
+    expect(reviewSlider.getAttribute('aria-valuenow')).toBe('50');
+
+    fireEvent.keyDown(reviewSlider, { key: 'ArrowRight' });
+    expect(reviewSlider.getAttribute('aria-valuenow')).toBe('60');
+    expect(sampleToggle.getAttribute('aria-checked')).toBe('true');
+
+    fireEvent.keyDown(reviewSlider, { key: 'ArrowLeft' });
+    fireEvent.keyDown(reviewSlider, { key: 'ArrowLeft' });
+    expect(reviewSlider.getAttribute('aria-valuenow')).toBe('40');
+    expect(sampleToggle.getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByTestId('row-professors-alex-low')).toBeTruthy();
+
+    fireEvent.click(sampleToggle);
+    expect(reviewSlider.getAttribute('aria-valuenow')).toBe('50');
+    expect(sampleToggle.getAttribute('aria-checked')).toBe('true');
+    expect(screen.queryByTestId('row-professors-alex-low')).toBeNull();
+
+    fireEvent.click(sampleToggle);
+    expect(reviewSlider.getAttribute('aria-valuenow')).toBe('0');
+    expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('No minimum');
+    expect(sampleToggle.getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByTestId('row-professors-alex-low')).toBeTruthy();
+  });
+
+  it('explains the minimum sample size from the info tooltip', async () => {
+    renderDirectory();
+    const infoButton = screen.getByTestId('button-minimum-sample-size-info');
+
+    fireEvent.pointerMove(infoButton, { pointerType: 'mouse', clientX: 0, clientY: 0 });
+
+    expect(await screen.findByText(
+      'Toggle this on to only include professors with 50 or more student reviews',
+      {},
+      { timeout: 3000 },
+    )).toBeTruthy();
+  });
+
   it('restores all default professor filters without clearing the search or sort', () => {
     const activityDataset = buildDataset({
       questions: [],

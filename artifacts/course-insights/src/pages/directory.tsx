@@ -541,6 +541,34 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
             </Tooltip>
           </div>
         )}
+        {isProf && (
+          <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
+            <Switch
+              id="toggle-minimum-sample-size"
+              checked={Number(minResponses) >= 50}
+              onCheckedChange={(checked) => setMinResponses(checked ? '50' : '')}
+              data-testid="toggle-minimum-sample-size"
+            />
+            <label htmlFor="toggle-minimum-sample-size" className="cursor-pointer select-none text-sm">
+              Minimum sample size
+            </label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Minimum sample size information"
+                  data-testid="button-minimum-sample-size-info"
+                  className="rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Info aria-hidden="true" className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="center" className="max-w-xs text-center">
+                Toggle this on to only include professors with 50 or more student reviews
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
         {!isProf && (
           <div className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3">
             <Switch
