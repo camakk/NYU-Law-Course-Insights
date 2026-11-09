@@ -229,7 +229,9 @@ describe('Courses table expansion', () => {
     expect(spring2026.textContent).toBe('🌸 Spring 2026 • Alice Doe');
     expect(spring2026.querySelector('strong')?.textContent).toBe('🌸 Spring 2026');
     expect(within(row).getByTestId('recent-semester-evidence-compact-1').textContent).toBe('🍂 Fall 2025 • Alice Doe, Sam Small');
-    expect(row.textContent).toMatch(/Latest (🌸 Spring|🍂 Fall|☀️ Summer) \d{4}/);
+    const courseLatest = within(row).getByTestId('course-latest-evidence');
+    expect(courseLatest.textContent).toMatch(/^Latest (Spring|Fall|Summer) \d{4}$/);
+    expect(courseLatest.textContent).not.toMatch(/🌸|🍂|☀️/);
     const recentProfessorLinks = within(row).getAllByRole('link', { name: 'Alice Doe' });
     expect(recentProfessorLinks.length).toBeGreaterThan(0);
     expect(recentProfessorLinks.every((link) => link.getAttribute('href') === '/professors/alice-doe')).toBe(true);

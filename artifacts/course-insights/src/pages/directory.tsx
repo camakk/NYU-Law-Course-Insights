@@ -752,7 +752,9 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                       )}
                     </span>
                     <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>{isProf ? 'Last Taught' : 'Latest'} {isProf ? r.latest : formatSemesterForDisplay(r.latest)}</span>
+                      <span data-testid={!isProf ? `course-latest-${r.g.slug}` : undefined}>
+                        {isProf ? 'Last Taught' : 'Latest'} {r.latest}
+                      </span>
                       {isProf && r.g.professorStatus === 'Inactive' && (
                         <span
                           className="inline-flex items-center rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive"
