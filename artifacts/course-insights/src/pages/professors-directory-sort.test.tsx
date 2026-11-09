@@ -152,6 +152,8 @@ describe('Professor table sorting', () => {
     });
     renderDirectoryWithData(activityDataset);
     fireEvent.click(screen.getByTestId('button-toggle-professor-filters'));
+    expect(screen.queryByText('Include course categories')).toBeNull();
+    expect(screen.queryByTestId('filter-category-course')).toBeNull();
     fireEvent.click(screen.getByTestId('toggle-active-professors'));
 
     const offeringsThumb = screen.getByTestId('filter-min-offerings-slider')
@@ -160,12 +162,10 @@ describe('Professor table sorting', () => {
       .querySelector('[role="slider"]') as HTMLElement;
     fireEvent.keyDown(offeringsThumb, { key: 'ArrowRight' });
     fireEvent.keyDown(reviewsThumb, { key: 'ArrowRight' });
-    fireEvent.click(screen.getByTestId('filter-category-seminar'));
 
     expect(screen.getByTestId('filter-min-offerings-value').textContent).toBe('2+');
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('60+');
     expect(screen.getByTestId('filter-score-range-value').textContent).toBe('No minimum · No maximum');
-    expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(false);
 
     const setDefaultButton = screen.getByTestId('button-set-default-filters');
     const clearButton = screen.getByTestId('button-clear-filters');
@@ -175,7 +175,6 @@ describe('Professor table sorting', () => {
     expect(screen.getByTestId('filter-min-offerings-value').textContent).toBe('1+');
     expect(screen.getByTestId('filter-min-responses-value').textContent).toBe('50+');
     expect(screen.getByTestId('filter-score-range-value').textContent).toBe('No minimum · No maximum');
-    expect((screen.getByTestId('filter-category-seminar') as HTMLInputElement).checked).toBe(true);
     expect(screen.getByTestId('toggle-active-professors').getAttribute('aria-checked')).toBe('true');
     expect(screen.getByTestId('row-professors-alex-recent')).toBeTruthy();
     expect(screen.queryByTestId('row-professors-pat-old')).toBeNull();

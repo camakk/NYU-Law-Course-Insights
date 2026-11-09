@@ -219,7 +219,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     (minResponses !== '' && Number(minResponses) > 0) ||
     (minScore !== '' && Number(minScore) > 0) ||
     (maxScore !== '' && Number(maxScore) < 5) ||
-    includedCategories.length !== COURSE_CATEGORIES.length;
+    (kind === 'courses' && includedCategories.length !== COURSE_CATEGORIES.length);
   const updateMinimum = (setValue: (value: string) => void) => (value: string) => {
     setValue(value);
   };
@@ -239,7 +239,6 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     setMinResponses('50');
     setMinScore('');
     setMaxScore('');
-    setIncludedCategories([...COURSE_CATEGORIES]);
     setActiveOnly(true);
   };
   const toggleCategory = (category: CourseCategory) => {
@@ -284,7 +283,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
     const out = groups
       .map((g) => {
         const categoryRecords = kind === 'professors'
-          ? g.records.filter((record) => record.courseCategories.some((category) => includedCategories.includes(category)))
+          ? g.records
           : g.courseCategories?.some((category) => includedCategories.includes(category)) ? g.records : [];
         return { g, categoryRecords };
       })
@@ -449,28 +448,28 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
           id={isProf ? 'filter-score-range' : 'filter-course-rating-range'}
         />
       </div>
-      <div className="mt-4 border-t pt-4">
-        <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
-        <div role="group" aria-labelledby="course-category-filter-label" className="mt-2 flex flex-wrap gap-2">
-          {COURSE_CATEGORIES.map((category) => (
-            <label key={category} className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs transition hover:border-primary/60">
-              <input
-                type="checkbox"
-                checked={includedCategories.includes(category)}
-                onChange={() => toggleCategory(category)}
-                data-testid={`filter-category-${category.toLowerCase()}`}
-                className="accent-primary"
-              />
-              {category}
-            </label>
-          ))}
-        </div>
-        {!isProf && (
+      {!isProf && (
+        <div className="mt-4 border-t pt-4">
+          <p id="course-category-filter-label" className="text-xs font-semibold">Include course categories</p>
+          <div role="group" aria-labelledby="course-category-filter-label" className="mt-2 flex flex-wrap gap-2">
+            {COURSE_CATEGORIES.map((category) => (
+              <label key={category} className="inline-flex cursor-pointer items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs transition hover:border-primary/60">
+                <input
+                  type="checkbox"
+                  checked={includedCategories.includes(category)}
+                  onChange={() => toggleCategory(category)}
+                  data-testid={`filter-category-${category.toLowerCase()}`}
+                  className="accent-primary"
+                />
+                {category}
+              </label>
+            ))}
+          </div>
           <p className="mt-2 text-xs text-muted-foreground">
             Uncheck a category to exclude those courses from the results. Categories are inferred from course titles; titles without a clear indicator are labeled Course.
           </p>
-        )}
-      </div>
+        </div>
+      )}
       {!isProf && (
         <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
           <p className="text-xs text-muted-foreground max-w-3xl">
