@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, useDataset, type RawData } from '@/lib/data';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ProfessorsPage } from './directory';
+import { Route, Router, Switch } from 'wouter';
+import ProfessorPage from './professor';
 
 vi.mock('@/lib/data', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/data')>()),
@@ -321,7 +323,7 @@ describe('Professor table sorting', () => {
     expect((screen.getByTestId('input-search-professors') as HTMLInputElement).value).toBe('');
   });
 
-  it('restores professor filters and position after returning from an individual profile', async () => {
+  it.each(['browser Back', 'All professors link'])('restores professor filters and position using %s', async (returnMethod) => {
     const returnDataset = buildDataset({
       questions: [],
       sourceNotes: [],
@@ -344,7 +346,16 @@ describe('Professor table sorting', () => {
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 640 });
 
     try {
-      const { unmount } = renderDirectoryWithData(returnDataset);
+      render(
+        <TooltipProvider>
+          <Router>
+            <Switch>
+              <Route path="/professors" component={ProfessorsPage} />
+              <Route path="/professors/:id" component={ProfessorPage} />
+            </Switch>
+          </Router>
+        </TooltipProvider>,
+      );
       fireEvent.change(screen.getByTestId('input-search-professors'), { target: { value: 'Evidence' } });
       fireEvent.click(screen.getByTestId('button-toggle-professor-filters'));
 
@@ -373,18 +384,20 @@ describe('Professor table sorting', () => {
 
       fireEvent.click(screen.getByTestId('row-professors-alice-doe'));
       expect(window.location.pathname).toBe('/professors/alice-doe');
-      unmount();
+      expect(screen.getByTestId('text-professor-name').textContent).toBe('Alice Doe');
+      expect(scrollTo).toHaveBeenCalledWith(0, 0);
+      Object.defineProperty(window, 'scrollY', { configurable: true, value: 100 });
 
       const returned = new Promise<void>((resolve) => {
         window.addEventListener('popstate', () => resolve(), { once: true });
       });
       await act(async () => {
-        window.history.back();
+        if (returnMethod === 'browser Back') window.history.back();
+        else fireEvent.click(screen.getByTestId('link-back'));
         await returned;
       });
       expect(window.location.pathname).toBe('/professors');
 
-      renderDirectoryWithData(returnDataset);
       expect((screen.getByTestId('input-search-professors') as HTMLInputElement).value).toBe('Evidence');
       expect((screen.getByTestId('select-sort') as HTMLSelectElement).value).toBe('name-desc');
       expect(screen.getByTestId('toggle-active-professors').getAttribute('aria-checked')).toBe('false');

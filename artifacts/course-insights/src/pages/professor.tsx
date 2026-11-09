@@ -173,7 +173,17 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
 
   return (
     <div className="rise">
-      <Link href="/professors" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4" data-testid="link-back"><ChevronLeft className="h-4 w-4" />All professors</Link>
+      <Link
+        href="/professors"
+        onClick={(event) => {
+          if (window.history.state?.courseInsightsFromProfessorDirectory === true) {
+            event.preventDefault();
+            window.history.back();
+          }
+        }}
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary mb-4"
+        data-testid="link-back"
+      ><ChevronLeft className="h-4 w-4" />All professors</Link>
       <div className="grid min-w-0 gap-6 pb-6 border-b xl:grid-cols-[minmax(0,1fr)_minmax(32rem,1.2fr)] xl:items-start" data-testid="professor-header">
         <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-[0.25em] text-primary font-semibold">Professor</div>

@@ -64,6 +64,13 @@ beforeEach(() => {
 });
 
 describe('Professor detail summary', () => {
+  it('falls back to the Professors page when a profile is opened directly', () => {
+    renderProfessorPage();
+    expect(window.history.state).toBeNull();
+    fireEvent.click(screen.getByTestId('link-back'));
+    expect(window.location.pathname).toBe('/professors');
+  });
+
   it('filters every offering of a course and restores it without changing all-time summaries', () => {
     renderProfessorPage();
     const controls = within(screen.getByTestId('professor-history-course-filters'));

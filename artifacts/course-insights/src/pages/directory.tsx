@@ -1004,6 +1004,7 @@ function DirectoryInner({ ds, kind }: { ds: Dataset; kind: Kind }) {
                   <Link
                     key={r.g.slug}
                     href={`/professors/${r.g.slug}`}
+                    state={{ courseInsightsFromProfessorDirectory: true }}
                     data-testid={`row-professors-${r.g.slug}`}
                     className={rowClass}
                     onClick={saveDirectorySnapshot}
