@@ -43,6 +43,16 @@ function shortSemester(semester: string): string {
   return `${seasons[match[1].toLowerCase()]} '${match[2].slice(-2)}`;
 }
 
+function needsThickSemesterDivider(previous: string, current: string): boolean {
+  const prior = /^(Fall|Spring)\s+(\d{4})$/i.exec(previous.trim());
+  const next = /^(Fall|Spring)\s+(\d{4})$/i.exec(current.trim());
+  if (!prior || !next) return false;
+  const priorSeason = prior[1].toLowerCase();
+  const nextSeason = next[1].toLowerCase();
+  return (priorSeason === 'fall' && nextSeason === 'spring')
+    || (priorSeason === nextSeason && prior[2] !== next[2]);
+}
+
 function extraCourseColor(index: number): string {
   const hue = EXTRA_COURSE_COLOR_HUES[index % EXTRA_COURSE_COLOR_HUES.length];
   const shade = Math.floor(index / EXTRA_COURSE_COLOR_HUES.length);
@@ -440,14 +450,19 @@ function Profile({ ds, g }: { ds: Dataset; g: Group }) {
                 ))}
               </div>
             </div>
-            <ol className="divide-y" data-testid="list-professor-offerings">
-              {visibleOfferings.map(({ record, section }) => {
+            <ol data-testid="list-professor-offerings">
+              {visibleOfferings.map(({ record, section }, index) => {
                 const professorScore = offeringScore(record, PROFESSOR_EFFECTIVE_QUESTION);
                 const courseScore = offeringScore(record, COURSE_EFFECTIVE_QUESTION);
+                const dividerClass = index === 0
+                  ? ''
+                  : needsThickSemesterDivider(visibleOfferings[index - 1].record.semester, record.semester)
+                    ? 'border-t-[3px]'
+                    : 'border-t';
                 return (
                   <li
                     key={record.id}
-                    className="relative grid grid-cols-1 gap-x-4 gap-y-2 px-4 py-3 md:grid-cols-[5rem_minmax(0,1fr)_8rem] xl:grid-cols-[5rem_minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] md:items-center"
+                    className={`relative grid grid-cols-1 gap-x-4 gap-y-2 px-4 py-3 md:grid-cols-[5rem_minmax(0,1fr)_8rem] xl:grid-cols-[5rem_minmax(14rem,1fr)_8rem_repeat(5,minmax(3.25rem,1fr))_8rem_repeat(3,minmax(3.25rem,1fr))] md:items-center ${dividerClass}`}
                     data-testid={`row-offering-${record.id}`}
                   >
                     <span

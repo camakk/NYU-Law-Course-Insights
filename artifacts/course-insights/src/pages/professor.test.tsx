@@ -65,6 +65,62 @@ beforeEach(() => {
 
 describe('Professor detail summary', () => {
   it.each([
+    ['Fall 2025', 'Spring 2025', true],
+    ['Fall 2025', 'Spring 2024', true],
+    ['Fall 2025', 'Fall 2024', true],
+    ['Spring 2026', 'Spring 2025', true],
+    ['Fall 2025', 'Fall 2025', false],
+    ['Spring 2026', 'Spring 2026', false],
+    ['Spring 2026', 'Fall 2025', false],
+    ['Fall 2025', 'Summer 2025', false],
+  ])('uses the correct divider between %s and %s', (previous, current, thick) => {
+    renderProfessorPage(buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Evidence', previous),
+        makeRecord(2, 'Contracts', current),
+      ],
+    }));
+    const first = screen.getByTestId('row-offering-1');
+    const second = screen.getByTestId('row-offering-2');
+    expect(first.classList.contains('border-t')).toBe(false);
+    expect(first.classList.contains('border-t-[3px]')).toBe(false);
+    expect(second.classList.contains('border-t-[3px]')).toBe(thick);
+    expect(second.classList.contains('border-t')).toBe(!thick);
+  });
+
+  it('recalculates dividers from adjacent visible offerings when course filters change', () => {
+    renderProfessorPage(buildDataset({
+      questions: [], sourceNotes: [],
+      records: [
+        makeRecord(1, 'Alpha', 'Fall 2026'),
+        makeRecord(2, 'Beta', 'Spring 2026'),
+        makeRecord(3, 'Gamma', 'Fall 2025'),
+        makeRecord(4, 'Delta', 'Spring 2025'),
+      ],
+    }));
+    const gamma = screen.getByTestId('row-offering-3');
+    const delta = screen.getByTestId('row-offering-4');
+    expect(gamma.classList.contains('border-t')).toBe(true);
+    expect(delta.classList.contains('border-t-[3px]')).toBe(true);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Beta' }));
+    expect(gamma.classList.contains('border-t-[3px]')).toBe(true);
+    expect(gamma.classList.contains('border-t')).toBe(false);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Beta' }));
+    expect(gamma.classList.contains('border-t')).toBe(true);
+    expect(gamma.classList.contains('border-t-[3px]')).toBe(false);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Gamma' }));
+    expect(delta.classList.contains('border-t-[3px]')).toBe(true);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Alpha' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Beta' }));
+    expect(delta.classList.contains('border-t-[3px]')).toBe(false);
+    expect(delta.classList.contains('border-t')).toBe(false);
+  });
+
+  it.each([
     [7, '• 7 responses'],
     [0, '• 0 responses'],
     [null, '• N/A responses'],
