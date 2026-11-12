@@ -2,7 +2,8 @@
 
 This is a static, read-only build of the NYU course-evaluations website. The
 evaluation records are bundled into the app; it does not need an API server,
-database, credentials, or a runtime backend.
+database, credentials, or a runtime backend. The export omits the duplicate
+standalone evaluation JSON file to reduce the download size.
 
 ## Automatic deployment from this repository
 
@@ -34,9 +35,9 @@ database, credentials, or a runtime backend.
    Do not leave the old `192.30.252.153` or `192.30.252.154` apex A records
    in place.
 
-5. Push to `main`, or run **Deploy GitHub Pages** from **Actions**. Wait for
-   the workflow to finish successfully. It verifies that the nested app,
-   JavaScript, CSS, data, CNAME, and fallback files are present before upload.
+5. Push to `main`, or run **Deploy Static Website** from **Actions**. Wait for
+   the workflow to finish successfully. It uploads the prebuilt app folder
+   and deploys it with the included GitHub Pages workflow.
 6. Confirm `http://cameronakker.com/NYU-Law-Course-Insights/` loads. GitHub may
    take time to provision a certificate after DNS is correct. When **Enforce
    HTTPS** becomes available under **Settings → Pages**, enable it; HTTP will
@@ -69,12 +70,15 @@ node self-host/build-github-pages.mjs
 The deployable folder is written to
 `generated-artifacts/nyu-course-insights-github-pages/`.
 The generated folder contains the site under
-`NYU-Law-Course-Insights/`, plus `CNAME`, `.nojekyll`, and `404.html` at its
-root. For manual hosting, copy the contents of this generated folder to the
-web root; do not add the outer `nyu-course-insights-github-pages` directory as
-another URL level. Domain DNS must point to GitHub Pages separately. Do not
-open `index.html` through a `file://` URL.
+`NYU-Law-Course-Insights/`, with its own `404.html` fallback and `.nojekyll`
+file, plus `.github/workflows/deploy_1794419306223.yml` at the export root.
+The workflow publishes the nested folder, so preserve this structure when
+adding the archive contents to the repository root. For manual hosting, copy
+the contents of `NYU-Law-Course-Insights/` to the web root. Do not open
+`index.html` through a `file://` URL.
 
 The build uses the evaluation-data snapshot included in the project. Searches,
 filters, sorting, rankings, and detail pages run in the browser without
-additional data or API requests. Rebuild and redeploy to publish updated data.
+additional data or API requests. The standalone JSON copy is removed from the
+export because the complete snapshot is already embedded in the application
+JavaScript. Rebuild and redeploy to publish updated data.
